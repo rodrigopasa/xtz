@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,8 +37,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Upload, File, FileText, X, Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface BookFormProps {
   id?: number;
@@ -92,6 +93,15 @@ export default function BookForm({ id }: BookFormProps) {
   const [selectedAuthor, setSelectedAuthor] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const isEditMode = !!id;
+  
+  // Refs e estados para upload de arquivo
+  const epubFileInputRef = useRef<HTMLInputElement>(null);
+  const pdfFileInputRef = useRef<HTMLInputElement>(null);
+  const [epubFile, setEpubFile] = useState<File | null>(null);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [epubUploading, setEpubUploading] = useState(false);
+  const [pdfUploading, setPdfUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   // Buscar dados do livro para edição
   const { data: book, isLoading: bookLoading, isError: bookError } = useQuery({
@@ -208,6 +218,113 @@ export default function BookForm({ id }: BookFormProps) {
     },
   });
   
+  // Funções para upload de arquivos
+  const handleEpubFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setEpubFile(e.target.files[0]);
+    }
+  };
+
+  const handlePdfFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setPdfFile(e.target.files[0]);
+    }
+  };
+
+  const handleUploadEpub = async () => {
+    if (!epubFile) return;
+
+    setEpubUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', epubFile);
+
+      // Simular o progresso de upload
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 95) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 5;
+        });
+      }, 200);
+
+      const response = await apiRequest("POST", "/api/upload/epub", formData);
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
+      if (response && response.url) {
+        form.setValue("epubUrl", response.url);
+        toast({
+          title: "Arquivo EPUB enviado",
+          description: "O arquivo EPUB foi enviado com sucesso.",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao enviar arquivo",
+        description: error.message || "Ocorreu um erro ao enviar o arquivo EPUB.",
+        variant: "destructive",
+      });
+    } finally {
+      setTimeout(() => {
+        setEpubUploading(false);
+        setUploadProgress(0);
+      }, 500);
+    }
+  };
+
+  const handleUploadPdf = async () => {
+    if (!pdfFile) return;
+
+    setPdfUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', pdfFile);
+
+      // Simular o progresso de upload
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 95) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 5;
+        });
+      }, 200);
+
+      const response = await apiRequest("POST", "/api/upload/pdf", formData);
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
+      if (response && response.url) {
+        form.setValue("pdfUrl", response.url);
+        toast({
+          title: "Arquivo PDF enviado",
+          description: "O arquivo PDF foi enviado com sucesso.",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao enviar arquivo",
+        description: error.message || "Ocorreu um erro ao enviar o arquivo PDF.",
+        variant: "destructive",
+      });
+    } finally {
+      setTimeout(() => {
+        setPdfUploading(false);
+        setUploadProgress(0);
+      }, 500);
+    }
+  };
+
   function onSubmit(values: z.infer<typeof bookFormSchema>) {
     mutation.mutate(values);
   }
@@ -659,12 +776,69 @@ export default function BookForm({ id }: BookFormProps) {
                         name="epubUrl"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>URL do arquivo EPUB</FormLabel>
-                            <FormControl>
-                              <Input placeholder="https://example.com/livro.epub" {...field} />
-                            </FormControl>
+                            <FormLabel>Arquivo EPUB</FormLabel>
+                            <div className="flex gap-2">
+                              <FormControl>
+                                <Input placeholder="https://example.com/livro.epub" {...field} />
+                              </FormControl>
+                              <div className="relative">
+                                <input
+                                  type="file"
+                                  ref={epubFileInputRef}
+                                  onChange={handleEpubFileChange}
+                                  accept=".epub"
+                                  className="sr-only"
+                                  aria-hidden="true"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => epubFileInputRef.current?.click()}
+                                  disabled={epubUploading}
+                                >
+                                  <File className="w-4 h-4 mr-2" />
+                                  Selecionar
+                                </Button>
+                              </div>
+                              {epubFile && (
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  onClick={handleUploadEpub}
+                                  disabled={epubUploading}
+                                  className="flex-shrink-0"
+                                >
+                                  {epubUploading ? (
+                                    <>
+                                      <span className="mr-2">{uploadProgress}%</span>
+                                      <span>Enviando...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="w-4 h-4 mr-2" />
+                                      <span>Enviar</span>
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </div>
+                            {epubFile && !epubUploading && (
+                              <div className="flex items-center text-sm mt-1 text-neutral-600">
+                                <FileText className="w-4 h-4 mr-1" />
+                                <span className="truncate">{epubFile.name}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-4 w-4 ml-1"
+                                  onClick={() => setEpubFile(null)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
                             <FormDescription>
-                              Link para download do arquivo EPUB.
+                              Digite a URL ou faça upload de um arquivo EPUB.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -676,12 +850,69 @@ export default function BookForm({ id }: BookFormProps) {
                         name="pdfUrl"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>URL do arquivo PDF</FormLabel>
-                            <FormControl>
-                              <Input placeholder="https://example.com/livro.pdf" {...field} />
-                            </FormControl>
+                            <FormLabel>Arquivo PDF</FormLabel>
+                            <div className="flex gap-2">
+                              <FormControl>
+                                <Input placeholder="https://example.com/livro.pdf" {...field} />
+                              </FormControl>
+                              <div className="relative">
+                                <input
+                                  type="file"
+                                  ref={pdfFileInputRef}
+                                  onChange={handlePdfFileChange}
+                                  accept=".pdf"
+                                  className="sr-only"
+                                  aria-hidden="true"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => pdfFileInputRef.current?.click()}
+                                  disabled={pdfUploading}
+                                >
+                                  <File className="w-4 h-4 mr-2" />
+                                  Selecionar
+                                </Button>
+                              </div>
+                              {pdfFile && (
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  onClick={handleUploadPdf}
+                                  disabled={pdfUploading}
+                                  className="flex-shrink-0"
+                                >
+                                  {pdfUploading ? (
+                                    <>
+                                      <span className="mr-2">{uploadProgress}%</span>
+                                      <span>Enviando...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="w-4 h-4 mr-2" />
+                                      <span>Enviar</span>
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </div>
+                            {pdfFile && !pdfUploading && (
+                              <div className="flex items-center text-sm mt-1 text-neutral-600">
+                                <FileText className="w-4 h-4 mr-1" />
+                                <span className="truncate">{pdfFile.name}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-4 w-4 ml-1"
+                                  onClick={() => setPdfFile(null)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
                             <FormDescription>
-                              Link para download do arquivo PDF.
+                              Digite a URL ou faça upload de um arquivo PDF.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
