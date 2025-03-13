@@ -121,6 +121,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     allowedHeaders: ['Content-Type', 'Authorization']
   }));
   
+  // Endpoint para health check (usado para monitoramento em Coolify/Docker)
+  app.get('/api/health', (req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      uptime: process.uptime(),
+      timestamp: Date.now()
+    });
+  });
+  
   // Configuração de sessão
   const MemoryStoreSession = MemoryStore(session);
   const isProduction = process.env.NODE_ENV === 'production';
