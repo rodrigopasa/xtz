@@ -3,6 +3,8 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
+import { useAuth } from "@/lib/auth";
+import { useEffect } from "react";
 
 // Layout Components
 import Header from "@/components/layout/header";
@@ -276,14 +278,34 @@ function Router() {
   );
 }
 
+// Componente para inicializar autenticação
+function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { checkAuth, isLoading } = useAuth();
+  
+  useEffect(() => {
+    console.log("App inicializado, verificando autenticação...");
+    checkAuth().then(result => {
+      console.log("Verificação de autenticação concluída:", result);
+    });
+  }, [checkAuth]);
+  
+  return (
+    <>
+      {children}
+    </>
+  );
+}
+
 function App() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <div className="min-h-screen flex flex-col">
-          <Router />
-          <Toaster />
-        </div>
+        <AuthProvider>
+          <div className="min-h-screen flex flex-col">
+            <Router />
+            <Toaster />
+          </div>
+        </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );
