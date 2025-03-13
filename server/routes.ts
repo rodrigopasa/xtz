@@ -51,14 +51,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.use(session({
     secret: "bibliotech-secret-key",
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Alterado para true para garantir que a sessão seja salva
+    saveUninitialized: true, // Alterado para true para inicializar sessões vazias
     cookie: { 
       maxAge: 24 * 60 * 60 * 1000, // 24 horas
       httpOnly: true,
       secure: false, // Em produção, isso seria true
-      sameSite: 'lax'
+      sameSite: 'lax',
+      path: '/' // Garante que o cookie seja enviado para todas as rotas
     },
+    name: 'bibliotech.sid', // Nome personalizado para o cookie de sessão
     store: new MemoryStoreSession({
       checkPeriod: 86400000 // 24 horas
     })
@@ -128,15 +130,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   
   // Rotas de autenticação
-  app.post("/api/auth/login", passport.authenticate("local"), (req, res) => {
-    const user = req.user as any;
-    res.json({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      name: user.name,
-      role: user.role
-    });
+  app.post("/api/auth/login", (req, res, next) => {
+    console.log("Tentativa de login:", req.body);
+    
+    passport.authenticate("local", (err, user, info) => {
+      if (err) {
+        console.error("Erro na autenticação:", err);
+        return next(err);
+      }
+      
+      if (!user) {
+        console.log("Falha no login:", info);
+        return res.status(401).json({ message: info?.message || "Credenciais inválidas" });
+      }
+      
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error("Erro ao estabelecer sessão:", loginErr);
+          return next(loginErr);
+        }
+        
+        console.log("Login bem-sucedido para:", user.username);
+        console.log("ID de sessão:", req.sessionID);
+        console.log("Cookies configurados:", res.getHeader('set-cookie'));
+        
+        return res.json({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          name: user.name,
+          role: user.role
+        });
+      });
+    })(req, res, next);
   });
   
   app.post("/api/auth/register", async (req, res) => {
@@ -182,8 +208,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.get("/api/auth/me", (req, res) => {
+    console.log("Verificando sessão...");
+    console.log("ID de sessão:", req.sessionID);
+    console.log("Cookies recebidos:", req.headers.cookie);
+    console.log("req.user:", req.user);
+    console.log("isAuthenticated:", req.isAuthenticated());
+    
     if (req.isAuthenticated()) {
       const user = req.user as any;
+      console.log("Usuário autenticado:", user.username);
+      
       return res.json({
         id: user.id,
         username: user.username,
@@ -193,6 +227,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         avatarUrl: user.avatarUrl
       });
     }
+    
+    console.log("Usuário não autenticado");
     res.status(401).json({ message: "Não autenticado" });
   });
   
