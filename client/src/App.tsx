@@ -1,0 +1,292 @@
+import { Switch, Route } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { ThemeProvider } from "@/components/theme-provider";
+
+// Layout Components
+import Header from "@/components/layout/header";
+import Footer from "@/components/layout/footer";
+import AdminHeader from "@/components/layout/admin-header";
+import AdminSidebar from "@/components/layout/admin-sidebar";
+import Sidebar from "@/components/layout/sidebar";
+
+// Public Pages
+import Home from "@/pages/home";
+import BookDetail from "@/pages/book-detail";
+import Category from "@/pages/category";
+import Author from "@/pages/author";
+import Reader from "@/pages/reader";
+import Login from "@/pages/login";
+import Register from "@/pages/register";
+import NotFound from "@/pages/not-found";
+
+// User Dashboard Pages
+import UserDashboard from "@/pages/user/dashboard";
+import UserFavorites from "@/pages/user/favorites";
+import UserHistory from "@/pages/user/history";
+import UserSettings from "@/pages/user/settings";
+
+// Admin Pages
+import AdminDashboard from "@/pages/admin/dashboard";
+import AdminBooks from "@/pages/admin/books";
+import AdminBookForm from "@/pages/admin/book-form";
+import AdminCategories from "@/pages/admin/categories";
+import AdminAuthors from "@/pages/admin/authors";
+import AdminUsers from "@/pages/admin/users";
+import AdminComments from "@/pages/admin/comments";
+
+// Router with layout wrappers
+function Router() {
+  return (
+    <Switch>
+      {/* Public routes with header and footer */}
+      <Route path="/">
+        {() => (
+          <>
+            <Header />
+            <Home />
+            <Footer />
+          </>
+        )}
+      </Route>
+      
+      <Route path="/livro/:slug/:authorSlug">
+        {(params) => (
+          <>
+            <Header />
+            <BookDetail slug={params.slug} authorSlug={params.authorSlug} />
+            <Footer />
+          </>
+        )}
+      </Route>
+      
+      <Route path="/categoria/:slug">
+        {(params) => (
+          <>
+            <Header />
+            <Category slug={params.slug} />
+            <Footer />
+          </>
+        )}
+      </Route>
+      
+      <Route path="/autor/:slug">
+        {(params) => (
+          <>
+            <Header />
+            <Author slug={params.slug} />
+            <Footer />
+          </>
+        )}
+      </Route>
+      
+      <Route path="/ler/:id/:format">
+        {(params) => (
+          <>
+            <Header />
+            <Reader id={parseInt(params.id)} format={params.format} />
+            <Footer />
+          </>
+        )}
+      </Route>
+
+      {/* Auth routes */}
+      <Route path="/login">
+        {() => (
+          <>
+            <Header />
+            <Login />
+            <Footer />
+          </>
+        )}
+      </Route>
+      
+      <Route path="/cadastro">
+        {() => (
+          <>
+            <Header />
+            <Register />
+            <Footer />
+          </>
+        )}
+      </Route>
+      
+      {/* User dashboard routes with sidebar */}
+      <Route path="/perfil">
+        {() => (
+          <>
+            <Header />
+            <div className="flex-grow flex">
+              <Sidebar />
+              <UserDashboard />
+            </div>
+            <Footer />
+          </>
+        )}
+      </Route>
+      
+      <Route path="/favoritos">
+        {() => (
+          <>
+            <Header />
+            <div className="flex-grow flex">
+              <Sidebar />
+              <UserFavorites />
+            </div>
+            <Footer />
+          </>
+        )}
+      </Route>
+      
+      <Route path="/historico">
+        {() => (
+          <>
+            <Header />
+            <div className="flex-grow flex">
+              <Sidebar />
+              <UserHistory />
+            </div>
+            <Footer />
+          </>
+        )}
+      </Route>
+      
+      <Route path="/configuracoes">
+        {() => (
+          <>
+            <Header />
+            <div className="flex-grow flex">
+              <Sidebar />
+              <UserSettings />
+            </div>
+            <Footer />
+          </>
+        )}
+      </Route>
+      
+      {/* Admin routes with admin header and sidebar */}
+      <Route path="/admin">
+        {() => (
+          <>
+            <AdminHeader />
+            <div className="flex-grow flex">
+              <AdminSidebar />
+              <AdminDashboard />
+            </div>
+          </>
+        )}
+      </Route>
+      
+      <Route path="/admin/livros">
+        {() => (
+          <>
+            <AdminHeader />
+            <div className="flex-grow flex">
+              <AdminSidebar />
+              <AdminBooks />
+            </div>
+          </>
+        )}
+      </Route>
+      
+      <Route path="/admin/livros/novo">
+        {() => (
+          <>
+            <AdminHeader />
+            <div className="flex-grow flex">
+              <AdminSidebar />
+              <AdminBookForm />
+            </div>
+          </>
+        )}
+      </Route>
+      
+      <Route path="/admin/livros/editar/:id">
+        {(params) => (
+          <>
+            <AdminHeader />
+            <div className="flex-grow flex">
+              <AdminSidebar />
+              <AdminBookForm id={parseInt(params.id)} />
+            </div>
+          </>
+        )}
+      </Route>
+      
+      <Route path="/admin/categorias">
+        {() => (
+          <>
+            <AdminHeader />
+            <div className="flex-grow flex">
+              <AdminSidebar />
+              <AdminCategories />
+            </div>
+          </>
+        )}
+      </Route>
+      
+      <Route path="/admin/autores">
+        {() => (
+          <>
+            <AdminHeader />
+            <div className="flex-grow flex">
+              <AdminSidebar />
+              <AdminAuthors />
+            </div>
+          </>
+        )}
+      </Route>
+      
+      <Route path="/admin/usuarios">
+        {() => (
+          <>
+            <AdminHeader />
+            <div className="flex-grow flex">
+              <AdminSidebar />
+              <AdminUsers />
+            </div>
+          </>
+        )}
+      </Route>
+      
+      <Route path="/admin/comentarios">
+        {() => (
+          <>
+            <AdminHeader />
+            <div className="flex-grow flex">
+              <AdminSidebar />
+              <AdminComments />
+            </div>
+          </>
+        )}
+      </Route>
+      
+      {/* Fallback 404 route */}
+      <Route>
+        {() => (
+          <>
+            <Header />
+            <NotFound />
+            <Footer />
+          </>
+        )}
+      </Route>
+    </Switch>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <div className="min-h-screen flex flex-col">
+          <Router />
+          <Toaster />
+        </div>
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+}
+
+export default App;
