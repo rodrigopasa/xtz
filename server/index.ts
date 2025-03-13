@@ -43,8 +43,14 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
+    // Log erro para debugging
+    console.error(`[ERROR] ${status}: ${message}`, err);
+    
+    // Enviar resposta ao cliente
     res.status(status).json({ message });
-    throw err;
+    
+    // Não propagar o erro (para evitar crash do servidor)
+    // throw err; - Removido para maior estabilidade
   });
 
   // importantly only setup vite in development and after
@@ -56,15 +62,16 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
+  // Configuração do servidor com suporte para variáveis de ambiente (importante para Coolify)
+  const port = process.env.PORT || 5000;
+  const host = process.env.HOST || "0.0.0.0";
+  
   server.listen({
-    port,
-    host: "0.0.0.0",
+    port: Number(port),
+    host,
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`Servidor rodando em ${host}:${port}`);
+    log(`Ambiente: ${app.get("env")}`);
   });
 })();

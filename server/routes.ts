@@ -123,16 +123,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Configuração de sessão
   const MemoryStoreSession = MemoryStore(session);
+  const isProduction = process.env.NODE_ENV === 'production';
   
   app.use(session({
-    secret: "bibliotech-secret-key",
-    resave: true, // Alterado para true para garantir que a sessão seja salva
-    saveUninitialized: true, // Alterado para true para inicializar sessões vazias
+    secret: process.env.SESSION_SECRET || "bibliotech-secret-key",
+    resave: true, 
+    saveUninitialized: true,
     cookie: { 
       maxAge: 24 * 60 * 60 * 1000, // 24 horas
       httpOnly: true,
-      secure: false, // Em produção, isso seria true
-      sameSite: 'lax',
+      secure: isProduction, // True em produção, false em dev
+      sameSite: isProduction ? 'strict' : 'lax',
       path: '/' // Garante que o cookie seja enviado para todas as rotas
     },
     name: 'bibliotech.sid', // Nome personalizado para o cookie de sessão

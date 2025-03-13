@@ -122,11 +122,15 @@ export default function FileUpload({
 
       if (onSuccess && response) {
         let url = "";
-        if (fileType === "cover") url = response.coverUrl;
-        if (fileType === "epub") url = response.epubUrl;
-        if (fileType === "pdf") url = response.pdfUrl;
+        if (fileType === "cover" && response.coverUrl) url = response.coverUrl;
+        if (fileType === "epub" && response.epubUrl) url = response.epubUrl;
+        if (fileType === "pdf" && response.pdfUrl) url = response.pdfUrl;
         
-        onSuccess(url);
+        if (url) {
+          onSuccess(url);
+        } else {
+          throw new Error(`URL de ${fileType} não encontrada na resposta`);
+        }
       }
 
       toast({
