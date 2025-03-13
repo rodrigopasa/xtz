@@ -1107,64 +1107,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Rota para obter livro por ID (além da que já existe por slug)
-  app.get("/api/books/:id(\\d+)", async (req, res) => {
+  // Rota de livro por ID numérico - sem regex para evitar problemas
+  app.get("/api/books/id/:numericId", async (req, res) => {
     try {
       // Garantir que o ID seja um número
-      const id = Number(req.params.id);
+      const id = Number(req.params.numericId);
+      console.log(`Buscando livro com ID numérico: ${id}, tipo: ${typeof id}`);
+      
       if (isNaN(id)) {
-        console.log(`ID inválido: ${req.params.id}`);
+        console.log(`ID inválido: ${req.params.numericId}`);
         return res.status(400).json({ message: "ID inválido" });
       }
-      
-      console.log(`Buscando livro com ID: ${id}, tipo: ${typeof id}`);
       
       // Verificar todos os livros e seus IDs para debug
       const allBooks = await storage.getAllBooks();
       console.log(`Total de livros: ${allBooks.length}`);
       console.log(`IDs disponíveis: ${allBooks.map(b => `${b.id} (${typeof b.id})`).join(', ')}`);
       
-      // Debugging: imprimir os dados completos do primeiro livro
+      // Debugging: imprimir os dados do primeiro livro
       if (allBooks.length > 0) {
-        console.log(`Primeiro livro - dados completos:`, JSON.stringify(allBooks[0], null, 2));
+        console.log(`Livro 1 ID: ${allBooks[0].id}, Título: ${allBooks[0].title}`);
       }
       
-      // Hack temporário: buscar diretamente da lista em vez de usar getBook
+      // Buscar diretamente na lista de livros
       const bookFromList = allBooks.find(b => Number(b.id) === id);
-      console.log(`Livro encontrado direto na lista: ${bookFromList ? 'Sim' : 'Não'}`);
+      console.log(`Livro encontrado na lista? ${bookFromList ? 'Sim' : 'Não'}`);
       
-      if (bookFromList) {
-        console.log(`Livro encontrado na lista: ID ${bookFromList.id}, Título: ${bookFromList.title}`);
-        const author = await storage.getAuthor(bookFromList.authorId);
-        const category = await storage.getCategory(bookFromList.categoryId);
-        
-        const enrichedBook = {
-          ...bookFromList,
-          author: author ? { name: author.name, slug: author.slug } : null,
-          category: category ? { name: category.name, slug: category.slug } : null
-        };
-        
-        return res.json(enrichedBook);
-      }
-      
-      // Só para log, ainda tenta o método getBook
-      const book = await storage.getBook(id);
-      console.log(`Método getBook retornou: ${book ? JSON.stringify(book.title) : 'null'}`);
-      
-      if (!book) {
+      if (!bookFromList) {
+        console.log(`Livro com ID ${id} não encontrado!`);
         return res.status(404).json({ message: "Livro não encontrado" });
       }
       
-      // Esse código não deveria ser executado com o hack acima, mas mantemos para segurança
-      const author = await storage.getAuthor(book.authorId);
-      const category = await storage.getCategory(book.categoryId);
+      console.log(`Encontrado livro: ${bookFromList.title}`);
+      
+      // Se encontrou o livro, continuar com o enriquecimento
+      const author = await storage.getAuthor(bookFromList.authorId);
+      const category = await storage.getCategory(bookFromList.categoryId);
       
       const enrichedBook = {
-        ...book,
+        ...bookFromList,
         author: author ? { name: author.name, slug: author.slug } : null,
         category: category ? { name: category.name, slug: category.slug } : null
       };
       
-      res.json(enrichedBook);
+      return res.json(enrichedBook);
     } catch (error) {
       console.error("Erro ao buscar livro por ID:", error);
       res.status(500).json({ message: "Erro ao buscar livro" });

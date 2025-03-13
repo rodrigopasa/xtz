@@ -21,9 +21,9 @@ export default function Reader({ id, format }: ReaderProps) {
   // Verificar formato válido
   const isValidFormat = format === 'epub' || format === 'pdf';
   
-  // Carregar informações do livro
+  // Carregar informações do livro usando a nova rota de ID
   const { data: book, isLoading, error } = useQuery({
-    queryKey: [`/api/books/${id}`],
+    queryKey: [`/api/books/id/${id}`],
   });
   
   useEffect(() => {
