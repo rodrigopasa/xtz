@@ -22,6 +22,10 @@ import Reader from "@/pages/reader";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import NotFound from "@/pages/not-found";
+import Lancamentos from "@/pages/lancamentos";
+import MaisLidos from "@/pages/mais-lidos";
+import Categorias from "@/pages/categorias";
+import Autores from "@/pages/autores";
 
 // User Dashboard Pages
 import UserDashboard from "@/pages/user/dashboard";
@@ -89,6 +93,46 @@ function Router() {
           <>
             <Header />
             <Reader id={parseInt(params.id)} format={params.format} />
+            <Footer />
+          </>
+        )}
+      </Route>
+
+      <Route path="/lancamentos">
+        {() => (
+          <>
+            <Header />
+            <Lancamentos />
+            <Footer />
+          </>
+        )}
+      </Route>
+
+      <Route path="/mais-lidos">
+        {() => (
+          <>
+            <Header />
+            <MaisLidos />
+            <Footer />
+          </>
+        )}
+      </Route>
+
+      <Route path="/categorias">
+        {() => (
+          <>
+            <Header />
+            <Categorias />
+            <Footer />
+          </>
+        )}
+      </Route>
+
+      <Route path="/autores">
+        {() => (
+          <>
+            <Header />
+            <Autores />
             <Footer />
           </>
         )}
