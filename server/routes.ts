@@ -167,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/auth/user", (req, res) => {
+  app.get("/api/auth/me", (req, res) => {
     if (req.isAuthenticated()) {
       const user = req.user as any;
       return res.json({
@@ -175,7 +175,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: user.username,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: user.role,
+        avatarUrl: user.avatarUrl
       });
     }
     res.status(401).json({ message: "Não autenticado" });
