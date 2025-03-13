@@ -1263,5 +1263,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Iniciar servidor HTTP para o Express
   const server = createServer(app);
   
+  // Rotas de upload
+  app.post('/api/upload/cover', isAuthenticated, uploadCover.single('cover'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'Nenhum arquivo enviado ou tipo de arquivo inválido' });
+      }
+      
+      // Construir URL para o arquivo
+      const coverUrl = `/covers/${req.file.filename}`;
+      
+      res.json({ coverUrl });
+    } catch (error) {
+      console.error('Erro no upload da capa:', error);
+      res.status(500).json({ message: 'Erro no processamento do upload' });
+    }
+  });
+  
+  app.post('/api/upload/epub', isAuthenticated, uploadBookFile.single('epub'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'Nenhum arquivo enviado ou tipo de arquivo inválido' });
+      }
+      
+      // Construir URL para o arquivo
+      const epubUrl = `/books/${req.file.filename}`;
+      
+      res.json({ epubUrl });
+    } catch (error) {
+      console.error('Erro no upload do EPUB:', error);
+      res.status(500).json({ message: 'Erro no processamento do upload' });
+    }
+  });
+  
+  app.post('/api/upload/pdf', isAuthenticated, uploadBookFile.single('pdf'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'Nenhum arquivo enviado ou tipo de arquivo inválido' });
+      }
+      
+      // Construir URL para o arquivo
+      const pdfUrl = `/books/${req.file.filename}`;
+      
+      res.json({ pdfUrl });
+    } catch (error) {
+      console.error('Erro no upload do PDF:', error);
+      res.status(500).json({ message: 'Erro no processamento do upload' });
+    }
+  });
+
   return server;
 }
