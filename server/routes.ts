@@ -1109,7 +1109,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rota para obter livro por ID (além da que já existe por slug)
   app.get("/api/books/:id(\\d+)", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      // Garantir que o ID seja um número
+      const id = Number(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "ID inválido" });
       }
@@ -1119,13 +1120,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Total de livros: ${allBooks.length}`);
       console.log(`IDs disponíveis: ${allBooks.map(b => `${b.id} (${typeof b.id})`).join(', ')}`);
       
+      // Busca direta pelo livro com o ID específico
       const book = await storage.getBook(id);
       console.log(`Livro encontrado: ${book ? 'Sim' : 'Não'}`);
       
+      // Se o livro não foi encontrado, tentar buscar manualmente na lista
       if (!book) {
+        const bookFromList = allBooks.find(b => b.id === id);
+        console.log(`Livro encontrado na lista: ${bookFromList ? 'Sim' : 'Não'}`);
+        
+        if (bookFromList) {
+          const author = await storage.getAuthor(bookFromList.authorId);
+          const category = await storage.getCategory(bookFromList.categoryId);
+          
+          const enrichedBook = {
+            ...bookFromList,
+            author: author ? { name: author.name, slug: author.slug } : null,
+            category: category ? { name: category.name, slug: category.slug } : null
+          };
+          
+          return res.json(enrichedBook);
+        }
+        
         return res.status(404).json({ message: "Livro não encontrado" });
       }
       
+      // Se encontrou o livro normalmente, continuar com o comportamento padrão
       const author = await storage.getAuthor(book.authorId);
       const category = await storage.getCategory(book.categoryId);
       

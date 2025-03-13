@@ -251,9 +251,35 @@ export class MemStorage implements IStorage {
       }
     ];
     
-    booksData.forEach(book => {
-      this.createBook(book);
-    });
+    // Criar livros e armazenar corretamente com seus IDs
+    for (let i = 0; i < booksData.length; i++) {
+      const newBook = {
+        ...booksData[i],
+        id: i + 1,
+        rating: 0,
+        ratingCount: 0,
+        downloadCount: 0
+      };
+      
+      // Armazenar diretamente no Map com o ID como chave
+      this.books.set(i + 1, newBook);
+      
+      // Atualizar contagem de livros na categoria
+      const category = this.categories.get(newBook.categoryId);
+      if (category) {
+        this.categories.set(category.id, {
+          ...category,
+          bookCount: category.bookCount + 1
+        });
+      }
+      
+      // Garantir que o próximo ID seja maior que o último usado
+      this.currentBookId = Math.max(this.currentBookId, i + 2);
+    }
+    
+    console.log(`Livros inicializados: ${this.books.size}`);
+    console.log(`IDs de livros: ${Array.from(this.books.keys()).join(', ')}`);
+    console.log(`Próximo ID de livro: ${this.currentBookId}`);
   }
 
   // Implementação dos métodos para Usuários
@@ -364,19 +390,29 @@ export class MemStorage implements IStorage {
     console.log(`MemStorage.getBook - ID: ${id}, Tipo: ${typeof id}`);
     console.log(`Chaves disponíveis no Map: ${Array.from(this.books.keys()).join(', ')}`);
     
+    // Garantir que o ID seja um número
+    const numericId = Number(id);
+    if (isNaN(numericId)) {
+      console.log(`ID inválido: ${id}`);
+      return undefined;
+    }
+    
     // Tentar buscar diretamente
-    const book = this.books.get(id);
+    const book = this.books.get(numericId);
     console.log(`Livro encontrado direto: ${book ? 'Sim' : 'Não'}`);
     
     // Se não encontrou, vamos tentar verificar iterando por todos
     if (!book) {
-      for (const [key, value] of this.books.entries()) {
-        console.log(`Verificando livro - Chave: ${key} (${typeof key}), ID do livro: ${value.id} (${typeof value.id})`);
-        if (value.id === id) {
-          console.log(`Encontrado por iteração: ${value.title}`);
-          return value;
-        }
+      console.log('Buscando por iteração...');
+      const allBooks = Array.from(this.books.values());
+      const foundBook = allBooks.find(book => book.id === numericId);
+      
+      if (foundBook) {
+        console.log(`Encontrado por iteração: ${foundBook.title}`);
+        return foundBook;
       }
+      
+      console.log('Livro não encontrado por ID em nenhum método');
     }
     
     return book;
