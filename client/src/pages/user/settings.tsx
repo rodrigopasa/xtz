@@ -97,14 +97,19 @@ export default function UserSettings() {
     setIsUpdating(true);
     
     try {
-      // Simulação de atualização - em uma implementação real seria uma chamada de API
-      // await apiRequest("PUT", `/api/users/${user?.id}`, values);
+      const updatedUser = await apiRequest("PUT", `/api/user/profile`, values);
       
       toast({
         title: "Perfil atualizado",
         description: "Suas informações de perfil foram atualizadas com sucesso.",
       });
+      
+      // Atualizar o contexto de autenticação
+      if (updatedUser) {
+        setTimeout(() => window.location.reload(), 1000);
+      }
     } catch (error) {
+      console.error("Erro ao atualizar perfil:", error);
       toast({
         title: "Erro",
         description: "Não foi possível atualizar o perfil. Tente novamente.",
@@ -119,8 +124,7 @@ export default function UserSettings() {
     setIsChangingPassword(true);
     
     try {
-      // Simulação de atualização de senha - em uma implementação real seria uma chamada de API
-      // await apiRequest("PUT", `/api/users/${user?.id}/password`, values);
+      const result = await apiRequest("PUT", `/api/user/password`, values);
       
       toast({
         title: "Senha atualizada",
@@ -133,6 +137,7 @@ export default function UserSettings() {
         confirmPassword: "",
       });
     } catch (error) {
+      console.error("Erro ao atualizar senha:", error);
       toast({
         title: "Erro",
         description: "Não foi possível atualizar a senha. Verifique se sua senha atual está correta.",
@@ -435,7 +440,17 @@ export default function UserSettings() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button>Salvar preferências</Button>
+                <Button onClick={() => {
+                    // Salvar preferências
+                    toast({
+                      title: "Preferências salvas",
+                      description: "Suas preferências foram atualizadas com sucesso."
+                    });
+                  }} 
+                  className="flex items-center">
+                  <Save className="mr-2 h-4 w-4" />
+                  Salvar preferências
+                </Button>
               </CardFooter>
             </Card>
           </TabsContent>

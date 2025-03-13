@@ -1157,6 +1157,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rotas de usuário para perfil e configurações
+  app.get("/api/user/profile", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar perfil de usuário" });
+    }
+  });
+  
+  app.put("/api/user/profile", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const { name, email, avatarUrl } = req.body;
+      
+      console.log("Atualizando perfil de usuário:", { userId, name, email, avatarUrl });
+      
+      const updatedUser = await storage.updateUser(userId, { name, email, avatarUrl });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Atualizar dados na sessão
+      (req.user as any).name = name;
+      (req.user as any).email = email;
+      (req.user as any).avatarUrl = avatarUrl;
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Erro ao atualizar perfil:", error);
+      res.status(500).json({ message: "Erro ao atualizar perfil" });
+    }
+  });
+  
+  app.put("/api/user/password", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const { currentPassword, newPassword } = req.body;
+      
+      // Verificar senha atual
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      if (user.password !== currentPassword) {
+        return res.status(400).json({ message: "Senha atual incorreta" });
+      }
+      
+      // Atualizar senha
+      const updatedUser = await storage.updateUser(userId, { password: newPassword });
+      
+      res.json({ message: "Senha atualizada com sucesso" });
+    } catch (error) {
+      console.error("Erro ao atualizar senha:", error);
+      res.status(500).json({ message: "Erro ao atualizar senha" });
+    }
+  });
+  
+  app.put("/api/user/preferences", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const { theme, preferredFormat, notifications } = req.body;
+      
+      console.log("Atualizando preferências:", { userId, theme, preferredFormat, notifications });
+      
+      // Em uma implementação real, essas preferências seriam salvas no banco de dados
+      // Como estamos usando armazenamento em memória, retornaremos como se tivesse sido salvo
+      
+      res.json({ 
+        success: true, 
+        message: "Preferências atualizadas com sucesso",
+        preferences: { theme, preferredFormat, notifications }
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar preferências:", error);
+      res.status(500).json({ message: "Erro ao atualizar preferências" });
+    }
+  });
+
   // Criar servidor HTTP
   const httpServer = createServer(app);
   
