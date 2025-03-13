@@ -1,6 +1,11 @@
 import express, { type Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import fs from "fs";
 import { 
   insertUserSchema, 
   insertCategorySchema, 
@@ -16,12 +21,7 @@ import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import MemoryStore from "memorystore";
-import path from "path";
-import fs from "fs";
-import { fileURLToPath } from "url";
 import cors from "cors";
-import multer from "multer";
-import { dirname } from "path";
 
 // ESM module compatibility - definir __dirname
 const __filename = fileURLToPath(import.meta.url);
