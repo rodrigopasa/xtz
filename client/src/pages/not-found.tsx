@@ -1,7 +1,8 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+
 import { BookX, ChevronLeft } from "lucide-react";
 import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function NotFound() {
   return (
@@ -29,7 +30,7 @@ export default function NotFound() {
           </div>
           
           <div className="mt-8 pt-6 border-t border-purple-300/10 text-sm text-gray-400">
-            <p>Código de erro: 404 - Página inexistente</p>
+            BiblioTech - A sua biblioteca digital
           </div>
         </CardContent>
       </Card>
