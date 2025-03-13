@@ -146,7 +146,8 @@ export default function UserSettings() {
   return (
     <main className="flex-grow p-6 bg-neutral-50">
       <div className="max-w-4xl mx-auto">
-        <h1 className="font-serif text-3xl font-bold mb-8">Configurações</h1>
+        <h1 className="font-serif text-3xl font-bold mb-4 text-primary">Configurações</h1>
+        <p className="text-neutral-600 mb-8">Personalize sua experiência na plataforma</p>
         
         <Tabs defaultValue="profile" className="space-y-6">
           <TabsList>
@@ -360,7 +361,7 @@ export default function UserSettings() {
                     <div>
                       <h3 className="text-base font-medium mb-2">Tema</h3>
                       <div className="flex space-x-2">
-                        <Button variant="outline" className="border-2 border-primary">
+                        <Button variant="default" className="bg-primary text-white">
                           Claro
                         </Button>
                         <Button variant="outline">
@@ -375,7 +376,7 @@ export default function UserSettings() {
                     <div>
                       <h3 className="text-base font-medium mb-2">Formato preferido</h3>
                       <div className="flex space-x-2">
-                        <Button variant="outline" className="border-2 border-primary">
+                        <Button variant="default" className="bg-primary text-white">
                           EPUB
                         </Button>
                         <Button variant="outline">
@@ -387,7 +388,7 @@ export default function UserSettings() {
                   
                   <div className="border-t pt-4 mt-6">
                     <h3 className="text-base font-medium mb-2">Notificações</h3>
-                    <div className="space-y-2">
+                    <div className="space-y-6">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium">Novos lançamentos</p>
@@ -395,7 +396,11 @@ export default function UserSettings() {
                             Receber notificações sobre novos livros lançados
                           </p>
                         </div>
-                        <input type="checkbox" className="toggle toggle-primary" checked />
+                        <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-neutral-200">
+                          <input type="checkbox" defaultChecked className="peer sr-only" />
+                          <span className="absolute inset-y-0 start-0 m-1 h-4 w-4 rounded-full bg-white transition-all peer-checked:start-5 peer-checked:bg-white peer-checked:[&+div]:bg-primary"></span>
+                          <div className="absolute inset-0 rounded-full transition"></div>
+                        </div>
                       </div>
                       
                       <div className="flex items-center justify-between">
@@ -405,7 +410,11 @@ export default function UserSettings() {
                             Receber notificações sobre respostas aos seus comentários
                           </p>
                         </div>
-                        <input type="checkbox" className="toggle toggle-primary" checked />
+                        <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-neutral-200">
+                          <input type="checkbox" defaultChecked className="peer sr-only" />
+                          <span className="absolute inset-y-0 start-0 m-1 h-4 w-4 rounded-full bg-white transition-all peer-checked:start-5 peer-checked:bg-white peer-checked:[&+div]:bg-primary"></span>
+                          <div className="absolute inset-0 rounded-full transition"></div>
+                        </div>
                       </div>
                       
                       <div className="flex items-center justify-between">
@@ -415,7 +424,11 @@ export default function UserSettings() {
                             Receber novidades e promoções por email
                           </p>
                         </div>
-                        <input type="checkbox" className="toggle toggle-primary" checked />
+                        <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-neutral-200">
+                          <input type="checkbox" defaultChecked className="peer sr-only" />
+                          <span className="absolute inset-y-0 start-0 m-1 h-4 w-4 rounded-full bg-white transition-all peer-checked:start-5 peer-checked:bg-white peer-checked:[&+div]:bg-primary"></span>
+                          <div className="absolute inset-0 rounded-full transition"></div>
+                        </div>
                       </div>
                     </div>
                   </div>
