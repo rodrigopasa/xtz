@@ -49,23 +49,33 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary to-primary-dark text-white py-12 md:py-20">
-        <div className="container mx-auto px-4">
+      <section className="bg-gradient-to-br from-purple-900 via-purple-800 to-purple-950 text-white py-12 md:py-20 relative overflow-hidden">
+        {/* Animated stars in background */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-10 left-20 w-2 h-2 rounded-full bg-purple-300 animate-pulse" style={{animationDelay: '0.3s'}}></div>
+          <div className="absolute top-40 left-[30%] w-1 h-1 rounded-full bg-purple-300 animate-pulse" style={{animationDelay: '0.7s'}}></div>
+          <div className="absolute top-20 right-[25%] w-2 h-2 rounded-full bg-purple-300 animate-pulse" style={{animationDelay: '1.1s'}}></div>
+          <div className="absolute bottom-[30%] left-10 w-1 h-1 rounded-full bg-purple-300 animate-pulse" style={{animationDelay: '0.9s'}}></div>
+          <div className="absolute bottom-20 right-[15%] w-2 h-2 rounded-full bg-purple-300 animate-pulse" style={{animationDelay: '0.5s'}}></div>
+          <div className="absolute top-[30%] right-10 w-1 h-1 rounded-full bg-purple-300 animate-pulse" style={{animationDelay: '1.3s'}}></div>
+        </div>
+        
+        <div className="container mx-auto px-4 relative z-10">
           <div className="flex flex-col md:flex-row items-center">
             <div className="md:w-1/2 mb-8 md:mb-0">
-              <h1 className="font-serif text-3xl md:text-5xl font-bold leading-tight mb-4">
+              <h1 className="font-serif text-3xl md:text-5xl font-bold leading-tight mb-4 text-white">
                 Descubra novos mundos através da leitura
               </h1>
               <p className="text-lg md:text-xl mb-6 text-white/90">
                 Acesse milhares de livros em formatos digitais, faça download ou leia online
               </p>
               <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-                <Button asChild size="lg" variant="secondary" className="bg-white text-primary hover:bg-neutral-100">
+                <Button asChild size="lg" variant="secondary" className="glass-card border border-purple-400/30 text-white hover:bg-purple-800/50">
                   <Link href="/explorar">
                     Explorar Catálogo
                   </Link>
                 </Button>
-                <Button asChild size="lg" className="bg-secondary hover:bg-secondary-dark">
+                <Button asChild size="lg" className="bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 shadow-lg shadow-purple-900/50">
                   <Link href="/cadastro">
                     Cadastre-se Grátis
                   </Link>
@@ -73,11 +83,14 @@ export default function Home() {
               </div>
             </div>
             <div className="md:w-1/2 flex justify-center">
-              <img 
-                src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&h=400&q=80" 
-                alt="Pilha de livros com um tablet mostrando um e-book" 
-                className="rounded-lg shadow-xl max-w-full h-auto"
-              />
+              <div className="relative">
+                <div className="absolute -inset-2 bg-gradient-to-r from-purple-600 to-purple-400 rounded-lg opacity-75 blur-xl"></div>
+                <img 
+                  src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&h=400&q=80" 
+                  alt="Pilha de livros com um tablet mostrando um e-book" 
+                  className="rounded-lg shadow-xl max-w-full h-auto relative z-10"
+                />
+              </div>
             </div>
           </div>
         </div>

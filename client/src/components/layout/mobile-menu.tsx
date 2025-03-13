@@ -26,10 +26,10 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="left" className="sm:max-w-md w-full">
-        <SheetHeader className="border-b border-neutral-200 pb-4">
-          <SheetTitle className="font-serif font-bold text-2xl text-primary">BiblioTech</SheetTitle>
-          <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100">
+      <SheetContent side="left" className="sm:max-w-md w-full bg-gray-900 border-r border-purple-500/20 text-white">
+        <SheetHeader className="border-b border-purple-500/20 pb-4">
+          <SheetTitle className="font-serif font-bold text-2xl gradient-heading">BiblioTech</SheetTitle>
+          <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 text-white">
             <X className="h-5 w-5" />
             <span className="sr-only">Fechar</span>
           </SheetClose>
@@ -40,7 +40,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             <li>
               <Link 
                 href="/categorias" 
-                className="block p-2 font-medium text-neutral-800 hover:bg-neutral-100 rounded"
+                className="block p-2 font-medium text-white hover:bg-purple-900/30 rounded"
                 onClick={onClose}
               >
                 Categorias
@@ -49,7 +49,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             <li>
               <Link 
                 href="/lancamentos" 
-                className="block p-2 font-medium text-neutral-800 hover:bg-neutral-100 rounded"
+                className="block p-2 font-medium text-white hover:bg-purple-900/30 rounded"
                 onClick={onClose}
               >
                 Lançamentos
@@ -58,7 +58,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             <li>
               <Link 
                 href="/mais-lidos" 
-                className="block p-2 font-medium text-neutral-800 hover:bg-neutral-100 rounded"
+                className="block p-2 font-medium text-white hover:bg-purple-900/30 rounded"
                 onClick={onClose}
               >
                 Mais Lidos
@@ -67,7 +67,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             <li>
               <Link 
                 href="/autores" 
-                className="block p-2 font-medium text-neutral-800 hover:bg-neutral-100 rounded"
+                className="block p-2 font-medium text-white hover:bg-purple-900/30 rounded"
                 onClick={onClose}
               >
                 Autores
@@ -76,7 +76,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             <li>
               <Link 
                 href="/livros-gratuitos" 
-                className="block p-2 font-medium text-neutral-800 hover:bg-neutral-100 rounded"
+                className="block p-2 font-medium text-white hover:bg-purple-900/30 rounded"
                 onClick={onClose}
               >
                 Livros Gratuitos
@@ -85,10 +85,10 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
             {isAuthenticated && (
               <>
-                <li className="border-t border-neutral-200 pt-4 mt-4">
+                <li className="border-t border-purple-500/20 pt-4 mt-4">
                   <Link 
                     href="/perfil" 
-                    className="block p-2 font-medium text-neutral-800 hover:bg-neutral-100 rounded"
+                    className="block p-2 font-medium text-white hover:bg-purple-900/30 rounded"
                     onClick={onClose}
                   >
                     Meu Perfil
@@ -97,7 +97,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 <li>
                   <Link 
                     href="/favoritos" 
-                    className="block p-2 font-medium text-neutral-800 hover:bg-neutral-100 rounded"
+                    className="block p-2 font-medium text-white hover:bg-purple-900/30 rounded"
                     onClick={onClose}
                   >
                     Favoritos
@@ -106,7 +106,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 <li>
                   <Link 
                     href="/historico" 
-                    className="block p-2 font-medium text-neutral-800 hover:bg-neutral-100 rounded"
+                    className="block p-2 font-medium text-white hover:bg-purple-900/30 rounded"
                     onClick={onClose}
                   >
                     Histórico de Leitura
@@ -116,7 +116,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   <li>
                     <Link 
                       href="/admin" 
-                      className="block p-2 font-medium text-neutral-800 hover:bg-neutral-100 rounded"
+                      className="block p-2 font-medium text-white hover:bg-purple-900/30 rounded"
                       onClick={onClose}
                     >
                       Painel Admin
@@ -128,17 +128,17 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           </ul>
         </nav>
 
-        <SheetFooter className="border-t border-neutral-200 pt-4 mt-auto">
+        <SheetFooter className="border-t border-purple-500/20 pt-4 mt-auto">
           {isAuthenticated ? (
-            <Button variant="destructive" className="w-full" onClick={handleLogout}>
+            <Button variant="destructive" className="w-full bg-red-600 hover:bg-red-700" onClick={handleLogout}>
               Sair
             </Button>
           ) : (
             <div className="flex flex-col w-full gap-2">
-              <Button asChild variant="default" className="w-full">
+              <Button asChild variant="default" className="w-full bg-purple-600 hover:bg-purple-700">
                 <Link href="/login" onClick={onClose}>Entrar</Link>
               </Button>
-              <Button asChild variant="outline" className="w-full">
+              <Button asChild variant="outline" className="w-full border-purple-500 text-white hover:bg-purple-900/30">
                 <Link href="/cadastro" onClick={onClose}>Cadastrar</Link>
               </Button>
             </div>

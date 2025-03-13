@@ -51,15 +51,15 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white shadow-sm">
+    <header className="glass-card shadow-lg bg-black/30 backdrop-blur-lg">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between py-4">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <span className="text-primary text-3xl">
+            <span className="text-white text-3xl">
               <Book />
             </span>
-            <span className="font-serif font-bold text-2xl text-primary">BiblioTech</span>
+            <span className="font-serif font-bold text-2xl gradient-heading">BiblioTech</span>
           </Link>
 
           {/* Search Bar (Desktop) */}
@@ -68,7 +68,7 @@ export default function Header() {
               <Input
                 type="text"
                 placeholder="Pesquisar livros, autores..."
-                className="w-full py-2 pl-4 pr-10 rounded-full border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full py-2 pl-4 pr-10 rounded-full border border-purple-500/20 bg-black/20 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -76,7 +76,7 @@ export default function Header() {
                 type="submit" 
                 variant="ghost" 
                 size="icon" 
-                className="absolute right-3 top-2.5 text-neutral-500"
+                className="absolute right-3 top-2.5 text-white/70 hover:text-white"
               >
                 <Search size={18} />
               </Button>
@@ -85,16 +85,16 @@ export default function Header() {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/categorias" className="font-medium text-neutral-700 hover:text-primary transition-colors">
+            <Link href="/categorias" className="font-medium text-white hover:text-purple-300 transition-colors">
               Categorias
             </Link>
-            <Link href="/lancamentos" className="font-medium text-neutral-700 hover:text-primary transition-colors">
+            <Link href="/lancamentos" className="font-medium text-white hover:text-purple-300 transition-colors">
               Lançamentos
             </Link>
-            <Link href="/mais-lidos" className="font-medium text-neutral-700 hover:text-primary transition-colors">
+            <Link href="/mais-lidos" className="font-medium text-white hover:text-purple-300 transition-colors">
               Mais Lidos
             </Link>
-            <Link href="/autores" className="font-medium text-neutral-700 hover:text-primary transition-colors">
+            <Link href="/autores" className="font-medium text-white hover:text-purple-300 transition-colors">
               Autores
             </Link>
           </nav>
@@ -102,7 +102,7 @@ export default function Header() {
           {/* User Actions */}
           <div className="flex items-center space-x-4">
             {isAuthenticated && (
-              <Link href="/favoritos" className="text-neutral-700 hover:text-primary">
+              <Link href="/favoritos" className="text-white hover:text-purple-300">
                 <Heart size={20} />
               </Link>
             )}
@@ -111,42 +111,42 @@ export default function Header() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="p-0 hover:bg-transparent" aria-label="Menu do usuário">
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-8 w-8 ring-2 ring-purple-500/50">
                       <AvatarImage src={user?.avatarUrl} alt={user?.name || "Usuário"} />
-                      <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                      <AvatarFallback className="bg-purple-800 text-white">{getUserInitials()}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
+                <DropdownMenuContent align="end" className="bg-gray-900 border border-purple-500/20 text-white">
+                  <DropdownMenuItem asChild className="focus:bg-purple-900 focus:text-white">
                     <Link href="/perfil">Meu Perfil</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild className="focus:bg-purple-900 focus:text-white">
                     <Link href="/favoritos">Favoritos</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild className="focus:bg-purple-900 focus:text-white">
                     <Link href="/historico">Histórico de Leitura</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild className="focus:bg-purple-900 focus:text-white">
                     <Link href="/configuracoes">Configurações</Link>
                   </DropdownMenuItem>
                   {user?.role === "admin" && (
                     <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
+                      <DropdownMenuSeparator className="bg-purple-500/20" />
+                      <DropdownMenuItem asChild className="focus:bg-purple-900 focus:text-white">
                         <Link href="/admin">Painel Admin</Link>
                       </DropdownMenuItem>
                     </>
                   )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
+                  <DropdownMenuSeparator className="bg-purple-500/20" />
+                  <DropdownMenuItem onClick={handleLogout} className="focus:bg-purple-900 focus:text-white">
                     Sair
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <Link href="/login">
-                <Button variant="ghost" size="sm">
+                <Button variant="secondary" size="sm" className="bg-purple-600 hover:bg-purple-700 text-white">
                   <User size={20} className="mr-2" />
                   Entrar
                 </Button>
@@ -157,7 +157,7 @@ export default function Header() {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="md:hidden"
+              className="md:hidden text-white hover:bg-purple-900/30"
               onClick={() => setShowMobileMenu(true)}
             >
               <Menu size={24} />
@@ -172,7 +172,7 @@ export default function Header() {
           <Input
             type="text"
             placeholder="Pesquisar livros, autores..."
-            className="w-full py-2 pl-4 pr-10 rounded-full border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="w-full py-2 pl-4 pr-10 rounded-full border border-purple-500/20 bg-black/20 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -180,7 +180,7 @@ export default function Header() {
             type="submit" 
             variant="ghost" 
             size="icon" 
-            className="absolute right-3 top-2.5 text-neutral-500"
+            className="absolute right-3 top-2.5 text-white/70 hover:text-white"
           >
             <Search size={18} />
           </Button>
