@@ -20,6 +20,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import cors from "cors";
+import multer from "multer";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1014,6 +1015,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Configuração do Multer para upload de arquivos
+  const uploadStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      const booksDir = path.join(__dirname, "../public/books");
+      if (!fs.existsSync(booksDir)) {
+        fs.mkdirSync(booksDir, { recursive: true });
+      }
+      cb(null, booksDir);
+    },
+    filename: (req, file, cb) => {
+      // Gerar um nome de arquivo único baseado no timestamp
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      let ext = path.extname(file.originalname).toLowerCase();
+      
+      // Verificar a extensão do arquivo
+      if (file.fieldname === 'epub' && ext !== '.epub') {
+        ext = '.epub';
+      } else if (file.fieldname === 'pdf' && ext !== '.pdf') {
+        ext = '.pdf';
+      }
+      
+      cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    }
+  });
+  
+  const upload = multer({
+    storage: uploadStorage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limite
+    fileFilter: (req, file, cb) => {
+      // Verifica o tipo de arquivo
+      if (file.fieldname === 'epub') {
+        if (file.mimetype === 'application/epub+zip' || 
+            file.mimetype === 'application/octet-stream' ||
+            file.originalname.endsWith('.epub')) {
+          return cb(null, true);
+        }
+      } else if (file.fieldname === 'pdf') {
+        if (file.mimetype === 'application/pdf' ||
+            file.originalname.endsWith('.pdf')) {
+          return cb(null, true);
+        }
+      }
+      
+      cb(new Error('Formato de arquivo não suportado'));
+    }
+  });
+
+  // Rota para upload de arquivo EPUB
+  app.post("/api/upload/epub", isAdmin, upload.single('file'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhum arquivo enviado" });
+      }
+      
+      // URL relativa do arquivo
+      const fileUrl = `/books/${req.file.filename}`;
+      
+      res.json({ 
+        url: fileUrl,
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        size: req.file.size
+      });
+    } catch (error) {
+      console.error("Erro no upload:", error);
+      res.status(500).json({ message: "Erro ao fazer upload do arquivo" });
+    }
+  });
+
+  // Rota para upload de arquivo PDF
+  app.post("/api/upload/pdf", isAdmin, upload.single('file'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhum arquivo enviado" });
+      }
+      
+      // URL relativa do arquivo
+      const fileUrl = `/books/${req.file.filename}`;
+      
+      res.json({ 
+        url: fileUrl,
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        size: req.file.size
+      });
+    } catch (error) {
+      console.error("Erro no upload:", error);
+      res.status(500).json({ message: "Erro ao fazer upload do arquivo" });
+    }
+  });
+  
+  // Rota para obter livro por ID (além da que já existe por slug)
+  app.get("/api/books/:id(\\d+)", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      
+      const book = await storage.getBook(id);
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      const author = await storage.getAuthor(book.authorId);
+      const category = await storage.getCategory(book.categoryId);
+      
+      const enrichedBook = {
+        ...book,
+        author: author ? { name: author.name, slug: author.slug } : null,
+        category: category ? { name: category.name, slug: category.slug } : null
+      };
+      
+      res.json(enrichedBook);
+    } catch (error) {
+      console.error("Erro ao buscar livro por ID:", error);
+      res.status(500).json({ message: "Erro ao buscar livro" });
+    }
+  });
+
   // Criar servidor HTTP
   const httpServer = createServer(app);
   
