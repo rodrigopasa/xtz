@@ -4,7 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useAuth } from "@/lib/auth";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 // Layout Components
 import Header from "@/components/layout/header";
@@ -296,12 +296,51 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Componente de estrelas animadas
+function FallingStars() {
+  const [stars, setStars] = useState<React.ReactNode[]>([]);
+
+  useEffect(() => {
+    const createStars = () => {
+      const starCount = 20;
+      const newStars = [];
+      
+      for (let i = 0; i < starCount; i++) {
+        const topOffset = Math.random() * 100;
+        const fallDelay = Math.random() * 10;
+        const fallDuration = 6 + Math.random() * 6;
+        const starColor = i % 3 === 0 ? '#c084fc' : i % 3 === 1 ? '#a78bfa' : '#8b5cf6';
+        
+        newStars.push(
+          <div 
+            key={i}
+            className="star"
+            style={{
+              '--top-offset': `${topOffset}vh`,
+              '--fall-delay': `${fallDelay}s`,
+              '--star-fall-duration': `${fallDuration}s`,
+              '--star-color': starColor
+            } as React.CSSProperties}
+          />
+        );
+      }
+      
+      setStars(newStars);
+    };
+    
+    createStars();
+  }, []);
+  
+  return <div className="stars">{stars}</div>;
+}
+
 function App() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <div className="min-h-screen flex flex-col">
+            <FallingStars />
             <Router />
             <Toaster />
           </div>
