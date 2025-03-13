@@ -48,21 +48,22 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      await login(values.username, values.password);
-      
-      toast({
-        title: "Login realizado com sucesso",
-        description: "Bem-vindo de volta à BiblioTech!",
+      const user = await login({
+        username: values.username,
+        password: values.password
       });
       
-      // Redirecionar para a página inicial ou última página visitada
-      navigate("/");
+      // O toast já está sendo mostrado no hook useAuth
+      
+      // Verificar se é admin e redirecionar para o painel admin
+      if (user.role === "admin") {
+        navigate("/admin");
+      } else {
+        // Redirecionar para a página inicial ou última página visitada
+        navigate("/");
+      }
     } catch (error: any) {
-      toast({
-        title: "Erro ao fazer login",
-        description: error.message || "Credenciais inválidas. Verifique seu nome de usuário e senha.",
-        variant: "destructive",
-      });
+      // O toast de erro já está sendo exibido no hook useAuth
     } finally {
       setIsLoading(false);
     }

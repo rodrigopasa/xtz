@@ -34,9 +34,9 @@ export function useAuth() {
   const checkAuth = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await apiRequest("GET", "/api/auth/me");
+      const response = await apiRequest<User | null>("GET", "/api/auth/me");
       if (response) {
-        setUser(response as User);
+        setUser(response);
         setIsAuthenticated(true);
       } else {
         setUser(null);
@@ -60,7 +60,7 @@ export function useAuth() {
   const login = async (data: LoginData) => {
     try {
       setIsLoading(true);
-      const response = await apiRequest("POST", "/api/auth/login", data);
+      const response = await apiRequest<User>("POST", "/api/auth/login", data);
       setUser(response);
       setIsAuthenticated(true);
       toast({
@@ -84,7 +84,7 @@ export function useAuth() {
   const register = async (data: RegisterData) => {
     try {
       setIsLoading(true);
-      const response = await apiRequest("POST", "/api/auth/register", data);
+      const response = await apiRequest<User>("POST", "/api/auth/register", data);
       setUser(response);
       setIsAuthenticated(true);
       toast({
