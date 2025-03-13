@@ -131,9 +131,9 @@ export default function BookCard({
   return (
     <div 
       className={cn(
-        "bg-white rounded-lg overflow-hidden transition-all duration-300",
+        "bg-neutral-900/90 rounded-lg overflow-hidden transition-all duration-300",
         "hover:shadow-xl hover:-translate-y-1",
-        "border border-gray-200",
+        "border border-purple-500/30",
         className
       )}
     >
@@ -156,21 +156,21 @@ export default function BookCard({
             DESTAQUE
           </div>
         )}
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300"></div>
+        <div className="absolute inset-0 bg-black bg-opacity-10 group-hover:bg-opacity-30 transition-all duration-300"></div>
       </Link>
       <div className="p-4">
-        <h3 className="font-serif font-bold text-lg mb-1 line-clamp-1 group-hover:text-primary">{title}</h3>
-        <p className="text-neutral-600 text-sm mb-2 line-clamp-1">{author.name}</p>
+        <h3 className="font-serif font-bold text-lg mb-1 line-clamp-1 text-white group-hover:text-purple-300">{title}</h3>
+        <p className="text-purple-300 text-sm mb-2 line-clamp-1">{author.name}</p>
         <div className="flex items-center mb-4">
           <div className="flex space-x-1">
             {renderRatingStars()}
           </div>
-          <span className="text-xs text-neutral-500 ml-2">({ratingCount})</span>
+          <span className="text-xs text-purple-300 ml-2">({ratingCount})</span>
         </div>
         <div className="flex justify-between items-center">
           <Link 
             href={`/livro/${slug}/${author.slug}`} 
-            className="text-primary bg-primary/5 hover:bg-primary/10 rounded-full px-3 py-1 font-medium text-sm transition-colors"
+            className="text-white bg-purple-600/50 hover:bg-purple-600/80 rounded-full px-3 py-1 font-medium text-sm transition-colors"
           >
             Ver detalhes
           </Link>
@@ -178,8 +178,8 @@ export default function BookCard({
             className={cn(
               "transition-all duration-200 h-8 w-8 rounded-full flex items-center justify-center",
               isFavorite 
-                ? "text-rose-500 bg-rose-50 hover:bg-rose-100" 
-                : "text-neutral-400 hover:text-rose-500 hover:bg-rose-50"
+                ? "text-rose-400 bg-rose-800/50 hover:bg-rose-700/60" 
+                : "text-gray-400 hover:text-rose-400 hover:bg-rose-800/30"
             )}
             onClick={toggleFavorite}
             disabled={isToggling}

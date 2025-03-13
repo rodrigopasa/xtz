@@ -73,10 +73,10 @@ export default function Login() {
 
   return (
     <div className="min-h-[calc(100vh-64px)] flex items-center justify-center py-12 px-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md bg-neutral-900/90 border border-purple-500/30 text-white">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Entrar na BiblioTech</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-2xl font-bold text-center text-white">Entrar na BiblioTech</CardTitle>
+          <CardDescription className="text-center text-purple-300">
             Entre com seu nome de usuário e senha para acessar sua conta
           </CardDescription>
         </CardHeader>
@@ -88,15 +88,16 @@ export default function Login() {
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome de usuário</FormLabel>
+                    <FormLabel className="text-white">Nome de usuário</FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="Digite seu nome de usuário" 
                         {...field} 
                         disabled={isLoading}
+                        className="bg-neutral-800 border-purple-500/30 text-white placeholder:text-neutral-400"
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-rose-300" />
                   </FormItem>
                 )}
               />
@@ -105,7 +106,7 @@ export default function Login() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Senha</FormLabel>
+                    <FormLabel className="text-white">Senha</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input 
@@ -113,25 +114,26 @@ export default function Login() {
                           placeholder="Digite sua senha" 
                           {...field} 
                           disabled={isLoading}
+                          className="bg-neutral-800 border-purple-500/30 text-white placeholder:text-neutral-400"
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="absolute right-0 top-0 h-full px-3 py-2"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent hover:text-purple-400 text-neutral-400"
                           onClick={() => setShowPassword(!showPassword)}
                         >
                           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </Button>
                       </div>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-rose-300" />
                   </FormItem>
                 )}
               />
               <Button 
                 type="submit" 
-                className="w-full"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                 disabled={isLoading}
               >
                 {isLoading ? "Entrando..." : "Entrar"}
@@ -140,14 +142,14 @@ export default function Login() {
           </Form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <div className="text-sm text-center text-neutral-600">
-            <Link href="/recuperar-senha" className="text-primary hover:underline">
+          <div className="text-sm text-center text-purple-300">
+            <Link href="/recuperar-senha" className="text-purple-400 hover:text-purple-300 hover:underline">
               Esqueceu sua senha?
             </Link>
           </div>
-          <div className="text-sm text-center text-neutral-600">
+          <div className="text-sm text-center text-purple-300">
             Não tem uma conta?{" "}
-            <Link href="/cadastro" className="text-primary hover:underline">
+            <Link href="/cadastro" className="text-purple-400 hover:text-purple-300 hover:underline">
               Cadastre-se
             </Link>
           </div>

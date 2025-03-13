@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
 :root {
   --star-color: #8b5cf6;
@@ -101,21 +101,35 @@
     text-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
   }
 
-  /* Card background com maior contraste */
+  /* Sobrescrever classes de fundo para usar tema escuro por padrão */
   .bg-white {
-    background: rgba(255, 255, 255, 0.97);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(10px);
-    color: #000000; /* Cor de texto preto para maior contraste */
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(17, 24, 39, 0.95) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: blur(10px) !important;
+    color: #ffffff !important; /* Cor de texto branco para maior contraste */
+    border: 1px solid rgba(139, 92, 246, 0.2) !important;
   }
-
-  .dark .bg-white {
-    background: rgba(30, 30, 45, 0.97);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(10px);
-    color: #ffffff; /* Cor de texto branco para maior contraste */
-    border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  /* Garantir que textos em contêineres com fundo branco sejam legíveis */
+  .bg-white h1, .bg-white h2, .bg-white h3, .bg-white h4, .bg-white h5, .bg-white h6,
+  .bg-white p, .bg-white span, .bg-white div, .bg-white a {
+    color: #ffffff !important;
+  }
+  
+  /* Sobrescrever outros backgrounds */
+  .bg-neutral-50, .bg-neutral-100, .bg-neutral-200, .bg-gray-50, .bg-gray-100, .bg-gray-200 {
+    background-color: #1f2937 !important;
+    color: #ffffff !important;
+  }
+  
+  /* Cor de texto para legendas e textos secundários */
+  .text-neutral-500, .text-neutral-600, .text-neutral-700, .text-gray-500, .text-gray-600, .text-gray-700 {
+    color: #a78bfa !important;
+  }
+  
+  /* Cor de texto para textos principais */
+  .text-neutral-800, .text-neutral-900, .text-gray-800, .text-gray-900, .text-black {
+    color: #ffffff !important;
   }
   
   /* Texto legível */
