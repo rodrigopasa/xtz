@@ -97,18 +97,20 @@ export default function BookCard({
     setIsToggling(true);
     try {
       if (isFavorite) {
-        await apiRequest<{success: boolean}>(`/api/favorites/${id}`, {
-          method: "DELETE"
-        });
+        await apiRequest<{success: boolean}>(
+          "DELETE",
+          `/api/favorites/${id}`
+        );
         toast({
           title: "Removido dos favoritos",
           description: `"${title}" foi removido dos seus favoritos.`,
         });
       } else {
-        await apiRequest<{id: number}>("/api/favorites", {
-          method: "POST",
-          body: { bookId: id }
-        });
+        await apiRequest<{id: number}>(
+          "POST",
+          "/api/favorites",
+          { bookId: id }
+        );
         toast({
           title: "Adicionado aos favoritos",
           description: `"${title}" foi adicionado aos seus favoritos.`,

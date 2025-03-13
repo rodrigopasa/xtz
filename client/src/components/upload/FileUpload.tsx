@@ -111,12 +111,9 @@ export default function FileUpload({
       }, 100);
 
       const response = await apiRequest<{coverUrl?: string, epubUrl?: string, pdfUrl?: string}>(
+        "POST",
         endpoint,
-        {
-          method: "POST",
-          body: formData,
-          // Não definimos Content-Type pois o browser vai adicionar com o boundary correto
-        }
+        formData
       );
 
       clearInterval(progressInterval);
