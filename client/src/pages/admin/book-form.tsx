@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import FileUpload from "@/components/upload/FileUpload";
 import {
   Card,
   CardContent,
@@ -346,7 +347,7 @@ export default function BookForm({ id }: BookFormProps) {
   }
 
   return (
-    <main className="flex-grow p-6 bg-neutral-100 overflow-auto">
+    <main className="flex-grow p-6 bg-neutral-900 overflow-auto">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
@@ -354,18 +355,18 @@ export default function BookForm({ id }: BookFormProps) {
               variant="ghost" 
               size="icon" 
               onClick={() => navigate("/admin/livros")}
-              className="mr-2"
+              className="mr-2 text-white hover:bg-neutral-800"
             >
               <ArrowLeft size={20} />
             </Button>
-            <h1 className="font-serif text-2xl md:text-3xl font-bold">
+            <h1 className="font-serif text-2xl md:text-3xl font-bold text-white">
               {isEditMode ? "Editar Livro" : "Adicionar Novo Livro"}
             </h1>
           </div>
           <Button 
             onClick={form.handleSubmit(onSubmit)}
             disabled={mutation.isPending}
-            className="bg-primary hover:bg-primary-dark flex items-center"
+            className="bg-purple-600 hover:bg-purple-700 flex items-center text-white"
           >
             <Save className="mr-2" size={16} />
             {mutation.isPending ? "Salvando..." : "Salvar"}

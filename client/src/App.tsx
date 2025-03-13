@@ -37,6 +37,7 @@ import AdminCategories from "@/pages/admin/categories";
 import AdminAuthors from "@/pages/admin/authors";
 import AdminUsers from "@/pages/admin/users";
 import AdminComments from "@/pages/admin/comments";
+import AdminReports from "@/pages/admin/reports";
 
 // Router with layout wrappers
 function Router() {
@@ -259,6 +260,30 @@ function Router() {
             <div className="flex-grow flex">
               <AdminSidebar />
               <AdminComments />
+            </div>
+          </>
+        )}
+      </Route>
+      
+      <Route path="/admin/relatorios">
+        {() => (
+          <>
+            <AdminHeader />
+            <div className="flex-grow flex">
+              <AdminSidebar />
+              <AdminReports />
+            </div>
+          </>
+        )}
+      </Route>
+      
+      <Route path="/admin/configuracoes">
+        {() => (
+          <>
+            <AdminHeader />
+            <div className="flex-grow flex">
+              <AdminSidebar />
+              <NotFound />
             </div>
           </>
         )}
