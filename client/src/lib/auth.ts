@@ -34,7 +34,9 @@ export function useAuth() {
   const checkAuth = useCallback(async () => {
     try {
       setIsLoading(true);
+      console.log("Verificando autenticação...");
       const response = await apiRequest<User | null>("GET", "/api/auth/me");
+      console.log("Resposta de autenticação:", response);
       if (response) {
         setUser(response);
         setIsAuthenticated(true);
@@ -44,6 +46,7 @@ export function useAuth() {
       }
       return !!response;
     } catch (error) {
+      console.error("Erro ao verificar autenticação:", error);
       setUser(null);
       setIsAuthenticated(false);
       return false;
@@ -60,15 +63,26 @@ export function useAuth() {
   const login = async (data: LoginData) => {
     try {
       setIsLoading(true);
+      
+      console.log("Iniciando login...");
       const response = await apiRequest<User>("POST", "/api/auth/login", data);
+      console.log("Resposta do login:", response);
+      
       setUser(response);
       setIsAuthenticated(true);
+      
+      // Verificar o estado da autenticação após o login
+      console.log("Verificando estado de autenticação após login...");
+      await checkAuth();
+      
       toast({
         title: "Login realizado com sucesso",
         description: `Bem-vindo de volta, ${response.name}!`,
       });
+      
       return response;
     } catch (error: any) {
+      console.error("Erro no login:", error);
       toast({
         title: "Erro ao fazer login",
         description: error?.message || "Verifique suas credenciais e tente novamente",

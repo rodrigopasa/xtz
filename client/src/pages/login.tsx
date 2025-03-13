@@ -55,6 +55,8 @@ export default function Login() {
       
       // O toast já está sendo mostrado no hook useAuth
       
+      console.log("Login bem-sucedido:", user);
+      
       // Verificar se é admin e redirecionar para o painel admin
       if (user.role === "admin") {
         navigate("/admin");
