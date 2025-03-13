@@ -61,8 +61,8 @@ const bookFormSchema = z.object({
   description: z.string().min(10, {
     message: "A descrição deve ter pelo menos 10 caracteres.",
   }),
-  coverUrl: z.string().url({
-    message: "Insira uma URL válida para a capa do livro.",
+  coverUrl: z.string().min(1, {
+    message: "A URL da capa é obrigatória",
   }),
   epubUrl: z.string().url({
     message: "Insira uma URL válida para o arquivo EPUB.",
@@ -545,12 +545,33 @@ export default function BookForm({ id }: BookFormProps) {
                           name="coverUrl"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>URL da capa*</FormLabel>
+                              <FormLabel>Capa do livro*</FormLabel>
                               <FormControl>
-                                <Input placeholder="https://example.com/capa.jpg" {...field} />
+                                <div className="space-y-4">
+                                  <FileUpload
+                                    endpoint="/api/upload/cover"
+                                    fileType="cover"
+                                    allowedTypes={[".jpg", ".jpeg", ".png", "image/jpeg", "image/png"]}
+                                    maxSizeMB={5}
+                                    onSuccess={(url) => field.onChange(url)}
+                                  />
+                                  {field.value && (
+                                    <div className="relative rounded-md border overflow-hidden w-36 h-48">
+                                      <img
+                                        src={field.value}
+                                        alt="Capa do livro"
+                                        className="object-cover w-full h-full"
+                                      />
+                                    </div>
+                                  )}
+                                  <Input 
+                                    type="hidden" 
+                                    {...field} 
+                                  />
+                                </div>
                               </FormControl>
                               <FormDescription>
-                                URL da imagem da capa do livro.
+                                Faça upload da imagem de capa do livro. Formato recomendado: JPG ou PNG.
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
