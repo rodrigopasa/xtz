@@ -122,7 +122,7 @@ export default function AdminComments() {
             comment.book?.title.toLowerCase().includes(searchTerm.toLowerCase())
           : true;
         
-        const matchesStatus = statusFilter
+        const matchesStatus = statusFilter && statusFilter !== "all"
           ? (statusFilter === "approved" && comment.isApproved) ||
             (statusFilter === "pending" && !comment.isApproved)
           : true;

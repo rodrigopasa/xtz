@@ -100,7 +100,7 @@ export default function AdminUsers() {
             user.email.toLowerCase().includes(searchTerm.toLowerCase())
           : true;
         
-        const matchesRole = roleFilter
+        const matchesRole = roleFilter && roleFilter !== "all"
           ? user.role === roleFilter
           : true;
         
@@ -130,7 +130,7 @@ export default function AdminUsers() {
 
   const handleResetFilters = () => {
     setSearchTerm("");
-    setRoleFilter("");
+    setRoleFilter("all");
   };
 
   const getInitials = (name: string) => {

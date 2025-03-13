@@ -125,12 +125,12 @@ export default function AdminBooks() {
           : true;
           
         // Filtrar por categoria
-        const matchesCategory = categoryFilter
+        const matchesCategory = categoryFilter && categoryFilter !== "all"
           ? book.category.id === parseInt(categoryFilter)
           : true;
           
         // Filtrar por status
-        const matchesStatus = statusFilter
+        const matchesStatus = statusFilter && statusFilter !== "all"
           ? (statusFilter === "featured" && book.isFeatured) ||
             (statusFilter === "new" && book.isNew) ||
             (statusFilter === "free" && book.isFree)
