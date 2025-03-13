@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import express, { type Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -21,11 +21,85 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import cors from "cors";
 import multer from "multer";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 import { dirname } from "path";
 
+// ESM module compatibility - definir __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Configurar diretórios para uploads
+const coversDirectory = path.join(__dirname, "../public/covers");
+const booksDirectory = path.join(__dirname, "../public/books");
+const uploadsDirectory = path.join(__dirname, "../public/uploads");
+
+// Garantir que os diretórios existam
+[coversDirectory, booksDirectory, uploadsDirectory].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
+// Configurar storage para upload de capas
+const coverStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, coversDirectory);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const extension = path.extname(file.originalname).toLowerCase();
+    cb(null, 'cover-' + uniqueSuffix + extension);
+  }
+});
+
+// Configurar storage para upload de arquivos de livro (EPUB/PDF)
+const bookFileStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, booksDirectory);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const extension = path.extname(file.originalname).toLowerCase();
+    cb(null, 'book-' + uniqueSuffix + extension);
+  }
+});
+
+// Filtro para permitir apenas imagens para capas
+const imageFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
+
+// Filtro para permitir apenas EPUB/PDF
+const bookFileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  if (
+    file.mimetype === 'application/epub+zip' || 
+    file.mimetype === 'application/pdf' ||
+    file.originalname.endsWith('.epub') ||
+    file.originalname.endsWith('.pdf')
+  ) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
+
+// Instâncias do multer para diferentes tipos de upload
+const uploadCover = multer({ 
+  storage: coverStorage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
+
+const uploadBookFile = multer({ 
+  storage: bookFileStorage,
+  fileFilter: bookFileFilter,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
+});
+
+// Declaração para estender session com tipos do usuário
 declare module "express-session" {
   interface SessionData {
     user: {
@@ -46,7 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
   }));
-
+  
   // Configuração de sessão
   const MemoryStoreSession = MemoryStore(session);
   
@@ -70,6 +144,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configuração do Passport
   app.use(passport.initialize());
   app.use(passport.session());
+  
+  // Configuração de arquivos estáticos
+  app.use('/covers', express.static(path.join(__dirname, '../public/covers')));
+  app.use('/books', express.static(path.join(__dirname, '../public/books')));
+  app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
   
   passport.use(new LocalStrategy(async (username, password, done) => {
     try {
@@ -124,17 +203,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   };
   
-  // Configurar diretório para arquivos de livros
-  const booksDirectory = path.join(__dirname, "../public/books");
-  if (!fs.existsSync(booksDirectory)) {
-    fs.mkdirSync(booksDirectory, { recursive: true });
-  }
-  
   // Rotas de autenticação
   app.post("/api/auth/login", (req, res, next) => {
     console.log("Tentativa de login:", req.body);
     
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
         console.error("Erro na autenticação:", err);
         return next(err);
@@ -443,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { category, author, featured, isNew, isFree } = req.query;
       
-      let books = [];
+      let books: any[] = [];
       
       if (category) {
         const categoryObj = await storage.getCategoryBySlug(category as string);
@@ -540,6 +613,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para upload de capa de livro
+  app.post("/api/books/:id/upload-cover", isAdmin, uploadCover.single('cover'), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      
+      const book = await storage.getBook(id);
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhum arquivo enviado ou formato inválido" });
+      }
+      
+      // Montar a URL da capa
+      const coverUrl = `/covers/${req.file.filename}`;
+      
+      // Atualizar URL da capa no banco de dados
+      const updatedBook = await storage.updateBook(id, { coverUrl });
+      
+      res.json({ 
+        message: "Capa atualizada com sucesso", 
+        coverUrl,
+        book: updatedBook
+      });
+    } catch (error) {
+      console.error("Erro ao fazer upload de capa:", error);
+      res.status(500).json({ message: "Erro ao processar upload da capa" });
+    }
+  });
+  
+  // Rota para upload de arquivo EPUB
+  app.post("/api/books/:id/upload-epub", isAdmin, uploadBookFile.single('epub'), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      
+      const book = await storage.getBook(id);
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhum arquivo enviado ou formato inválido" });
+      }
+      
+      // Montar a URL do arquivo EPUB
+      const epubUrl = `/books/${req.file.filename}`;
+      
+      // Atualizar URL do EPUB no banco de dados
+      const updatedBook = await storage.updateBook(id, { epubUrl });
+      
+      res.json({ 
+        message: "Arquivo EPUB atualizado com sucesso", 
+        epubUrl,
+        book: updatedBook
+      });
+    } catch (error) {
+      console.error("Erro ao fazer upload de EPUB:", error);
+      res.status(500).json({ message: "Erro ao processar upload do EPUB" });
+    }
+  });
+  
+  // Rota para upload de arquivo PDF
+  app.post("/api/books/:id/upload-pdf", isAdmin, uploadBookFile.single('pdf'), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      
+      const book = await storage.getBook(id);
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhum arquivo enviado ou formato inválido" });
+      }
+      
+      // Montar a URL do arquivo PDF
+      const pdfUrl = `/books/${req.file.filename}`;
+      
+      // Atualizar URL do PDF no banco de dados
+      const updatedBook = await storage.updateBook(id, { pdfUrl });
+      
+      res.json({ 
+        message: "Arquivo PDF atualizado com sucesso", 
+        pdfUrl,
+        book: updatedBook
+      });
+    } catch (error) {
+      console.error("Erro ao fazer upload de PDF:", error);
+      res.status(500).json({ message: "Erro ao processar upload do PDF" });
+    }
+  });
+
   app.put("/api/books/:id", isAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -970,14 +1145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/users", isAdmin, async (req, res) => {
     try {
       const users = await storage.getAllUsers();
-      
-      // Remover senhas por segurança
-      const safeUsers = users.map(user => {
-        const { password, ...safeUser } = user;
-        return safeUser;
-      });
-      
-      res.json(safeUsers);
+      res.json(users);
     } catch (error) {
       res.status(500).json({ message: "Erro ao buscar usuários" });
     }
@@ -997,8 +1165,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const { role } = req.body;
-      if (role !== 'user' && role !== 'admin') {
-        return res.status(400).json({ message: "Papel inválido" });
+      if (!role || (role !== "user" && role !== "admin")) {
+        return res.status(400).json({ message: "Role inválida" });
       }
       
       const updatedUser = await storage.updateUser(id, { role });
@@ -1006,241 +1174,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Usuário não encontrado" });
       }
       
-      // Remover senha por segurança
-      const { password, ...safeUser } = updatedUser;
-      
-      res.json(safeUser);
+      res.json(updatedUser);
     } catch (error) {
       res.status(500).json({ message: "Erro ao atualizar usuário" });
     }
   });
   
-  // Configuração do Multer para upload de arquivos
-  const uploadStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      const booksDir = path.join(__dirname, "../public/books");
-      if (!fs.existsSync(booksDir)) {
-        fs.mkdirSync(booksDir, { recursive: true });
-      }
-      cb(null, booksDir);
-    },
-    filename: (req, file, cb) => {
-      // Gerar um nome de arquivo único baseado no timestamp
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      let ext = path.extname(file.originalname).toLowerCase();
-      
-      // Verificar a extensão do arquivo
-      if (file.fieldname === 'epub' && ext !== '.epub') {
-        ext = '.epub';
-      } else if (file.fieldname === 'pdf' && ext !== '.pdf') {
-        ext = '.pdf';
-      }
-      
-      cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-    }
-  });
-  
-  const upload = multer({
-    storage: uploadStorage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limite
-    fileFilter: (req, file, cb) => {
-      // Verifica o tipo de arquivo
-      if (file.fieldname === 'epub') {
-        if (file.mimetype === 'application/epub+zip' || 
-            file.mimetype === 'application/octet-stream' ||
-            file.originalname.endsWith('.epub')) {
-          return cb(null, true);
-        }
-      } else if (file.fieldname === 'pdf') {
-        if (file.mimetype === 'application/pdf' ||
-            file.originalname.endsWith('.pdf')) {
-          return cb(null, true);
-        }
-      }
-      
-      cb(new Error('Formato de arquivo não suportado'));
-    }
-  });
-
-  // Rota para upload de arquivo EPUB
-  app.post("/api/upload/epub", isAdmin, upload.single('file'), (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: "Nenhum arquivo enviado" });
-      }
-      
-      // URL relativa do arquivo
-      const fileUrl = `/books/${req.file.filename}`;
-      
-      res.json({ 
-        url: fileUrl,
-        filename: req.file.filename,
-        originalname: req.file.originalname,
-        size: req.file.size
-      });
-    } catch (error) {
-      console.error("Erro no upload:", error);
-      res.status(500).json({ message: "Erro ao fazer upload do arquivo" });
-    }
-  });
-
-  // Rota para upload de arquivo PDF
-  app.post("/api/upload/pdf", isAdmin, upload.single('file'), (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: "Nenhum arquivo enviado" });
-      }
-      
-      // URL relativa do arquivo
-      const fileUrl = `/books/${req.file.filename}`;
-      
-      res.json({ 
-        url: fileUrl,
-        filename: req.file.filename,
-        originalname: req.file.originalname,
-        size: req.file.size
-      });
-    } catch (error) {
-      console.error("Erro no upload:", error);
-      res.status(500).json({ message: "Erro ao fazer upload do arquivo" });
-    }
-  });
-  
-  // Rota para obter livro por ID (além da que já existe por slug)
-  // Rota de livro por ID numérico - sem regex para evitar problemas
-  app.get("/api/books/id/:numericId", async (req, res) => {
-    try {
-      // Garantir que o ID seja um número
-      const id = Number(req.params.numericId);
-      console.log(`Buscando livro com ID numérico: ${id}, tipo: ${typeof id}`);
-      
-      if (isNaN(id)) {
-        console.log(`ID inválido: ${req.params.numericId}`);
-        return res.status(400).json({ message: "ID inválido" });
-      }
-      
-      // Verificar todos os livros e seus IDs para debug
-      const allBooks = await storage.getAllBooks();
-      console.log(`Total de livros: ${allBooks.length}`);
-      console.log(`IDs disponíveis: ${allBooks.map(b => `${b.id} (${typeof b.id})`).join(', ')}`);
-      
-      // Debugging: imprimir os dados do primeiro livro
-      if (allBooks.length > 0) {
-        console.log(`Livro 1 ID: ${allBooks[0].id}, Título: ${allBooks[0].title}`);
-      }
-      
-      // Buscar diretamente na lista de livros
-      const bookFromList = allBooks.find(b => Number(b.id) === id);
-      console.log(`Livro encontrado na lista? ${bookFromList ? 'Sim' : 'Não'}`);
-      
-      if (!bookFromList) {
-        console.log(`Livro com ID ${id} não encontrado!`);
-        return res.status(404).json({ message: "Livro não encontrado" });
-      }
-      
-      console.log(`Encontrado livro: ${bookFromList.title}`);
-      
-      // Se encontrou o livro, continuar com o enriquecimento
-      const author = await storage.getAuthor(bookFromList.authorId);
-      const category = await storage.getCategory(bookFromList.categoryId);
-      
-      const enrichedBook = {
-        ...bookFromList,
-        author: author ? { name: author.name, slug: author.slug } : null,
-        category: category ? { name: category.name, slug: category.slug } : null
-      };
-      
-      return res.json(enrichedBook);
-    } catch (error) {
-      console.error("Erro ao buscar livro por ID:", error);
-      res.status(500).json({ message: "Erro ao buscar livro" });
-    }
-  });
-
-  // Rotas de usuário para perfil e configurações
   app.get("/api/user/profile", isAuthenticated, async (req, res) => {
     try {
-      const userId = (req.user as any).id;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      const user = req.user as any;
+      const userProfile = await storage.getUser(user.id);
+      
+      if (!userProfile) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Excluir campos sensíveis
+      delete userProfile.password;
+      
+      res.json(userProfile);
     } catch (error) {
-      res.status(500).json({ message: "Erro ao buscar perfil de usuário" });
+      res.status(500).json({ message: "Erro ao buscar perfil" });
     }
   });
   
   app.put("/api/user/profile", isAuthenticated, async (req, res) => {
     try {
-      const userId = (req.user as any).id;
-      const { name, email, avatarUrl } = req.body;
+      const user = req.user as any;
+      const { name, email, password } = req.body;
       
-      console.log("Atualizando perfil de usuário:", { userId, name, email, avatarUrl });
+      // Validar email único se for alterado
+      if (email && email !== user.email) {
+        const existingEmail = await storage.getUserByEmail(email);
+        if (existingEmail) {
+          return res.status(400).json({ message: "E-mail já está em uso" });
+        }
+      }
       
-      const updatedUser = await storage.updateUser(userId, { name, email, avatarUrl });
+      // Atualizar apenas os campos permitidos
+      const updatedFields: any = {};
+      if (name) updatedFields.name = name;
+      if (email) updatedFields.email = email;
+      if (password) updatedFields.password = password;
       
+      const updatedUser = await storage.updateUser(user.id, updatedFields);
       if (!updatedUser) {
         return res.status(404).json({ message: "Usuário não encontrado" });
       }
       
-      // Atualizar dados na sessão
-      (req.user as any).name = name;
-      (req.user as any).email = email;
-      (req.user as any).avatarUrl = avatarUrl;
+      // Excluir campos sensíveis
+      delete updatedUser.password;
       
       res.json(updatedUser);
     } catch (error) {
-      console.error("Erro ao atualizar perfil:", error);
       res.status(500).json({ message: "Erro ao atualizar perfil" });
     }
   });
   
-  app.put("/api/user/password", isAuthenticated, async (req, res) => {
+  app.post("/api/user/avatar", isAuthenticated, uploadCover.single('avatar'), async (req, res) => {
     try {
-      const userId = (req.user as any).id;
-      const { currentPassword, newPassword } = req.body;
+      const user = req.user as any;
       
-      // Verificar senha atual
-      const user = await storage.getUser(userId);
-      if (!user) {
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhum arquivo enviado ou formato inválido" });
+      }
+      
+      // Construir URL do avatar
+      const avatarUrl = `/uploads/${req.file.filename}`;
+      
+      // Atualizar usuário
+      const updatedUser = await storage.updateUser(user.id, { avatarUrl });
+      if (!updatedUser) {
         return res.status(404).json({ message: "Usuário não encontrado" });
       }
       
-      if (user.password !== currentPassword) {
-        return res.status(400).json({ message: "Senha atual incorreta" });
-      }
+      // Excluir campos sensíveis
+      delete updatedUser.password;
       
-      // Atualizar senha
-      const updatedUser = await storage.updateUser(userId, { password: newPassword });
-      
-      res.json({ message: "Senha atualizada com sucesso" });
-    } catch (error) {
-      console.error("Erro ao atualizar senha:", error);
-      res.status(500).json({ message: "Erro ao atualizar senha" });
-    }
-  });
-  
-  app.put("/api/user/preferences", isAuthenticated, async (req, res) => {
-    try {
-      const userId = (req.user as any).id;
-      const { theme, preferredFormat, notifications } = req.body;
-      
-      console.log("Atualizando preferências:", { userId, theme, preferredFormat, notifications });
-      
-      // Em uma implementação real, essas preferências seriam salvas no banco de dados
-      // Como estamos usando armazenamento em memória, retornaremos como se tivesse sido salvo
-      
-      res.json({ 
-        success: true, 
-        message: "Preferências atualizadas com sucesso",
-        preferences: { theme, preferredFormat, notifications }
+      res.json({
+        message: "Avatar atualizado com sucesso",
+        user: updatedUser
       });
     } catch (error) {
-      console.error("Erro ao atualizar preferências:", error);
-      res.status(500).json({ message: "Erro ao atualizar preferências" });
+      res.status(500).json({ message: "Erro ao atualizar avatar" });
     }
   });
-
-  // Criar servidor HTTP
-  const httpServer = createServer(app);
   
-  return httpServer;
+  // Iniciar servidor HTTP para o Express
+  const server = createServer(app);
+  
+  return server;
 }
