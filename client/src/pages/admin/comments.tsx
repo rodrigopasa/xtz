@@ -149,7 +149,7 @@ export default function AdminComments() {
 
   const handleResetFilters = () => {
     setSearchTerm("");
-    setStatusFilter("");
+    setStatusFilter("all");
   };
 
   // Renderizar estrelas para avaliação

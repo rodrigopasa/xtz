@@ -186,8 +186,8 @@ export default function AdminBooks() {
   
   const handleResetFilters = () => {
     setSearchTerm("");
-    setCategoryFilter("");
-    setStatusFilter("");
+    setCategoryFilter("all");
+    setStatusFilter("all");
   };
 
   return (
