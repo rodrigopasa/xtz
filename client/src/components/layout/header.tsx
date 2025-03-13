@@ -19,7 +19,12 @@ export default function Header() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [location, navigate] = useLocation();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, checkAuth } = useAuth();
+  
+  // DEBUG: Verificar estado de autenticação
+  useEffect(() => {
+    console.log("Header: Estado de autenticação:", { isAuthenticated, user });
+  }, [isAuthenticated, user]);
 
   // Fechar o menu móvel quando a localização muda
   useEffect(() => {

@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -19,6 +19,7 @@ import MemoryStore from "memorystore";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import cors from "cors";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,6 +38,14 @@ declare module "express-session" {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Configuração do CORS
+  app.use(cors({
+    origin: true, // Permite requisições do mesmo domínio
+    credentials: true, // Permite cookies nas requisições de CORS
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+
   // Configuração de sessão
   const MemoryStoreSession = MemoryStore(session);
   
@@ -44,7 +53,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     secret: "bibliotech-secret-key",
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 24 * 60 * 60 * 1000 }, // 24 horas
+    cookie: { 
+      maxAge: 24 * 60 * 60 * 1000, // 24 horas
+      httpOnly: true,
+      secure: false, // Em produção, isso seria true
+      sameSite: 'lax'
+    },
     store: new MemoryStoreSession({
       checkPeriod: 86400000 // 24 horas
     })
