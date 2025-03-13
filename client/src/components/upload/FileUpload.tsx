@@ -110,11 +110,14 @@ export default function FileUpload({
         });
       }, 100);
 
-      const response = await apiRequest(endpoint, {
-        method: "POST",
-        body: formData,
-        // Não definimos Content-Type pois o browser vai adicionar com o boundary correto
-      });
+      const response = await apiRequest<{coverUrl?: string, epubUrl?: string, pdfUrl?: string}>(
+        endpoint,
+        {
+          method: "POST",
+          body: formData,
+          // Não definimos Content-Type pois o browser vai adicionar com o boundary correto
+        }
+      );
 
       clearInterval(progressInterval);
       setProgress(100);

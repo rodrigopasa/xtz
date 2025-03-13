@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { Heart } from "lucide-react";
+import { Heart, Star, StarHalf } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 
 interface BookCardProps {
   id: number;
@@ -49,11 +50,29 @@ export default function BookCard({
 
     for (let i = 0; i < 5; i++) {
       if (i < fullStars) {
-        stars.push(<i key={i} className="fas fa-star"></i>);
+        stars.push(
+          <Star 
+            key={i} 
+            className="fill-current text-yellow-400" 
+            size={14} 
+          />
+        );
       } else if (i === fullStars && hasHalfStar) {
-        stars.push(<i key={i} className="fas fa-star-half-alt"></i>);
+        stars.push(
+          <StarHalf 
+            key={i} 
+            className="fill-yellow-400 text-yellow-400" 
+            size={14} 
+          />
+        );
       } else {
-        stars.push(<i key={i} className="far fa-star"></i>);
+        stars.push(
+          <Star 
+            key={i} 
+            className="text-gray-300" 
+            size={14} 
+          />
+        );
       }
     }
 
@@ -78,13 +97,18 @@ export default function BookCard({
     setIsToggling(true);
     try {
       if (isFavorite) {
-        await apiRequest("DELETE", `/api/favorites/${id}`);
+        await apiRequest<{success: boolean}>(`/api/favorites/${id}`, {
+          method: "DELETE"
+        });
         toast({
           title: "Removido dos favoritos",
           description: `"${title}" foi removido dos seus favoritos.`,
         });
       } else {
-        await apiRequest("POST", "/api/favorites", { bookId: id });
+        await apiRequest<{id: number}>("/api/favorites", {
+          method: "POST",
+          body: { bookId: id }
+        });
         toast({
           title: "Adicionado aos favoritos",
           description: `"${title}" foi adicionado aos seus favoritos.`,
@@ -105,43 +129,63 @@ export default function BookCard({
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-md overflow-hidden transition-all hover:shadow-lg ${className}`}>
-      <Link href={`/livro/${slug}/${author.slug}`} className="block relative pb-[140%]">
+    <div 
+      className={cn(
+        "bg-white rounded-lg overflow-hidden transition-all duration-300",
+        "hover:shadow-xl hover:-translate-y-1",
+        "border border-gray-200",
+        className
+      )}
+    >
+      <Link href={`/livro/${slug}/${author.slug}`} className="block relative pb-[140%] overflow-hidden group">
         <img
-          src={coverUrl}
+          src={coverUrl || "/placeholders/book-cover.jpg"}
           alt={`Capa do livro ${title}`}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover transform transition-transform duration-300 group-hover:scale-105"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = '/placeholders/book-cover.jpg';
+          }}
         />
         {isNew && (
-          <div className="absolute top-2 right-2 bg-accent text-neutral-800 text-xs font-bold py-1 px-2 rounded">
+          <div className="absolute top-2 right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold py-1 px-3 rounded-full shadow-md">
             NOVO
           </div>
         )}
         {isFeatured && !isNew && (
-          <div className="absolute top-2 right-2 bg-secondary text-white text-xs font-bold py-1 px-2 rounded">
+          <div className="absolute top-2 right-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold py-1 px-3 rounded-full shadow-md">
             DESTAQUE
           </div>
         )}
+        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300"></div>
       </Link>
       <div className="p-4">
-        <h3 className="font-serif font-bold text-lg mb-1 line-clamp-1">{title}</h3>
-        <p className="text-neutral-600 text-sm mb-2">{author.name}</p>
-        <div className="flex items-center mb-3">
-          <div className="flex text-accent">
+        <h3 className="font-serif font-bold text-lg mb-1 line-clamp-1 group-hover:text-primary">{title}</h3>
+        <p className="text-neutral-600 text-sm mb-2 line-clamp-1">{author.name}</p>
+        <div className="flex items-center mb-4">
+          <div className="flex space-x-1">
             {renderRatingStars()}
           </div>
-          <span className="text-xs text-neutral-500 ml-1">({ratingCount})</span>
+          <span className="text-xs text-neutral-500 ml-2">({ratingCount})</span>
         </div>
         <div className="flex justify-between items-center">
-          <Link href={`/livro/${slug}/${author.slug}`} className="text-primary hover:text-primary-dark font-medium text-sm">
+          <Link 
+            href={`/livro/${slug}/${author.slug}`} 
+            className="text-primary bg-primary/5 hover:bg-primary/10 rounded-full px-3 py-1 font-medium text-sm transition-colors"
+          >
             Ver detalhes
           </Link>
           <button 
-            className={`transition-colors ${isFavorite ? 'text-secondary' : 'text-neutral-400 hover:text-secondary'}`}
+            className={cn(
+              "transition-all duration-200 h-8 w-8 rounded-full flex items-center justify-center",
+              isFavorite 
+                ? "text-rose-500 bg-rose-50 hover:bg-rose-100" 
+                : "text-neutral-400 hover:text-rose-500 hover:bg-rose-50"
+            )}
             onClick={toggleFavorite}
             disabled={isToggling}
+            aria-label={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
           >
-            <Heart className={isFavorite ? "fill-current" : ""} size={18} />
+            <Heart className={cn("transition-all", isFavorite ? "fill-current" : "")} size={18} />
           </button>
         </div>
       </div>
