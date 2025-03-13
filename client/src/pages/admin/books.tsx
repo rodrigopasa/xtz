@@ -222,7 +222,7 @@ export default function AdminBooks() {
                     <SelectValue placeholder="Todas categorias" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas categorias</SelectItem>
+                    <SelectItem value="all">Todas categorias</SelectItem>
                     {categories?.map((category: any) => (
                       <SelectItem key={category.id} value={category.id.toString()}>
                         {category.name}
@@ -236,7 +236,7 @@ export default function AdminBooks() {
                     <SelectValue placeholder="Todos status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos status</SelectItem>
+                    <SelectItem value="all">Todos status</SelectItem>
                     <SelectItem value="featured">Destaques</SelectItem>
                     <SelectItem value="new">Novos</SelectItem>
                     <SelectItem value="free">Gratuitos</SelectItem>

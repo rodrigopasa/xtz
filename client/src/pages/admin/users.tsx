@@ -167,7 +167,7 @@ export default function AdminUsers() {
                     <SelectValue placeholder="Todos papéis" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos papéis</SelectItem>
+                    <SelectItem value="all">Todos papéis</SelectItem>
                     <SelectItem value="admin">Administradores</SelectItem>
                     <SelectItem value="user">Usuários</SelectItem>
                   </SelectContent>

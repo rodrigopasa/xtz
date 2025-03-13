@@ -190,7 +190,7 @@ export default function AdminComments() {
                     <SelectValue placeholder="Todos status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos status</SelectItem>
+                    <SelectItem value="all">Todos status</SelectItem>
                     <SelectItem value="approved">Aprovados</SelectItem>
                     <SelectItem value="pending">Pendentes</SelectItem>
                   </SelectContent>
