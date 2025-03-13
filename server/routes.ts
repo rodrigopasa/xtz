@@ -1114,7 +1114,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "ID inválido" });
       }
       
+      console.log(`Buscando livro com ID: ${id}, tipo: ${typeof id}`);
+      const allBooks = await storage.getAllBooks();
+      console.log(`Total de livros: ${allBooks.length}`);
+      console.log(`IDs disponíveis: ${allBooks.map(b => `${b.id} (${typeof b.id})`).join(', ')}`);
+      
       const book = await storage.getBook(id);
+      console.log(`Livro encontrado: ${book ? 'Sim' : 'Não'}`);
+      
       if (!book) {
         return res.status(404).json({ message: "Livro não encontrado" });
       }

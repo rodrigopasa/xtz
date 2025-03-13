@@ -361,7 +361,25 @@ export class MemStorage implements IStorage {
   }
   
   async getBook(id: number): Promise<Book | undefined> {
-    return this.books.get(id);
+    console.log(`MemStorage.getBook - ID: ${id}, Tipo: ${typeof id}`);
+    console.log(`Chaves disponíveis no Map: ${Array.from(this.books.keys()).join(', ')}`);
+    
+    // Tentar buscar diretamente
+    const book = this.books.get(id);
+    console.log(`Livro encontrado direto: ${book ? 'Sim' : 'Não'}`);
+    
+    // Se não encontrou, vamos tentar verificar iterando por todos
+    if (!book) {
+      for (const [key, value] of this.books.entries()) {
+        console.log(`Verificando livro - Chave: ${key} (${typeof key}), ID do livro: ${value.id} (${typeof value.id})`);
+        if (value.id === id) {
+          console.log(`Encontrado por iteração: ${value.title}`);
+          return value;
+        }
+      }
+    }
+    
+    return book;
   }
   
   async getBookBySlug(slug: string): Promise<Book | undefined> {
