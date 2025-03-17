@@ -66,9 +66,21 @@ const coverStorage = multer.diskStorage({
     cb(null, uploadsCoversDirectory);
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const extension = path.extname(file.originalname).toLowerCase();
-    cb(null, 'cover-' + uniqueSuffix + extension);
+    // Pegar o nome original do arquivo e remover caracteres problemáticos
+    const originalName = file.originalname.replace(/[^\w.-]/g, '_');
+    
+    // Se o nome original for muito grande, cortá-lo
+    const maxNameLength = 100;
+    const truncatedName = originalName.length > maxNameLength 
+      ? originalName.substring(0, maxNameLength - 10) + '...' + path.extname(originalName)
+      : originalName;
+    
+    // Adicionar um sufixo único para evitar colisões
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E6);
+    const extension = path.extname(originalName).toLowerCase();
+    
+    // Formato final: nome_original-timestamp.extensao
+    cb(null, path.basename(truncatedName, extension) + '-' + uniqueSuffix + extension);
   }
 });
 
@@ -78,9 +90,21 @@ const bookFileStorage = multer.diskStorage({
     cb(null, uploadsBooksDirectory);
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const extension = path.extname(file.originalname).toLowerCase();
-    cb(null, 'book-' + uniqueSuffix + extension);
+    // Pegar o nome original do arquivo e remover caracteres problemáticos
+    const originalName = file.originalname.replace(/[^\w.-]/g, '_');
+    
+    // Se o nome original for muito grande, cortá-lo
+    const maxNameLength = 100;
+    const truncatedName = originalName.length > maxNameLength 
+      ? originalName.substring(0, maxNameLength - 10) + '...' + path.extname(originalName)
+      : originalName;
+    
+    // Adicionar um sufixo único para evitar colisões
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E6);
+    const extension = path.extname(originalName).toLowerCase();
+    
+    // Formato final: nome_original-timestamp.extensao
+    cb(null, path.basename(truncatedName, extension) + '-' + uniqueSuffix + extension);
   }
 });
 
@@ -653,6 +677,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(enrichedBook);
     } catch (error) {
       res.status(500).json({ message: "Erro ao buscar livro por ID" });
+    }
+  });
+  
+  // Rota para visualização de arquivos EPUB/PDF (usada pelo leitor)
+  app.get("/api/books/view/:id/:format", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const format = req.params.format.toLowerCase();
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      
+      if (format !== 'epub' && format !== 'pdf') {
+        return res.status(400).json({ message: "Formato inválido" });
+      }
+      
+      const book = await storage.getBook(id);
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      // Verificar se o livro possui o formato solicitado
+      const fileUrl = format === 'epub' ? book.epubUrl : book.pdfUrl;
+      if (!fileUrl) {
+        return res.status(404).json({ message: `Formato ${format.toUpperCase()} não disponível para este livro` });
+      }
+      
+      console.log(`Requisição para visualizar livro - ID: ${id}, Formato: ${format}`);
+      console.log(`Livro encontrado: ID: ${book.id}, Título: ${book.title}`);
+      console.log(`URL do arquivo ${format}: ${fileUrl}`);
+      
+      // Obter caminho real do arquivo
+      let filePath = '';
+      
+      if (fileUrl.startsWith('/uploads/')) {
+        // Arquivo está no diretório de uploads
+        filePath = path.join(uploadsDirectory, fileUrl.substring(9));
+        console.log(`Verificando arquivo em: ${filePath} (caminho de uploads)`);
+      } else if (fileUrl.startsWith('/books/')) {
+        // Arquivo está no diretório de books
+        filePath = path.join(booksDirectory, fileUrl.substring(7));
+        console.log(`Verificando arquivo em: ${filePath} (caminho de books)`);
+      } else {
+        // URL não reconhecida
+        return res.status(404).json({ message: "Arquivo não encontrado" });
+      }
+      
+      // Verificar se o arquivo existe
+      if (!fs.existsSync(filePath)) {
+        // Tentar encontrar em outros locais possíveis como fallback
+        const possiblePaths = [
+          path.join(uploadsBooksDirectory, path.basename(fileUrl)),
+          path.join(booksDirectory, path.basename(fileUrl)),
+          path.join(__dirname, '..', fileUrl)
+        ];
+        
+        console.log('Tentando localizar o arquivo em caminhos alternativos...');
+        let foundPath = null;
+        
+        for (const altPath of possiblePaths) {
+          console.log(`Verificando: ${altPath}`);
+          if (fs.existsSync(altPath)) {
+            foundPath = altPath;
+            console.log(`Arquivo encontrado em caminho alternativo: ${foundPath}`);
+            break;
+          }
+        }
+        
+        if (!foundPath) {
+          return res.status(404).json({ message: "Arquivo não encontrado no servidor" });
+        }
+        
+        filePath = foundPath;
+      }
+      
+      // Verificar se o arquivo está vazio
+      const stats = fs.statSync(filePath);
+      if (stats.size === 0) {
+        return res.status(400).json({ 
+          message: "Arquivo sem conteúdo",
+          error: "empty_file",
+          details: "O arquivo existe no servidor, mas está vazio (0 bytes)."
+        });
+      }
+      
+      console.log(`Enviando arquivo: ${filePath} (tamanho: ${stats.size} bytes)`);
+      
+      // Definir headers adequados para o tipo de arquivo
+      if (format === 'epub') {
+        res.setHeader('Content-Type', 'application/epub+zip');
+      } else {
+        res.setHeader('Content-Type', 'application/pdf');
+      }
+      
+      // Permite acesso de qualquer origem (importante para o leitor EPUB)
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cache-Control', 'no-cache');
+      
+      // Enviar o arquivo
+      fs.createReadStream(filePath).pipe(res);
+      
+    } catch (error) {
+      console.error("Erro ao processar visualização:", error);
+      res.status(500).json({ message: "Erro ao processar visualização do livro" });
     }
   });
   
