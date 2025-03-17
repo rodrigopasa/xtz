@@ -99,6 +99,7 @@ export default function FileUpload({
     setSuccess(false);
 
     try {
+      // Criar FormData para upload do arquivo
       const formData = new FormData();
       formData.append(fileType, file);
 
@@ -110,21 +111,33 @@ export default function FileUpload({
         });
       }, 100);
 
-      const response = await apiRequest<{coverUrl?: string, epubUrl?: string, pdfUrl?: string}>(
-        "POST",
-        endpoint,
-        formData
-      );
+      // Usar fetch diretamente para ter melhor controle sobre o FormData
+      // e garantir que os cookies de sessão sejam enviados
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include' // Importante: inclui os cookies de sessão na requisição
+      });
 
       clearInterval(progressInterval);
+      
+      // Verificar se a resposta foi bem-sucedida
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`${response.status}: ${errorText}`);
+      }
+
+      // Processar a resposta
+      const data = await response.json() as {coverUrl?: string, epubUrl?: string, pdfUrl?: string};
       setProgress(100);
       setSuccess(true);
 
-      if (onSuccess && response) {
+      // Chamar o callback de sucesso com a URL retornada
+      if (onSuccess && data) {
         let url = "";
-        if (fileType === "cover" && response.coverUrl) url = response.coverUrl;
-        if (fileType === "epub" && response.epubUrl) url = response.epubUrl;
-        if (fileType === "pdf" && response.pdfUrl) url = response.pdfUrl;
+        if (fileType === "cover" && data.coverUrl) url = data.coverUrl;
+        if (fileType === "epub" && data.epubUrl) url = data.epubUrl;
+        if (fileType === "pdf" && data.pdfUrl) url = data.pdfUrl;
         
         if (url) {
           onSuccess(url);

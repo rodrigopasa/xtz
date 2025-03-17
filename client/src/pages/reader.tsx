@@ -55,13 +55,14 @@ export default function Reader({ id, format }: ReaderProps) {
 
     if (hasRequestedFormat) {
       // O formato solicitado está disponível
-      setFileUrl(format === 'epub' ? book.epubUrl : book.pdfUrl);
+      const requestedUrl = format === 'epub' ? book.epubUrl : book.pdfUrl;
+      if (requestedUrl) setFileUrl(requestedUrl);
     } else if (hasAlternativeFormat) {
       // Usar formato alternativo
       const alternativeFormat = format === 'epub' ? 'PDF' : 'EPUB';
       const alternativeUrl = format === 'epub' ? book.pdfUrl : book.epubUrl;
       
-      setFileUrl(alternativeUrl);
+      if (alternativeUrl) setFileUrl(alternativeUrl);
       toast({
         title: `${format.toUpperCase()} não disponível`,
         description: `O formato ${format.toUpperCase()} não está disponível para este livro. Exibindo em ${alternativeFormat}.`,
