@@ -81,13 +81,13 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/favorites/check/${book?.id}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
-      
+
       toast({
-        title: favoriteStatus?.isFavorite 
-          ? "Removido dos favoritos" 
+        title: favoriteStatus?.isFavorite
+          ? "Removido dos favoritos"
           : "Adicionado aos favoritos",
-        description: favoriteStatus?.isFavorite 
-          ? `${book?.title} foi removido dos seus favoritos.` 
+        description: favoriteStatus?.isFavorite
+          ? `${book?.title} foi removido dos seus favoritos.`
           : `${book?.title} foi adicionado aos seus favoritos.`,
       });
     },
@@ -112,7 +112,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
       setCommentContent("");
       setRating(5);
       queryClient.invalidateQueries({ queryKey: [`/api/books/${book?.id}/comments`] });
-      
+
       toast({
         title: "Comentário enviado",
         description: "Seu comentário foi adicionado com sucesso.",
@@ -137,6 +137,28 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
     },
   });
 
+  // Rating mutation
+  const ratingMutation = useMutation({
+    mutationFn: async (rating: number) => {
+      await apiRequest("POST", `/api/books/${book.id}/rate`, { rating });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/books/${book?.id}`] });
+      toast({
+        title: "Avaliação enviada",
+        description: "Sua avaliação foi registrada com sucesso.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível registrar sua avaliação. Tente novamente.",
+        variant: "destructive",
+      });
+    },
+  });
+
+
   const handleFavoriteToggle = () => {
     if (!isAuthenticated) {
       toast({
@@ -146,13 +168,13 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
       });
       return;
     }
-    
+
     favoriteMutation.mutate(book.id);
   };
 
   const handleDownload = async (format: string) => {
     if (!book) return;
-    
+
     if (!isAuthenticated) {
       toast({
         title: "Não autenticado",
@@ -161,17 +183,17 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
       });
       return;
     }
-    
+
     try {
       // URL para download do livro
       const downloadUrl = `/api/books/download/${book.id}/${format}`;
-      
+
       // Abrir em uma nova aba para iniciar o download
       window.open(downloadUrl, "_blank");
-      
+
       // Incrementar contador de downloads
       await apiRequest("POST", `/api/books/${book.id}/increment-downloads`);
-      
+
       toast({
         title: "Download iniciado",
         description: `O download do livro em formato ${format.toUpperCase()} foi iniciado.`,
@@ -187,7 +209,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
 
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!isAuthenticated) {
       toast({
         title: "Não autenticado",
@@ -196,7 +218,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
       });
       return;
     }
-    
+
     if (!commentContent.trim()) {
       toast({
         title: "Comentário vazio",
@@ -205,7 +227,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
       });
       return;
     }
-    
+
     commentMutation.mutate();
   };
 
@@ -218,13 +240,13 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
       });
       return;
     }
-    
+
     helpfulMutation.mutate(commentId);
   };
 
   const handleReadOnline = (format: string) => {
     if (!book) return;
-    
+
     if (!isAuthenticated) {
       toast({
         title: "Não autenticado",
@@ -233,7 +255,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
       });
       return;
     }
-    
+
     // Navegar para a página do leitor com o ID do livro e formato
     navigate(`/ler/${book.id}/${format}`);
   };
@@ -254,7 +276,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
               <Skeleton className="h-10 w-full" />
             </div>
           </div>
-          
+
           <div className="md:w-2/3 lg:w-3/4 space-y-6">
             <Skeleton className="h-10 w-3/4" />
             <Skeleton className="h-6 w-1/2" />
@@ -322,18 +344,18 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
             <div className="md:w-1/3 lg:w-1/4">
               <div className="sticky top-8">
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                  <img 
+                  <img
                     src={book.coverUrl}
                     alt={`Capa do livro ${book.title}`}
                     className="w-full h-auto"
                   />
                 </div>
-                
+
                 <div className="mt-6 flex flex-col gap-3">
                   {/* Só mostrar o botão de leitura online se houver pelo menos um formato disponível */}
                   {(book.pdfUrl || book.epubUrl) && (
-                    <Button 
-                      className="flex items-center justify-center" 
+                    <Button
+                      className="flex items-center justify-center"
                       onClick={() => handleReadOnline(
                         // Priorizar o formato disponível, ou o primeiro se ambos estiverem disponíveis
                         book.epubUrl ? 'epub' : 'pdf'
@@ -342,21 +364,21 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                       <Book className="mr-2" size={18} /> Ler online
                     </Button>
                   )}
-                  
+
                   <div className="grid grid-cols-2 gap-3">
                     {book.pdfUrl && (
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         className="flex items-center justify-center"
                         onClick={() => handleDownload('pdf')}
                       >
                         <FileText className="mr-2" size={18} /> PDF
                       </Button>
                     )}
-                    
+
                     {book.epubUrl && (
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         className="flex items-center justify-center"
                         onClick={() => handleDownload('epub')}
                       >
@@ -364,18 +386,18 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                       </Button>
                     )}
                   </div>
-                  
+
                   {book.amazonUrl && (
-                    <Button 
-                      variant="secondary" 
+                    <Button
+                      variant="secondary"
                       className="flex items-center justify-center"
                       onClick={() => window.open(book.amazonUrl, "_blank")}
                     >
                       <ExternalLink className="mr-2" size={18} /> Comprar na Amazon
                     </Button>
                   )}
-                  
-                  <Button 
+
+                  <Button
                     variant={favoriteStatus?.isFavorite ? "default" : "outline"}
                     className={`flex items-center justify-center ${
                       favoriteStatus?.isFavorite ? "bg-secondary hover:bg-secondary-dark" : ""
@@ -383,30 +405,30 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                     onClick={handleFavoriteToggle}
                     disabled={favoriteMutation.isPending}
                   >
-                    <Heart 
-                      className={`mr-2 ${favoriteStatus?.isFavorite ? "fill-current" : ""}`} 
-                      size={18} 
-                    /> 
+                    <Heart
+                      className={`mr-2 ${favoriteStatus?.isFavorite ? "fill-current" : ""}`}
+                      size={18}
+                    />
                     {favoriteStatus?.isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
                   </Button>
                 </div>
               </div>
             </div>
-            
+
             {/* Book Info */}
             <div className="md:w-2/3 lg:w-3/4">
               <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">{book.title}</h1>
               <p className="text-xl text-neutral-600 mb-4">{book.author.name}</p>
-              
+
               <div className="flex items-center mb-6">
                 <div className="flex text-accent">
                   {[...Array(5)].map((_, index) => {
                     const starValue = index + 1;
                     return (
-                      <svg 
+                      <svg
                         key={index}
-                        xmlns="http://www.w3.org/2000/svg" 
-                        viewBox="0 0 24 24" 
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
                         fill={starValue <= book.rating ? "currentColor" : "none"}
                         stroke={starValue <= book.rating ? "none" : "currentColor"}
                         className="w-5 h-5"
@@ -422,7 +444,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                 </div>
                 <span className="text-neutral-600 ml-2">{book.rating.toFixed(1)} ({book.ratingCount} avaliações)</span>
               </div>
-              
+
               <div className="flex flex-wrap gap-2 mb-6">
                 <span className="bg-neutral-100 text-neutral-800 text-sm py-1 px-3 rounded-full">
                   {book.category.name}
@@ -438,14 +460,14 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                   </span>
                 )}
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-md p-6 mb-8">
                 <h2 className="font-serif text-xl font-bold mb-4">Sobre o livro</h2>
                 <p className="text-neutral-600 whitespace-pre-line">
                   {book.description}
                 </p>
               </div>
-              
+
               {/* Tabs Navigation */}
               <Tabs defaultValue="details">
                 <TabsList className="mb-6">
@@ -454,12 +476,12 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                     Comentários ({comments.length})
                   </TabsTrigger>
                 </TabsList>
-                
+
                 {/* Book Details */}
                 <TabsContent value="details" className="space-y-8">
                   <div className="bg-white rounded-lg shadow-md p-6">
                     <h2 className="font-serif text-xl font-bold mb-4">Informações do livro</h2>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <ul className="space-y-3">
@@ -470,6 +492,17 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                           <li className="flex">
                             <span className="font-medium w-28 text-neutral-800">Autor:</span>
                             <span className="text-neutral-600">{book.author.name}</span>
+                          </li>
+                          <li className="flex">
+                            <span className="font-medium w-28 text-neutral-800">Série:</span>
+                            <span className="text-neutral-600">
+                              {book.series ? (
+                                <>
+                                  {book.series.name}
+                                  {book.volumeNumber ? ` - Volume ${book.volumeNumber}` : ''}
+                                </>
+                              ) : 'Não faz parte de uma série'}
+                            </span>
                           </li>
                           <li className="flex">
                             <span className="font-medium w-28 text-neutral-800">Editora:</span>
@@ -487,7 +520,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                           </li>
                         </ul>
                       </div>
-                      
+
                       <div>
                         <ul className="space-y-3">
                           <li className="flex">
@@ -505,7 +538,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                           <li className="flex">
                             <span className="font-medium w-28 text-neutral-800">Formato:</span>
                             <span className="text-neutral-600">
-                              {book.format === 'epub' ? 'EPUB' : 
+                              {book.format === 'epub' ? 'EPUB' :
                                 book.format === 'pdf' ? 'PDF' : 'EPUB, PDF'}
                             </span>
                           </li>
@@ -518,7 +551,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                     </div>
                   </div>
                 </TabsContent>
-                
+
                 {/* Comments Section */}
                 <TabsContent value="comments" className="space-y-8">
                   <div className="bg-white rounded-lg shadow-md p-6">
@@ -533,14 +566,35 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                                 <button
                                   key={star}
                                   type="button"
-                                  onClick={() => setRating(star)}
+                                  onClick={() => {
+                                    setRating(star);
+                                    if (isAuthenticated) {
+                                      ratingMutation.mutate(star);
+                                    } else {
+                                      toast({
+                                        title: "Não autenticado",
+                                        description: "Faça login para avaliar este livro.",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
                                   className="text-2xl focus:outline-none"
+                                  disabled={ratingMutation.isPending}
                                 >
-                                  <span className={`text-2xl ${rating >= star ? 'text-accent' : 'text-neutral-300'}`}>
+                                  <span
+                                    className={`text-2xl transition-colors ${
+                                      rating >= star ? 'text-accent' : 'text-neutral-300'
+                                    }`}
+                                  >
                                     ★
                                   </span>
                                 </button>
                               ))}
+                              {ratingMutation.isPending && (
+                                <span className="text-sm text-neutral-500 ml-2">
+                                  Enviando avaliação...
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="mb-4">
@@ -556,8 +610,8 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                               required
                             />
                           </div>
-                          <Button 
-                            type="submit" 
+                          <Button
+                            type="submit"
                             disabled={commentMutation.isPending}
                           >
                             {commentMutation.isPending ? "Enviando..." : "Enviar comentário"}
@@ -565,12 +619,12 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                         </form>
                       </div>
                     )}
-                    
+
                     <div className="space-y-6">
                       <div className="flex justify-between items-center mb-6">
                         <h3 className="font-serif text-xl font-bold">Comentários dos leitores</h3>
                       </div>
-                      
+
                       {commentsLoading ? (
                         <div className="space-y-6">
                           {[1, 2].map((i) => (
@@ -602,7 +656,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                                     {comment.user?.name.charAt(0) || 'U'}
                                   </AvatarFallback>
                                 </Avatar>
-                                
+
                                 <div className="flex-grow">
                                   <div className="flex justify-between items-center mb-2">
                                     <h4 className="font-medium">{comment.user?.name}</h4>
@@ -610,7 +664,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                                       {formatDate(comment.createdAt)}
                                     </span>
                                   </div>
-                                  
+
                                   <div className="flex text-accent mb-3">
                                     {[...Array(5)].map((_, index) => (
                                       <span key={index} className="text-lg">
@@ -618,18 +672,18 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                                       </span>
                                     ))}
                                   </div>
-                                  
+
                                   <p className="text-neutral-600 mb-3 whitespace-pre-line">
                                     {comment.content}
                                   </p>
-                                  
+
                                   <div className="flex items-center space-x-4 text-sm">
-                                    <button 
+                                    <button
                                       className="text-neutral-500 hover:text-neutral-700 flex items-center"
                                       onClick={() => handleHelpfulClick(comment.id)}
                                       disabled={helpfulMutation.isPending}
                                     >
-                                      <ThumbsUp size={16} className="mr-1" /> 
+                                      <ThumbsUp size={16} className="mr-1" />
                                       Útil ({comment.helpfulCount})
                                     </button>
                                     <button className="text-neutral-500 hover:text-neutral-700 flex items-center">
