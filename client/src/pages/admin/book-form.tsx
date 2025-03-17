@@ -123,7 +123,7 @@ const bookFormSchema = z.object({
   isFeatured: z.boolean().default(false),
   isNew: z.boolean().default(false),
   isFree: z.boolean().default(false),
-  seriesId: z.string().optional().or(z.literal("")),
+  seriesId: z.string().optional().or(z.literal("none")),
   volumeNumber: z.number().nullable().optional(),
 });
 
@@ -187,7 +187,7 @@ export default function BookForm({ id }: BookFormProps) {
       isFeatured: false,
       isNew: false,
       isFree: false,
-      seriesId: "",
+      seriesId: "none",
       volumeNumber: null,
     },
   });
@@ -214,7 +214,7 @@ export default function BookForm({ id }: BookFormProps) {
         isFeatured: book.isFeatured || false,
         isNew: book.isNew || false,
         isFree: book.isFree || false,
-        seriesId: book.seriesId?.toString() || "",
+        seriesId: book.seriesId?.toString() || "none",
         volumeNumber: book.volumeNumber,
       });
 
@@ -242,7 +242,8 @@ export default function BookForm({ id }: BookFormProps) {
         ...values,
         authorId: parseInt(values.authorId),
         categoryId: parseInt(values.categoryId),
-        volumeNumber: values.volumeNumber, // Correctly handle volumeNumber
+        seriesId: values.seriesId === "none" ? null : parseInt(values.seriesId),
+        volumeNumber: values.volumeNumber,
       };
 
       if (isEditMode) {
@@ -837,7 +838,7 @@ export default function BookForm({ id }: BookFormProps) {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    <SelectItem value="">Nenhuma série</SelectItem>
+                                    <SelectItem value="none">Nenhuma série</SelectItem>
                                     {seriesLoading ? (
                                       <div className="py-2 px-4 text-center">
                                         Carregando séries...
@@ -865,7 +866,7 @@ export default function BookForm({ id }: BookFormProps) {
                             )}
                           />
 
-                          {form.watch("seriesId") && (
+                          {form.watch("seriesId") !== "none" && (
                             <FormField
                               control={form.control}
                               name="volumeNumber"
@@ -990,7 +991,7 @@ export default function BookForm({ id }: BookFormProps) {
                                   variant="ghost"
                                   size="icon"
                                   className="h-4 w-4 ml-1"
-                                  onClick={() => setEpubFile(null)}
+                                                                 onClick={() => setEpubFile(null)}
                                 >
                                   <X className="h-3 w-3" />
                                 </Button>
