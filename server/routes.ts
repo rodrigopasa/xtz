@@ -1038,8 +1038,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Verificar se o livro possui o formato solicitado
-      if ((format === 'epub' && !book.epubUrl) || (format === 'pdf' && !book.pdfUrl)) {
+      const fileUrl = format === 'epub' ? book.epubUrl : book.pdfUrl;
+      if (!fileUrl) {
         return res.status(404).json({ message: `Formato ${format.toUpperCase()} não disponível para este livro` });
+      }
+      
+      console.log(`Requisição para download de livro - ID: ${id}, Formato: ${format}`);
+      console.log(`Livro encontrado: ID: ${book.id}, Título: ${book.title}`);
+      console.log(`URL do arquivo ${format}: ${fileUrl}`);
+      
+      // Obter caminho real do arquivo
+      let filePath = '';
+      
+      if (fileUrl.startsWith('/uploads/')) {
+        // Arquivo está no diretório de uploads
+        filePath = path.join(uploadsDirectory, fileUrl.substring(9));
+        console.log(`Verificando arquivo em: ${filePath} (caminho de uploads)`);
+      } else if (fileUrl.startsWith('/books/')) {
+        // Arquivo está no diretório de books
+        filePath = path.join(booksDirectory, fileUrl.substring(7));
+        console.log(`Verificando arquivo em: ${filePath} (caminho de books)`);
+      } else {
+        // URL não reconhecida
+        return res.status(404).json({ message: "Arquivo não encontrado" });
+      }
+      
+      // Verificar se o arquivo existe
+      if (!fs.existsSync(filePath)) {
+        // Tentar encontrar em outros locais possíveis como fallback
+        const possiblePaths = [
+          path.join(uploadsBooksDirectory, path.basename(fileUrl)),
+          path.join(booksDirectory, path.basename(fileUrl)),
+          path.join(__dirname, '..', fileUrl)
+        ];
+        
+        console.log('Tentando localizar o arquivo em caminhos alternativos...');
+        let foundPath = null;
+        
+        for (const altPath of possiblePaths) {
+          console.log(`Verificando: ${altPath}`);
+          if (fs.existsSync(altPath)) {
+            foundPath = altPath;
+            console.log(`Arquivo encontrado em caminho alternativo: ${foundPath}`);
+            break;
+          }
+        }
+        
+        if (!foundPath) {
+          return res.status(404).json({ message: "Arquivo não encontrado no servidor" });
+        }
+        
+        filePath = foundPath;
       }
       
       // Incrementar contador de downloads
@@ -1056,13 +1105,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // No sistema real, aqui redirecionaríamos para o download real
-      // Como é um sistema de memória, apenas retornamos success
-      res.json({ 
-        message: "Download iniciado", 
-        url: format === 'epub' ? book.epubUrl : book.pdfUrl 
-      });
+      // Enviar o arquivo para download
+      const fileSize = fs.statSync(filePath).size;
+      console.log(`Arquivo sendo baixado: ${filePath} (tamanho: ${fileSize} bytes)`);
+      
+      // Definir headers para download
+      const fileName = path.basename(filePath);
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      if (format === 'epub') {
+        res.setHeader('Content-Type', 'application/epub+zip');
+      } else {
+        res.setHeader('Content-Type', 'application/pdf');
+      }
+      res.setHeader('Content-Length', fileSize);
+      
+      // Enviar o arquivo
+      fs.createReadStream(filePath).pipe(res);
     } catch (error) {
+      console.error("Erro ao processar download:", error);
       res.status(500).json({ message: "Erro ao processar download" });
     }
   });

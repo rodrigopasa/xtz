@@ -49,46 +49,82 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
 
     const initializeBook = async () => {
       try {
-        // Usar a rota de visualização para carregar o livro
-        const viewUrl = `/api/books/view/${bookId}/epub`;
-        console.log("Carregando EPUB de:", viewUrl);
+        // Nós temos duas opções para carregar o EPUB:
+        // 1. Se temos uma URL direta (passada como prop), usamos ela
+        // 2. Se temos apenas o ID do livro, usamos a rota da API
         
-        // Adicionamos um timestamp para evitar cache no navegador
-        const cacheBustUrl = `${viewUrl}?t=${new Date().getTime()}`;
+        // Determinar URL a usar (prioridade para URL direta, senão construir do ID)
+        const fileUrl = url || `/api/books/view/${bookId}/epub`;
+        console.log("EPubReader inicializado - BookID:", bookId, "URL:", url);
+        console.log("Carregando EPUB de:", fileUrl);
+        
+        // Adicionar timestamp para evitar cache
+        const timestamp = new Date().getTime();
+        const cacheBustUrl = `${fileUrl}${fileUrl.includes('?') ? '&' : '?'}t=${timestamp}`;
         console.log("URL com cache bust:", cacheBustUrl);
         
-        // Configuração de opções adicionais para o Book
+        // Opções avançadas para o leitor EPUB
         const bookOptions = {
+          openAs: "epub",
           encoding: "binary",
-          replacements: "base64",
           withCredentials: true
         };
         
+        console.log("Iniciando carregamento com opcões:", bookOptions);
+        
+        // Criar instância do livro EPUB
         const epubBook = new Book(cacheBustUrl, bookOptions);
         setBook(epubBook);
 
+        // Aguardar o livro estar pronto
         console.log("Aguardando epubBook.ready...");
         await epubBook.ready;
-        console.log("EPUB carregado com sucesso:", epubBook);
-
+        console.log("EPUB carregado com sucesso!");
+        
+        // Confirmar que temos um elemento container
         const container = viewerRef.current;
         if (!container) {
           throw new Error("Container element not found");
         }
         
-        console.log("Criando renderização...");
+        // Renderizar o livro no container com configurações otimizadas
+        console.log("Criando renderização do EPUB...");
         const epubRendition = epubBook.renderTo(container, {
           width: "100%",
           height: "100%",
-          spread: "auto",
+          spread: "auto", 
           flow: "paginated",
-          minSpreadWidth: 800
+          minSpreadWidth: 800,
+          manager: "continuous"
         });
-
+        
+        // Configurar estilos adicionais para melhor leitura
+        epubRendition.themes.register("default", {
+          "body": {
+            "font-family": "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif",
+            "font-size": "1.2em",
+            "line-height": "1.5",
+            "padding": "0 !important",
+            "margin": "0 auto"
+          },
+          "p": {
+            "font-family": "inherit"
+          },
+          "img": {
+            "max-width": "100% !important"
+          }
+        });
+        epubRendition.themes.select("default");
+        
+        // Definir fonte inicial
+        epubRendition.themes.fontSize(`${fontSize}%`);
+        
+        // Exibir o conteúdo do livro
         console.log("Exibindo EPUB...");
         await epubRendition.display();
         console.log("EPUB exibido com sucesso");
-
+        
+        // Configurar eventos
         epubRendition.on("locationChanged", (location: any) => {
           console.log("Localização mudou:", location);
           setCurrentLocation(location.start);
@@ -108,6 +144,19 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
         epubRendition.on("relocated", (location: any) => {
           console.log("Relocação:", location);
         });
+        
+        // Registrar eventos de erro
+        epubRendition.on("layout", (layout: any) => {
+          console.log("Layout alterado:", layout);
+        });
+        
+        epubRendition.on("resized", (size: any) => {
+          console.log("Dimensão alterada:", size);
+        });
+        
+        epubRendition.on("keydown", (e: any) => {
+          console.log("Tecla pressionada:", e);
+        });
 
         setRendition(epubRendition);
 
@@ -120,7 +169,7 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
         // Gerar localizações para navegação precisa
         console.log("Gerando localizações...");
         await epubBook.locations.generate(1024);
-        console.log("Localizações geradas");
+        console.log("Localizações geradas com sucesso");
 
       } catch (error) {
         console.error("Erro ao carregar o EPUB:", error);
@@ -133,19 +182,25 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
             (errorStr.includes("404") && errorStr.includes("Arquivo sem conteúdo"))) {
           toast({
             title: "Arquivo vazio",
-            description: "O arquivo EPUB existe, mas está vazio (0 bytes). Esta é uma limitação do ambiente de demonstração.",
+            description: "O arquivo EPUB existe, mas está vazio (0 bytes). Tente fazer o upload novamente.",
             variant: "destructive",
           });
         } else if (errorStr.includes("404") || errorStr.includes("not found")) {
           toast({
             title: "Arquivo não encontrado",
-            description: "O arquivo EPUB deste livro não está disponível no servidor. Estamos usando um banco de dados com arquivos de exemplo.",
+            description: "O arquivo EPUB deste livro não foi encontrado. Verifique se você fez o upload corretamente.",
+            variant: "destructive",
+          });
+        } else if (errorStr.includes("Failed to fetch")) {
+          toast({
+            title: "Erro de conexão",
+            description: "Não foi possível carregar o arquivo EPUB. Verifique sua conexão com a internet.",
             variant: "destructive",
           });
         } else {
           toast({
-            title: "Erro",
-            description: "Não foi possível carregar o livro. Tente novamente mais tarde. " + errorStr.substring(0, 100),
+            title: "Erro no leitor",
+            description: "Não foi possível carregar o livro. Erro: " + errorStr.substring(0, 100),
             variant: "destructive",
           });
         }
@@ -159,7 +214,7 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
         book.destroy();
       }
     };
-  }, [url, isAuthenticated, user, bookId]);
+  }, [url, isAuthenticated, user, bookId, fontSize]);
 
   const saveReadingProgress = async (progressValue: number) => {
     try {
