@@ -591,6 +591,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para obter livro por ID (necessária para o leitor)
+  app.get("/api/books/id/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      
+      console.log(`MemStorage.getBook - ID: ${id}, Tipo: ${typeof id}`);
+      const book = await storage.getBook(id);
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      const author = await storage.getAuthor(book.authorId);
+      const category = await storage.getCategory(book.categoryId);
+      
+      const enrichedBook = {
+        ...book,
+        author: author ? { id: author.id, name: author.name, slug: author.slug } : null,
+        category: category ? { id: category.id, name: category.name, slug: category.slug } : null
+      };
+      
+      res.json(enrichedBook);
+    } catch (error) {
+      console.error("Erro ao buscar livro por ID:", error);
+      res.status(500).json({ message: "Erro ao buscar livro" });
+    }
+  });
+  
   app.post("/api/books", isAdmin, async (req, res) => {
     try {
       const { data, error } = validateSchema(insertBookSchema, req.body);
