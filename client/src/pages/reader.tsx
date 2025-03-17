@@ -21,33 +21,50 @@ export default function Reader({ id, format }: ReaderProps) {
   // Verificar formato válido
   const isValidFormat = format === 'epub' || format === 'pdf';
   
+  // Definindo o tipo para o livro
+  interface Book {
+    id: number;
+    title: string;
+    slug: string;
+    epubUrl?: string;
+    pdfUrl?: string;
+    format: 'epub' | 'pdf' | 'both';
+    author: {
+      name: string;
+      slug: string;
+    };
+  }
+  
   // Carregar informações do livro usando a nova rota de ID
-  const { data: book, isLoading, error } = useQuery({
+  const { data: book, isLoading, error } = useQuery<Book>({
     queryKey: [`/api/books/id/${id}`],
   });
   
   useEffect(() => {
     if (!book) return;
     
-    // Determinar a URL do arquivo baseado no formato
-    if (format === 'epub' && book.epubUrl) {
-      setFileUrl(book.epubUrl);
-    } else if (format === 'pdf' && book.pdfUrl) {
-      setFileUrl(book.pdfUrl);
-    } else if (format === 'epub' && !book.epubUrl && book.pdfUrl) {
-      // Fallback para PDF se EPUB não estiver disponível
-      setFileUrl(book.pdfUrl);
+    // Verificar disponibilidade do formato selecionado
+    const hasRequestedFormat = 
+      (format === 'epub' && book.epubUrl) || 
+      (format === 'pdf' && book.pdfUrl);
+    
+    // Verificar formato alternativo disponível
+    const hasAlternativeFormat = 
+      (format === 'epub' && !book.epubUrl && book.pdfUrl) || 
+      (format === 'pdf' && !book.pdfUrl && book.epubUrl);
+
+    if (hasRequestedFormat) {
+      // O formato solicitado está disponível
+      setFileUrl(format === 'epub' ? book.epubUrl : book.pdfUrl);
+    } else if (hasAlternativeFormat) {
+      // Usar formato alternativo
+      const alternativeFormat = format === 'epub' ? 'PDF' : 'EPUB';
+      const alternativeUrl = format === 'epub' ? book.pdfUrl : book.epubUrl;
+      
+      setFileUrl(alternativeUrl);
       toast({
-        title: "EPUB não disponível",
-        description: "O formato EPUB não está disponível para este livro. Exibindo em PDF.",
-        variant: "default",
-      });
-    } else if (format === 'pdf' && !book.pdfUrl && book.epubUrl) {
-      // Fallback para EPUB se PDF não estiver disponível
-      setFileUrl(book.epubUrl);
-      toast({
-        title: "PDF não disponível",
-        description: "O formato PDF não está disponível para este livro. Exibindo em EPUB.",
+        title: `${format.toUpperCase()} não disponível`,
+        description: `O formato ${format.toUpperCase()} não está disponível para este livro. Exibindo em ${alternativeFormat}.`,
         variant: "default",
       });
     } else {
@@ -120,7 +137,7 @@ export default function Reader({ id, format }: ReaderProps) {
   }
   
   // Mostrar mensagem se nenhum formato estiver disponível
-  if (!fileUrl) {
+  if (!fileUrl && book) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
@@ -146,10 +163,10 @@ export default function Reader({ id, format }: ReaderProps) {
   // Renderizar o leitor apropriado
   return (
     <div className="h-[calc(100vh-64px)]">
-      {format === 'epub' || (!book.pdfUrl && book.epubUrl) ? (
-        <EPubReader url={fileUrl} bookId={id} />
+      {format === 'epub' || fileUrl?.endsWith('.epub') ? (
+        <EPubReader url={""} bookId={id} />
       ) : (
-        <PDFReader url={fileUrl} bookId={id} />
+        <PDFReader url={""} bookId={id} />
       )}
     </div>
   );

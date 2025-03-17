@@ -47,12 +47,21 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
 
     const initializeBook = async () => {
       try {
-        const epubBook = new Book(url);
+        // Usar a rota de visualização para carregar o livro
+        const viewUrl = `/api/books/view/${bookId}/epub`;
+        console.log("Carregando EPUB de:", viewUrl);
+        
+        const epubBook = new Book(viewUrl);
         setBook(epubBook);
 
         await epubBook.ready;
 
-        const epubRendition = epubBook.renderTo(viewerRef.current, {
+        const container = viewerRef.current;
+        if (!container) {
+          throw new Error("Container element not found");
+        }
+        
+        const epubRendition = epubBook.renderTo(container, {
           width: "100%",
           height: "100%",
           spread: "auto",

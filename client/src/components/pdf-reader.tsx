@@ -48,7 +48,11 @@ export default function PDFReader({ url, bookId }: PDFReaderProps) {
   useEffect(() => {
     const loadPDF = async () => {
       try {
-        const loadingTask = pdfjs.getDocument(url);
+        // Usar a rota de visualização para carregar o PDF
+        const viewUrl = `/api/books/view/${bookId}/pdf`;
+        console.log("Carregando PDF de:", viewUrl);
+        
+        const loadingTask = pdfjs.getDocument(viewUrl);
         const pdfDocument = await loadingTask.promise;
         
         setPdf(pdfDocument);
@@ -86,9 +90,16 @@ export default function PDFReader({ url, bookId }: PDFReaderProps) {
         const viewport = page.getViewport({ scale, rotation: rotation });
         
         const canvas = canvasRef.current;
-        const context = canvas.getContext("2d");
+        if (!canvas) {
+          console.error("Canvas element not found");
+          return;
+        }
         
-        if (!context) return;
+        const context = canvas.getContext("2d");
+        if (!context) {
+          console.error("Could not get 2D context from canvas");
+          return;
+        }
         
         canvas.height = viewport.height;
         canvas.width = viewport.width;
