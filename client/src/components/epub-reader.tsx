@@ -94,8 +94,18 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
       } catch (error) {
         console.error("Erro ao carregar o EPUB:", error);
         
-        // Verificar se a resposta indica que o arquivo não foi encontrado
-        if (String(error).includes("404") || String(error).includes("not found")) {
+        // Analisar o erro para fornecer mensagens mais específicas
+        const errorStr = String(error);
+        console.log("Detalhes do erro:", errorStr);
+        
+        if (errorStr.includes("empty_file") || 
+            (errorStr.includes("404") && errorStr.includes("Arquivo sem conteúdo"))) {
+          toast({
+            title: "Arquivo vazio",
+            description: "O arquivo EPUB existe, mas está vazio (0 bytes). Esta é uma limitação do ambiente de demonstração.",
+            variant: "destructive",
+          });
+        } else if (errorStr.includes("404") || errorStr.includes("not found")) {
           toast({
             title: "Arquivo não encontrado",
             description: "O arquivo EPUB deste livro não está disponível no servidor. Estamos usando um banco de dados com arquivos de exemplo.",

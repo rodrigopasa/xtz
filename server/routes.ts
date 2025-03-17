@@ -1303,6 +1303,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para verificar status de arquivos (debug)
+  app.get("/api/debug/file-check", (req, res) => {
+    try {
+      const filePath = req.query.path as string;
+      
+      if (!filePath) {
+        return res.status(400).send("ERROR: Caminho do arquivo não fornecido");
+      }
+      
+      // Verificar na pasta public
+      const publicPath = path.join(process.cwd(), "public", filePath.replace(/^\//, ""));
+      
+      // Verificar na pasta uploads
+      const uploadsPath = path.join(process.cwd(), filePath.replace(/^\//, ""));
+      
+      let result = "VERIFICAÇÃO DE ARQUIVOS:\n\n";
+      
+      if (fs.existsSync(publicPath)) {
+        const stats = fs.statSync(publicPath);
+        result += `Arquivo em public: SIM\n`;
+        result += `Tamanho: ${stats.size} bytes\n`;
+        result += `Caminho: ${publicPath}\n\n`;
+      } else {
+        result += `Arquivo em public: NÃO\n\n`;
+      }
+      
+      if (fs.existsSync(uploadsPath)) {
+        const stats = fs.statSync(uploadsPath);
+        result += `Arquivo em uploads: SIM\n`;
+        result += `Tamanho: ${stats.size} bytes\n`;
+        result += `Caminho: ${uploadsPath}\n`;
+      } else {
+        result += `Arquivo em uploads: NÃO\n`;
+      }
+      
+      res.header("Content-Type", "text/plain").send(result);
+    } catch (error) {
+      console.error("Erro ao verificar arquivo:", error);
+      res.status(500).send("Erro ao verificar arquivo: " + String(error));
+    }
+  });
+
   // Iniciar servidor HTTP para o Express
   const server = createServer(app);
   
@@ -1353,7 +1395,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Arquivo não encontrado no servidor" });
       }
       
-      console.log(`Arquivo sendo visualizado: ${filePath} (URL: ${fileUrl})`);
+      // Verificar se o arquivo tem conteúdo (tamanho maior que 0)
+      const stats = fs.statSync(filePath);
+      if (stats.size === 0) {
+        console.error(`Arquivo vazio: ${filePath} (tamanho: ${stats.size} bytes)`);
+        return res.status(404).json({ 
+          message: "Arquivo sem conteúdo",
+          error: "empty_file",
+          details: "O arquivo existe no servidor, mas está vazio (0 bytes). Esta é uma limitação do ambiente de demonstração."
+        });
+      }
+      
+      console.log(`Arquivo sendo visualizado: ${filePath} (URL: ${fileUrl}, tamanho: ${stats.size} bytes)`);
       
       // Enviar o arquivo para visualização (sem forçar download)
       res.setHeader('Content-Type', format === 'epub' ? 'application/epub+zip' : 'application/pdf');
@@ -1407,10 +1460,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Arquivo não encontrado no servidor" });
       }
       
+      // Verificar se o arquivo tem conteúdo (tamanho maior que 0)
+      const stats = fs.statSync(filePath);
+      if (stats.size === 0) {
+        console.error(`Arquivo vazio: ${filePath} (tamanho: ${stats.size} bytes)`);
+        return res.status(404).json({ 
+          message: "Arquivo sem conteúdo",
+          error: "empty_file",
+          details: "O arquivo existe no servidor, mas está vazio (0 bytes). Esta é uma limitação do ambiente de demonstração."
+        });
+      }
+      
       // Incrementar contador de downloads
       await storage.incrementDownloadCount(id);
       
-      console.log(`Arquivo sendo baixado: ${filePath}`);
+      console.log(`Arquivo sendo baixado: ${filePath} (tamanho: ${stats.size} bytes)`);
       
       // Configurar headers para forçar download
       const fileName = path.basename(filePath);
