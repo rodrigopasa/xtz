@@ -40,6 +40,7 @@ export default function AdminHeader() {
   const navItems = [
     { path: "/admin", label: "Dashboard" },
     { path: "/admin/livros", label: "Livros" },
+    { path: "/admin/series", label: "Séries" },
     { path: "/admin/categorias", label: "Categorias" },
     { path: "/admin/autores", label: "Autores" },
     { path: "/admin/usuarios", label: "Usuários" },

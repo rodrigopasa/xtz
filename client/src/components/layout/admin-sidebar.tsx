@@ -3,12 +3,13 @@ import {
   LayoutDashboard,
   Book,
   Bookmark,
-  User, // Usando o ícone básico de usuário para autores
+  User,
   Users,
   MessageSquare,
   BarChart,
   Settings,
-  LogOut
+  LogOut,
+  ListOrdered 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -34,6 +35,7 @@ export default function AdminSidebar() {
   const navItems = [
     { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { path: "/admin/livros", label: "Livros", icon: Book },
+    { path: "/admin/series", label: "Séries", icon: ListOrdered }, 
     { path: "/admin/categorias", label: "Categorias", icon: Bookmark },
     { path: "/admin/autores", label: "Autores", icon: User },
     { path: "/admin/usuarios", label: "Usuários", icon: Users },

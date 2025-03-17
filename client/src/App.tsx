@@ -43,6 +43,7 @@ import AdminAuthors from "@/pages/admin/authors";
 import AdminUsers from "@/pages/admin/users";
 import AdminComments from "@/pages/admin/comments";
 import AdminReports from "@/pages/admin/reports";
+import AdminSeries from "@/pages/admin/series"; // Add this import
 
 // Router with layout wrappers
 function Router() {
@@ -58,7 +59,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/livro/:slug/:authorSlug">
         {(params) => (
           <>
@@ -68,7 +69,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/categoria/:slug">
         {(params) => (
           <>
@@ -78,7 +79,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/autor/:slug">
         {(params) => (
           <>
@@ -88,7 +89,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/ler/:id/:format">
         {(params) => (
           <>
@@ -159,7 +160,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/cadastro">
         {() => (
           <>
@@ -169,7 +170,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       {/* User dashboard routes with sidebar */}
       <Route path="/perfil">
         {() => (
@@ -183,7 +184,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/favoritos">
         {() => (
           <>
@@ -196,7 +197,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/historico">
         {() => (
           <>
@@ -209,7 +210,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/configuracoes">
         {() => (
           <>
@@ -222,7 +223,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       {/* Admin routes with admin header and sidebar */}
       <Route path="/admin">
         {() => (
@@ -235,7 +236,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/admin/livros">
         {() => (
           <>
@@ -247,7 +248,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/admin/livros/novo">
         {() => (
           <>
@@ -259,7 +260,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/admin/livros/editar/:id">
         {(params) => (
           <>
@@ -271,7 +272,19 @@ function Router() {
           </>
         )}
       </Route>
-      
+
+      <Route path="/admin/series"> {/* Add this route */}
+        {() => (
+          <>
+            <AdminHeader />
+            <div className="flex-grow flex">
+              <AdminSidebar />
+              <AdminSeries />
+            </div>
+          </>
+        )}
+      </Route> {/* Add this route */}
+
       <Route path="/admin/categorias">
         {() => (
           <>
@@ -283,7 +296,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/admin/autores">
         {() => (
           <>
@@ -295,7 +308,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/admin/usuarios">
         {() => (
           <>
@@ -307,7 +320,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/admin/comentarios">
         {() => (
           <>
@@ -319,7 +332,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/admin/relatorios">
         {() => (
           <>
@@ -331,7 +344,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       <Route path="/admin/configuracoes">
         {() => (
           <>
@@ -343,7 +356,7 @@ function Router() {
           </>
         )}
       </Route>
-      
+
       {/* Fallback 404 route */}
       <Route>
         {() => (
@@ -361,14 +374,14 @@ function Router() {
 // Componente para inicializar autenticação
 function AuthProvider({ children }: { children: React.ReactNode }) {
   const { checkAuth, isLoading } = useAuth();
-  
+
   useEffect(() => {
     console.log("App inicializado, verificando autenticação...");
     checkAuth().then(result => {
       console.log("Verificação de autenticação concluída:", result);
     });
   }, [checkAuth]);
-  
+
   return (
     <>
       {children}
@@ -384,15 +397,15 @@ function FallingStars() {
     const createStars = () => {
       const starCount = 20;
       const newStars = [];
-      
+
       for (let i = 0; i < starCount; i++) {
         const topOffset = Math.random() * 100;
         const fallDelay = Math.random() * 10;
         const fallDuration = 6 + Math.random() * 6;
         const starColor = i % 3 === 0 ? '#c084fc' : i % 3 === 1 ? '#a78bfa' : '#8b5cf6';
-        
+
         newStars.push(
-          <div 
+          <div
             key={i}
             className="star"
             style={{
@@ -404,13 +417,13 @@ function FallingStars() {
           />
         );
       }
-      
+
       setStars(newStars);
     };
-    
+
     createStars();
   }, []);
-  
+
   return <div className="stars">{stars}</div>;
 }
 

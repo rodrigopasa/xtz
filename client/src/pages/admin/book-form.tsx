@@ -115,16 +115,16 @@ const bookFormSchema = z.object({
   format: z.enum(["epub", "pdf", "both"], {
     message: "Selecione um formato válido.",
   }),
-  pageCount: z.string().transform((val) => (val === "" ? 0 : parseInt(val, 10))),
+  pageCount: z.coerce.number().optional(),
   isbn: z.string().optional(),
-  publishYear: z.string().transform((val) => (val === "" ? 0 : parseInt(val, 10))),
+  publishYear: z.coerce.number().optional(),
   publisher: z.string().optional(),
   language: z.string().default("pt-BR"),
   isFeatured: z.boolean().default(false),
   isNew: z.boolean().default(false),
   isFree: z.boolean().default(false),
-  seriesId: z.string().optional().or(z.literal("none")),
-  volumeNumber: z.number().nullable().optional(),
+  seriesId: z.number().optional().nullable(),
+  volumeNumber: z.number().optional().nullable(),
 });
 
 export default function BookForm({ id }: BookFormProps) {
@@ -187,7 +187,7 @@ export default function BookForm({ id }: BookFormProps) {
       isFeatured: false,
       isNew: false,
       isFree: false,
-      seriesId: "none",
+      seriesId: null,
       volumeNumber: null,
     },
   });
@@ -214,7 +214,7 @@ export default function BookForm({ id }: BookFormProps) {
         isFeatured: book.isFeatured || false,
         isNew: book.isNew || false,
         isFree: book.isFree || false,
-        seriesId: book.seriesId?.toString() || "none",
+        seriesId: book.seriesId,
         volumeNumber: book.volumeNumber,
       });
 
@@ -237,14 +237,18 @@ export default function BookForm({ id }: BookFormProps) {
   // Mutação para criar ou atualizar livro
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof bookFormSchema>) => {
-      // Converter strings para números
+      // Converter strings para números e tratar campos opcionais
       const payload = {
         ...values,
         authorId: parseInt(values.authorId),
         categoryId: parseInt(values.categoryId),
-        seriesId: values.seriesId === "none" ? null : parseInt(values.seriesId),
+        seriesId: values.seriesId,
         volumeNumber: values.volumeNumber,
+        pageCount: values.pageCount || null,
+        publishYear: values.publishYear || null,
       };
+
+      console.log("Sending payload:", payload); // Debug log
 
       if (isEditMode) {
         return apiRequest("PUT", `/api/books/${id}`, payload);
@@ -263,6 +267,7 @@ export default function BookForm({ id }: BookFormProps) {
       navigate("/admin/livros");
     },
     onError: (error: any) => {
+      console.error("Error saving book:", error); // Debug log
       toast({
         title: "Erro",
         description: error.message || "Ocorreu um erro ao salvar o livro.",
@@ -820,6 +825,7 @@ export default function BookForm({ id }: BookFormProps) {
                         )}
                       />
 
+                      {/* Series section */}
                       {selectedAuthor && (
                         <div className="space-y-4">
                           <FormField
@@ -829,7 +835,7 @@ export default function BookForm({ id }: BookFormProps) {
                               <FormItem>
                                 <FormLabel>Série</FormLabel>
                                 <Select
-                                  value={field.value}
+                                  value={field.value || "none"}
                                   onValueChange={field.onChange}
                                 >
                                   <FormControl>
@@ -866,7 +872,7 @@ export default function BookForm({ id }: BookFormProps) {
                             )}
                           />
 
-                          {form.watch("seriesId") !== "none" && (
+                          {form.watch("seriesId") && form.watch("seriesId") !== "none" && (
                             <FormField
                               control={form.control}
                               name="volumeNumber"
@@ -878,7 +884,11 @@ export default function BookForm({ id }: BookFormProps) {
                                       type="number"
                                       placeholder="Ex: 1"
                                       {...field}
-                                      onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
+                                      value={field.value || ""}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        field.onChange(value ? parseInt(value) : null);
+                                      }}
                                     />
                                   </FormControl>
                                   <FormDescription>
@@ -991,7 +1001,7 @@ export default function BookForm({ id }: BookFormProps) {
                                   variant="ghost"
                                   size="icon"
                                   className="h-4 w-4 ml-1"
-                                                                 onClick={() => setEpubFile(null)}
+                                  onClick={() => setEpubFile(null)}
                                 >
                                   <X className="h-3 w-3" />
                                 </Button>
