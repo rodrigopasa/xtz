@@ -42,6 +42,48 @@ import { ArrowLeft, Save, Upload, File, FileText, X, Check } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+interface Author {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface Series {
+  id: number;
+  name: string;
+  authorId: number;
+}
+
+interface Book {
+  id: number;
+  title: string;
+  slug: string;
+  authorId: number;
+  categoryId: number;
+  description: string;
+  coverUrl: string;
+  epubUrl: string | null;
+  pdfUrl: string | null;
+  amazonUrl: string | null;
+  format: 'epub' | 'pdf' | 'both';
+  pageCount: number | null;
+  isbn: string | null;
+  publishYear: number | null;
+  publisher: string | null;
+  language: string;
+  isFeatured: boolean;
+  isNew: boolean;
+  isFree: boolean;
+  seriesId: number | null;
+  volumeNumber: number | null;
+}
+
 interface BookFormProps {
   id?: number;
 }
@@ -82,7 +124,7 @@ const bookFormSchema = z.object({
   isNew: z.boolean().default(false),
   isFree: z.boolean().default(false),
   seriesId: z.string().optional().or(z.literal("")),
-  volumeNumber: z.string().transform((val) => (val === "" ? null : parseInt(val, 10))).nullable().optional(),
+  volumeNumber: z.number().nullable().optional(),
 });
 
 export default function BookForm({ id }: BookFormProps) {
@@ -92,7 +134,7 @@ export default function BookForm({ id }: BookFormProps) {
   const [selectedAuthor, setSelectedAuthor] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const isEditMode = !!id;
-  
+
   // Refs e estados para upload de arquivo
   const epubFileInputRef = useRef<HTMLInputElement>(null);
   const pdfFileInputRef = useRef<HTMLInputElement>(null);
@@ -101,28 +143,28 @@ export default function BookForm({ id }: BookFormProps) {
   const [epubUploading, setEpubUploading] = useState(false);
   const [pdfUploading, setPdfUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  
+
   // Buscar dados do livro para edição
-  const { data: book, isLoading: bookLoading, isError: bookError } = useQuery({
+  const { data: book, isLoading: bookLoading, isError: bookError } = useQuery<Book>({
     queryKey: [`/api/books/${id}`],
     enabled: isEditMode,
   });
-  
+
   // Buscar autores e categorias
-  const { data: authors, isLoading: authorsLoading } = useQuery({
+  const { data: authors, isLoading: authorsLoading } = useQuery<Author[]>({
     queryKey: ["/api/authors"],
   });
-  
-  const { data: categories, isLoading: categoriesLoading } = useQuery({
+
+  const { data: categories, isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
   });
-  
+
   // Buscar séries disponíveis
-  const { data: series, isLoading: seriesLoading } = useQuery({
+  const { data: series, isLoading: seriesLoading } = useQuery<Series[]>({
     queryKey: ["/api/series"],
     enabled: !!selectedAuthor, // Só buscar séries quando um autor for selecionado
   });
-  
+
   // Configurar o formulário
   const form = useForm<z.infer<typeof bookFormSchema>>({
     resolver: zodResolver(bookFormSchema),
@@ -145,9 +187,11 @@ export default function BookForm({ id }: BookFormProps) {
       isFeatured: false,
       isNew: false,
       isFree: false,
+      seriesId: "",
+      volumeNumber: null,
     },
   });
-  
+
   // Preencher o formulário com dados do livro quando carregado
   useEffect(() => {
     if (book && !form.formState.isDirty) {
@@ -170,13 +214,15 @@ export default function BookForm({ id }: BookFormProps) {
         isFeatured: book.isFeatured || false,
         isNew: book.isNew || false,
         isFree: book.isFree || false,
+        seriesId: book.seriesId?.toString() || "",
+        volumeNumber: book.volumeNumber,
       });
-      
+
       setSelectedAuthor(book.authorId.toString());
       setSelectedCategory(book.categoryId.toString());
     }
   }, [book, form]);
-  
+
   // Atualizar slug automaticamente a partir do título
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
@@ -184,10 +230,10 @@ export default function BookForm({ id }: BookFormProps) {
         form.setValue("slug", slugify(value.title));
       }
     });
-    
+
     return () => subscription.unsubscribe();
   }, [form]);
-  
+
   // Mutação para criar ou atualizar livro
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof bookFormSchema>) => {
@@ -196,8 +242,9 @@ export default function BookForm({ id }: BookFormProps) {
         ...values,
         authorId: parseInt(values.authorId),
         categoryId: parseInt(values.categoryId),
+        volumeNumber: values.volumeNumber, // Correctly handle volumeNumber
       };
-      
+
       if (isEditMode) {
         return apiRequest("PUT", `/api/books/${id}`, payload);
       } else {
@@ -208,8 +255,8 @@ export default function BookForm({ id }: BookFormProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/books"] });
       toast({
         title: isEditMode ? "Livro atualizado" : "Livro criado",
-        description: isEditMode 
-          ? "O livro foi atualizado com sucesso." 
+        description: isEditMode
+          ? "O livro foi atualizado com sucesso."
           : "O livro foi criado com sucesso.",
       });
       navigate("/admin/livros");
@@ -222,7 +269,7 @@ export default function BookForm({ id }: BookFormProps) {
       });
     },
   });
-  
+
   // Funções para upload de arquivos
   const handleEpubFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -258,10 +305,10 @@ export default function BookForm({ id }: BookFormProps) {
       }, 200);
 
       const response = await apiRequest("POST", "/api/upload/epub", formData);
-      
+
       clearInterval(progressInterval);
       setUploadProgress(100);
-      
+
       if (response && response.epubUrl) {
         form.setValue("epubUrl", response.epubUrl);
         toast({
@@ -312,10 +359,10 @@ export default function BookForm({ id }: BookFormProps) {
       }, 200);
 
       const response = await apiRequest("POST", "/api/upload/pdf", formData);
-      
+
       clearInterval(progressInterval);
       setUploadProgress(100);
-      
+
       if (response && response.pdfUrl) {
         form.setValue("pdfUrl", response.pdfUrl);
         toast({
@@ -347,7 +394,7 @@ export default function BookForm({ id }: BookFormProps) {
   function onSubmit(values: z.infer<typeof bookFormSchema>) {
     mutation.mutate(values);
   }
-  
+
   if (isEditMode && bookError) {
     return (
       <main className="flex-grow p-6 bg-neutral-100">
@@ -369,9 +416,9 @@ export default function BookForm({ id }: BookFormProps) {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => navigate("/admin/livros")}
               className="mr-2 text-white hover:bg-neutral-800"
             >
@@ -381,7 +428,7 @@ export default function BookForm({ id }: BookFormProps) {
               {isEditMode ? "Editar Livro" : "Adicionar Novo Livro"}
             </h1>
           </div>
-          <Button 
+          <Button
             onClick={form.handleSubmit(onSubmit)}
             disabled={mutation.isPending}
             className="bg-purple-600 hover:bg-purple-700 flex items-center text-white"
@@ -390,7 +437,7 @@ export default function BookForm({ id }: BookFormProps) {
             {mutation.isPending ? "Salvando..." : "Salvar"}
           </Button>
         </div>
-        
+
         {isEditMode && bookLoading ? (
           <div className="space-y-6">
             <Card>
@@ -414,7 +461,7 @@ export default function BookForm({ id }: BookFormProps) {
                   <TabsTrigger value="details">Detalhes</TabsTrigger>
                   <TabsTrigger value="files">Arquivos e Links</TabsTrigger>
                 </TabsList>
-                
+
                 {/* Informações Básicas */}
                 <TabsContent value="basic">
                   <Card>
@@ -439,7 +486,7 @@ export default function BookForm({ id }: BookFormProps) {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="slug"
@@ -456,7 +503,7 @@ export default function BookForm({ id }: BookFormProps) {
                             </FormItem>
                           )}
                         />
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
@@ -464,8 +511,8 @@ export default function BookForm({ id }: BookFormProps) {
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Autor*</FormLabel>
-                                <Select 
-                                  value={field.value} 
+                                <Select
+                                  value={field.value}
                                   onValueChange={(value) => {
                                     field.onChange(value);
                                     setSelectedAuthor(value);
@@ -482,7 +529,7 @@ export default function BookForm({ id }: BookFormProps) {
                                         Carregando autores...
                                       </div>
                                     ) : authors?.length > 0 ? (
-                                      authors.map((author: any) => (
+                                      authors.map((author: Author) => (
                                         <SelectItem key={author.id} value={author.id.toString()}>
                                           {author.name}
                                         </SelectItem>
@@ -498,15 +545,15 @@ export default function BookForm({ id }: BookFormProps) {
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="categoryId"
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Categoria*</FormLabel>
-                                <Select 
-                                  value={field.value} 
+                                <Select
+                                  value={field.value}
                                   onValueChange={(value) => {
                                     field.onChange(value);
                                     setSelectedCategory(value);
@@ -523,7 +570,7 @@ export default function BookForm({ id }: BookFormProps) {
                                         Carregando categorias...
                                       </div>
                                     ) : categories?.length > 0 ? (
-                                      categories.map((category: any) => (
+                                      categories.map((category: Category) => (
                                         <SelectItem key={category.id} value={category.id.toString()}>
                                           {category.name}
                                         </SelectItem>
@@ -540,7 +587,7 @@ export default function BookForm({ id }: BookFormProps) {
                             )}
                           />
                         </div>
-                        
+
                         <FormField
                           control={form.control}
                           name="description"
@@ -548,17 +595,17 @@ export default function BookForm({ id }: BookFormProps) {
                             <FormItem>
                               <FormLabel>Descrição*</FormLabel>
                               <FormControl>
-                                <Textarea 
-                                  placeholder="Descrição do livro" 
+                                <Textarea
+                                  placeholder="Descrição do livro"
                                   rows={6}
-                                  {...field} 
+                                  {...field}
                                 />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="coverUrl"
@@ -583,9 +630,9 @@ export default function BookForm({ id }: BookFormProps) {
                                       />
                                     </div>
                                   )}
-                                  <Input 
-                                    type="hidden" 
-                                    {...field} 
+                                  <Input
+                                    type="hidden"
+                                    {...field}
                                   />
                                 </div>
                               </FormControl>
@@ -596,7 +643,7 @@ export default function BookForm({ id }: BookFormProps) {
                             </FormItem>
                           )}
                         />
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <FormField
                             control={form.control}
@@ -618,7 +665,7 @@ export default function BookForm({ id }: BookFormProps) {
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="isNew"
@@ -639,7 +686,7 @@ export default function BookForm({ id }: BookFormProps) {
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="isFree"
@@ -665,7 +712,7 @@ export default function BookForm({ id }: BookFormProps) {
                     </CardContent>
                   </Card>
                 </TabsContent>
-                
+
                 {/* Detalhes */}
                 <TabsContent value="details">
                   <Card>
@@ -690,15 +737,15 @@ export default function BookForm({ id }: BookFormProps) {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="language"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Idioma</FormLabel>
-                              <Select 
-                                value={field.value} 
+                              <Select
+                                value={field.value}
                                 onValueChange={field.onChange}
                               >
                                 <FormControl>
@@ -719,7 +766,7 @@ export default function BookForm({ id }: BookFormProps) {
                           )}
                         />
                       </div>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -728,17 +775,17 @@ export default function BookForm({ id }: BookFormProps) {
                             <FormItem>
                               <FormLabel>Ano de publicação</FormLabel>
                               <FormControl>
-                                <Input 
-                                  type="number" 
-                                  placeholder="Ex: 2023" 
-                                  {...field} 
+                                <Input
+                                  type="number"
+                                  placeholder="Ex: 2023"
+                                  {...field}
                                 />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="pageCount"
@@ -746,10 +793,10 @@ export default function BookForm({ id }: BookFormProps) {
                             <FormItem>
                               <FormLabel>Número de páginas</FormLabel>
                               <FormControl>
-                                <Input 
-                                  type="number" 
-                                  placeholder="Ex: 320" 
-                                  {...field} 
+                                <Input
+                                  type="number"
+                                  placeholder="Ex: 320"
+                                  {...field}
                                 />
                               </FormControl>
                               <FormMessage />
@@ -757,7 +804,7 @@ export default function BookForm({ id }: BookFormProps) {
                           )}
                         />
                       </div>
-                      
+
                       <FormField
                         control={form.control}
                         name="isbn"
@@ -771,10 +818,82 @@ export default function BookForm({ id }: BookFormProps) {
                           </FormItem>
                         )}
                       />
+
+                      {selectedAuthor && (
+                        <div className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="seriesId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Série</FormLabel>
+                                <Select
+                                  value={field.value}
+                                  onValueChange={field.onChange}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecione uma série (opcional)" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="">Nenhuma série</SelectItem>
+                                    {seriesLoading ? (
+                                      <div className="py-2 px-4 text-center">
+                                        Carregando séries...
+                                      </div>
+                                    ) : series?.length > 0 ? (
+                                      series
+                                        .filter((s: Series) => s.authorId === parseInt(selectedAuthor))
+                                        .map((s: Series) => (
+                                          <SelectItem key={s.id} value={s.id.toString()}>
+                                            {s.name}
+                                          </SelectItem>
+                                        ))
+                                    ) : (
+                                      <div className="py-2 px-4 text-center">
+                                        Nenhuma série encontrada
+                                      </div>
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                                <FormDescription>
+                                  Selecione uma série caso este livro faça parte de uma
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          {form.watch("seriesId") && (
+                            <FormField
+                              control={form.control}
+                              name="volumeNumber"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Número do Volume</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      placeholder="Ex: 1"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
+                                    />
+                                  </FormControl>
+                                  <FormDescription>
+                                    Informe o número do volume deste livro na série
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>
-                
+
                 {/* Arquivos e Links */}
                 <TabsContent value="files">
                   <Card>
@@ -791,8 +910,8 @@ export default function BookForm({ id }: BookFormProps) {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Formato disponível*</FormLabel>
-                            <Select 
-                              value={field.value} 
+                            <Select
+                              value={field.value}
                               onValueChange={field.onChange}
                             >
                               <FormControl>
@@ -810,7 +929,7 @@ export default function BookForm({ id }: BookFormProps) {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="epubUrl"
@@ -884,7 +1003,7 @@ export default function BookForm({ id }: BookFormProps) {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="pdfUrl"
@@ -958,7 +1077,7 @@ export default function BookForm({ id }: BookFormProps) {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="amazonUrl"
@@ -979,7 +1098,7 @@ export default function BookForm({ id }: BookFormProps) {
                   </Card>
                 </TabsContent>
               </Tabs>
-              
+
               {/* Preview */}
               <Card>
                 <CardHeader>
@@ -992,7 +1111,7 @@ export default function BookForm({ id }: BookFormProps) {
                   <div className="flex flex-col md:flex-row gap-6">
                     <div className="md:w-1/3">
                       {form.watch("coverUrl") ? (
-                        <img 
+                        <img
                           src={form.watch("coverUrl")}
                           alt="Pré-visualização da capa"
                           className="w-full h-auto rounded-lg shadow-md"
@@ -1006,50 +1125,50 @@ export default function BookForm({ id }: BookFormProps) {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="md:w-2/3">
                       <h2 className="font-serif text-2xl font-bold mb-2">
                         {form.watch("title") || "Título do livro"}
                       </h2>
-                      
+
                       <p className="text-neutral-600 mb-3">
                         {selectedAuthor && authors
-                          ? authors.find((a: any) => a.id.toString() === selectedAuthor)?.name
+                          ? authors.find((a: Author) => a.id.toString() === selectedAuthor)?.name
                           : "Autor"}
                       </p>
-                      
+
                       <div className="flex items-center mb-4">
                         <span className="bg-neutral-100 text-neutral-800 text-sm py-1 px-3 rounded-full mr-2">
                           {selectedCategory && categories
-                            ? categories.find((c: any) => c.id.toString() === selectedCategory)?.name
+                            ? categories.find((c: Category) => c.id.toString() === selectedCategory)?.name
                             : "Categoria"}
                         </span>
-                        
+
                         {form.watch("isFeatured") && (
                           <span className="bg-secondary text-white text-sm py-1 px-3 rounded-full mr-2">
                             Destaque
                           </span>
                         )}
-                        
+
                         {form.watch("isNew") && (
                           <span className="bg-accent text-black text-sm py-1 px-3 rounded-full mr-2">
                             Novo
                           </span>
                         )}
-                        
+
                         {form.watch("isFree") && (
                           <span className="bg-success text-white text-sm py-1 px-3 rounded-full">
                             Grátis
                           </span>
                         )}
                       </div>
-                      
+
                       <div className="prose max-w-none mb-6">
                         <p className="text-neutral-700 whitespace-pre-line">
                           {form.watch("description") || "Descrição do livro..."}
                         </p>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <p><strong>Editora:</strong> {form.watch("publisher") || "—"}</p>
@@ -1060,8 +1179,8 @@ export default function BookForm({ id }: BookFormProps) {
                           <p><strong>Páginas:</strong> {form.watch("pageCount") || "—"}</p>
                           <p><strong>ISBN:</strong> {form.watch("isbn") || "—"}</p>
                           <p><strong>Formato:</strong> {
-                            form.watch("format") === "epub" ? "EPUB" : 
-                            form.watch("format") === "pdf" ? "PDF" : "EPUB e PDF"
+                            form.watch("format") === "epub" ? "EPUB" :
+                              form.watch("format") === "pdf" ? "PDF" : "EPUB e PDF"
                           }</p>
                         </div>
                       </div>
@@ -1075,14 +1194,14 @@ export default function BookForm({ id }: BookFormProps) {
                   >
                     Cancelar
                   </Button>
-                  
-                  <Button 
+
+                  <Button
                     type="submit"
                     disabled={mutation.isPending}
                     className="bg-primary hover:bg-primary-dark"
                   >
-                    {mutation.isPending 
-                      ? (isEditMode ? "Atualizando..." : "Criando...") 
+                    {mutation.isPending
+                      ? (isEditMode ? "Atualizando..." : "Criando...")
                       : (isEditMode ? "Atualizar livro" : "Criar livro")
                     }
                   </Button>
