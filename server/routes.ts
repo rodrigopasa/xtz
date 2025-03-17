@@ -27,17 +27,36 @@ import cors from "cors";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Configurar diretórios para uploads
-const coversDirectory = path.join(__dirname, "../public/covers");
-const booksDirectory = path.join(__dirname, "../public/books");
-const uploadsDirectory = path.join(__dirname, "../public/uploads");
-const uploadsCoversDirectory = path.join(__dirname, "../public/uploads/covers");
-const uploadsBooksDirectory = path.join(__dirname, "../public/uploads/books");
+// Configurar diretórios para arquivos
+const publicDirectory = path.join(__dirname, "../public");
+const uploadsDirectory = path.join(__dirname, "../uploads");
+
+// Diretórios para arquivos públicos
+const coversDirectory = path.join(publicDirectory, "covers");
+const booksDirectory = path.join(publicDirectory, "books");
+
+// Diretórios para uploads
+const uploadsCoversDirectory = path.join(uploadsDirectory, "covers");
+const uploadsBooksDirectory = path.join(uploadsDirectory, "books");
+
+// Log dos diretórios configurados
+console.log("Configuração de diretórios:");
+console.log(`- Public: ${publicDirectory}`);
+console.log(`- Uploads: ${uploadsDirectory}`);
+console.log(`- Capas: ${coversDirectory}`);
+console.log(`- Livros: ${booksDirectory}`);
+console.log(`- Uploads de capas: ${uploadsCoversDirectory}`);
+console.log(`- Uploads de livros: ${uploadsBooksDirectory}`);
 
 // Garantir que os diretórios existam
-[coversDirectory, booksDirectory, uploadsDirectory, uploadsCoversDirectory, uploadsBooksDirectory].forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+[publicDirectory, uploadsDirectory, coversDirectory, booksDirectory, uploadsCoversDirectory, uploadsBooksDirectory].forEach(dir => {
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      console.log(`Diretório criado: ${dir}`);
+    }
+  } catch (error) {
+    console.error(`Erro ao criar diretório ${dir}:`, error);
   }
 });
 
@@ -159,9 +178,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.session());
   
   // Configuração de arquivos estáticos
-  app.use('/covers', express.static(path.join(__dirname, '../public/covers')));
-  app.use('/books', express.static(path.join(__dirname, '../public/books')));
-  app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+  app.use('/covers', express.static(coversDirectory));
+  app.use('/books', express.static(booksDirectory));
+  app.use('/uploads', express.static(uploadsDirectory));
+  
+  // Mostra no console as configurações de arquivos estáticos
+  console.log("Rotas de arquivos estáticos:");
+  console.log(`- /covers -> ${coversDirectory}`);
+  console.log(`- /books -> ${booksDirectory}`);
+  console.log(`- /uploads -> ${uploadsDirectory}`);
   
   passport.use(new LocalStrategy(async (username, password, done) => {
     try {
@@ -1517,12 +1542,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Nenhum arquivo enviado ou tipo de arquivo inválido' });
       }
       
-      // Construir URL para o arquivo
+      // Construir URL para o arquivo (usar a mesma estrutura consistentemente)
       const epubUrl = `/uploads/books/${req.file.filename}`;
       
       // Log do upload
       console.log(`Upload de EPUB concluído: ${req.file.filename}`);
       console.log(`URL do EPUB: ${epubUrl}`);
+      console.log(`Caminho completo: ${path.join(__dirname, '..', epubUrl)}`);
+      
+      // Verificar se o arquivo existe no sistema de arquivos
+      const filePath = path.join(__dirname, '..', epubUrl);
+      if (fs.existsSync(filePath)) {
+        const stats = fs.statSync(filePath);
+        console.log(`Tamanho do arquivo: ${stats.size} bytes`);
+      } else {
+        console.warn(`Arquivo não encontrado após upload: ${filePath}`);
+      }
       
       res.json({ epubUrl });
     } catch (error) {
@@ -1537,12 +1572,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Nenhum arquivo enviado ou tipo de arquivo inválido' });
       }
       
-      // Construir URL para o arquivo
+      // Construir URL para o arquivo (usar a mesma estrutura consistentemente)
       const pdfUrl = `/uploads/books/${req.file.filename}`;
       
       // Log do upload
       console.log(`Upload de PDF concluído: ${req.file.filename}`);
       console.log(`URL do PDF: ${pdfUrl}`);
+      console.log(`Caminho completo: ${path.join(__dirname, '..', pdfUrl)}`);
+      
+      // Verificar se o arquivo existe no sistema de arquivos
+      const filePath = path.join(__dirname, '..', pdfUrl);
+      if (fs.existsSync(filePath)) {
+        const stats = fs.statSync(filePath);
+        console.log(`Tamanho do arquivo: ${stats.size} bytes`);
+      } else {
+        console.warn(`Arquivo não encontrado após upload: ${filePath}`);
+      }
       
       res.json({ pdfUrl });
     } catch (error) {
