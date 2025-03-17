@@ -598,12 +598,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         seriesList = await storage.getAllSeries();
       }
       
-      // Enriquecer séries com dados do autor
+      // Enriquecer séries com dados do autor e informações sobre os livros
       const enrichedSeries = await Promise.all(seriesList.map(async (series) => {
         const author = await storage.getAuthor(series.authorId);
+        
+        // Buscar uma prévia dos livros da série (até 3)
+        const allBooks = await storage.getBooksBySeries(series.id);
+        
+        // Pegar informações básicas dos primeiros 3 livros
+        const previewBooks = allBooks.slice(0, 3).map(book => ({
+          id: book.id,
+          title: book.title,
+          slug: book.slug,
+          coverUrl: book.coverUrl,
+          volumeNumber: book.volumeNumber
+        }));
+        
         return {
           ...series,
-          author: author ? { name: author.name, slug: author.slug } : null
+          author: author ? { 
+            id: author.id,
+            name: author.name, 
+            slug: author.slug 
+          } : null,
+          totalBooks: series.bookCount,
+          previewBooks: previewBooks
         };
       }));
       
@@ -623,25 +642,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Obter o autor da série
       const author = await storage.getAuthor(series.authorId);
       
-      // Obter livros da série
+      // Obter livros da série (já enriquecidos com informações do autor e ordenados por volume)
       const books = await storage.getBooksBySeries(series.id);
       
-      // Enriquecer com dados do autor e ordenar por número do volume
-      const enrichedBooks = books
-        .map(book => ({
-          id: book.id,
-          title: book.title,
-          slug: book.slug,
-          coverUrl: book.coverUrl,
-          volumeNumber: book.volumeNumber || 0, // Fallback para 0 se não tiver número
-          rating: book.rating || 0
-        }))
-        .sort((a, b) => a.volumeNumber - b.volumeNumber);
+      // Formatar livros para a API
+      const formattedBooks = books.map(book => ({
+        id: book.id,
+        title: book.title,
+        slug: book.slug,
+        coverUrl: book.coverUrl,
+        format: book.format,
+        volumeNumber: book.volumeNumber,
+        rating: book.rating || 0,
+        ratingCount: book.ratingCount || 0,
+        // Já temos as informações do autor no livro
+        author: book.author
+      }));
       
       const enrichedSeries = {
         ...series,
         author: author ? { name: author.name, slug: author.slug } : null,
-        books: enrichedBooks
+        books: formattedBooks
       };
       
       res.json(enrichedSeries);
@@ -745,6 +766,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Nova rota para buscar livros por série
+  app.get("/api/series/:id/books", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de série inválido" });
+      }
+
+      // Verificar se a série existe
+      const series = await storage.getSeries(id);
+      if (!series) {
+        return res.status(404).json({ message: "Série não encontrada" });
+      }
+
+      // Usar o método atualizado que já retorna livros com informações de autor
+      const books = await storage.getBooksBySeries(id);
+      
+      // Obter informações detalhadas sobre a série e o autor
+      const author = await storage.getAuthor(series.authorId);
+      
+      // Formatar a resposta
+      const response = {
+        series: {
+          ...series,
+          author: author ? {
+            id: author.id,
+            name: author.name,
+            slug: author.slug
+          } : null
+        },
+        books: books.map(book => ({
+          id: book.id,
+          title: book.title,
+          slug: book.slug,
+          coverUrl: book.coverUrl,
+          format: book.format,
+          volumeNumber: book.volumeNumber,
+          rating: book.rating || 0,
+          ratingCount: book.ratingCount || 0,
+          publishYear: book.publishYear,
+          language: book.language,
+          author: book.author
+        }))
+      };
+      
+      res.json(response);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar livros da série" });
+    }
+  });
+
   // Rotas para Livros
   app.get("/api/books", async (req, res) => {
     try {
@@ -776,14 +848,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         books = await storage.getAllBooks();
       }
       
-      // Enriquecer livros com dados de autor e categoria
+      // Enriquecer livros com dados de autor, categoria e série
       const enrichedBooks = await Promise.all(books.map(async (book) => {
         const author = await storage.getAuthor(book.authorId);
         const category = await storage.getCategory(book.categoryId);
+        
+        // Obter informações da série, se o livro pertencer a uma
+        let seriesInfo = null;
+        if (book.seriesId) {
+          const series = await storage.getSeries(book.seriesId);
+          if (series) {
+            seriesInfo = {
+              id: series.id,
+              name: series.name,
+              slug: series.slug,
+              volume: book.volumeNumber
+            };
+          }
+        }
+        
         return {
           ...book,
           author: author ? { name: author.name, slug: author.slug } : null,
-          category: category ? { name: category.name, slug: category.slug } : null
+          category: category ? { name: category.name, slug: category.slug } : null,
+          series: seriesInfo
         };
       }));
       

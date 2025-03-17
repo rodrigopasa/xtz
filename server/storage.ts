@@ -42,7 +42,7 @@ export interface IStorage {
   createSeries(series: InsertSeries): Promise<Series>;
   updateSeries(id: number, series: Partial<Series>): Promise<Series | undefined>;
   deleteSeries(id: number): Promise<boolean>;
-  getBooksBySeries(seriesId: number): Promise<Book[]>;
+  getBooksBySeries(seriesId: number): Promise<(Book & { author?: { name: string, slug: string } })[]>;
   
   // Livros
   getAllBooks(): Promise<Book[]>;
@@ -442,8 +442,26 @@ export class MemStorage implements IStorage {
     return this.series.delete(id);
   }
   
-  async getBooksBySeries(seriesId: number): Promise<Book[]> {
-    return Array.from(this.books.values()).filter(book => book.seriesId === seriesId);
+  async getBooksBySeries(seriesId: number): Promise<(Book & { author?: { name: string, slug: string } })[]> {
+    const seriesBooks = Array.from(this.books.values())
+      .filter(book => book.seriesId === seriesId)
+      // Ordenar por número do volume, se disponível
+      .sort((a, b) => {
+        if (a.volumeNumber === null) return 1;
+        if (b.volumeNumber === null) return -1;
+        return (a.volumeNumber || 0) - (b.volumeNumber || 0);
+      });
+    
+    // Enriquecer livros com informações de autor
+    const enrichedBooks = await Promise.all(seriesBooks.map(async (book) => {
+      const author = await this.getAuthor(book.authorId);
+      return {
+        ...book,
+        author: author ? { name: author.name, slug: author.slug } : undefined
+      };
+    }));
+    
+    return enrichedBooks;
   }
   
   // Implementação dos métodos para Livros
