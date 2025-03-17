@@ -3,6 +3,8 @@ import * as pdfjs from "pdfjs-dist";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -11,7 +13,15 @@ import {
   ZoomIn, 
   ZoomOut, 
   RotateCw, 
-  BookOpen 
+  BookOpen,
+  Bookmark,
+  Home,
+  ChevronFirst,
+  ChevronLast,
+  FileText,
+  RotateCcw,
+  MoveLeft,
+  Search
 } from "lucide-react";
 import {
   Sheet,
@@ -20,8 +30,15 @@ import {
   SheetTitle,
   SheetClose,
 } from "@/components/ui/sheet";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
+import { Link } from "wouter";
 
 // Configurar PDF.js para usar um worker fake quando o worker real não está disponível
 // Isso garante que o PDF.js funcionará mesmo sem acesso ao worker externo
@@ -263,187 +280,439 @@ export default function PDFReader({ url, bookId }: PDFReaderProps) {
   }, [currentPage, numPages]);
 
   return (
-    <div className="flex flex-col h-full bg-neutral-800">
-      {/* Barra de Ferramentas */}
-      <div className="bg-neutral-800 text-white p-3 flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowSidebar(true)}
-            className="text-white hover:bg-neutral-700"
-          >
-            <Menu size={20} />
-          </Button>
-          <span className="text-sm">
-            {currentPage} / {numPages}
-          </span>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleZoomOut}
-            className="text-white hover:bg-neutral-700"
-          >
-            <ZoomOut size={20} />
-          </Button>
-          <span className="text-sm">{Math.round(scale * 100)}%</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleZoomIn}
-            className="text-white hover:bg-neutral-700"
-          >
-            <ZoomIn size={20} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleRotate}
-            className="text-white hover:bg-neutral-700"
-          >
-            <RotateCw size={20} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleFullscreen}
-            className="text-white hover:bg-neutral-700"
-          >
-            <BookOpen size={20} />
-          </Button>
-        </div>
-      </div>
-
-      {/* Container de Visualização */}
-      <div className="flex-grow overflow-auto bg-neutral-900 flex items-center justify-center">
-        <div className="relative p-4">
-          <canvas ref={canvasRef} className="mx-auto shadow-lg bg-white" />
-        </div>
-      </div>
-
-      {/* Barra de Navegação */}
-      <div className="p-3 bg-neutral-800 border-t border-neutral-700 flex items-center space-x-3">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handlePrevPage}
-          disabled={currentPage <= 1}
-          className="bg-neutral-700 hover:bg-neutral-600 text-white"
-        >
-          <ChevronLeft size={18} />
-        </Button>
-        
-        <div className="flex-grow px-4">
-          <Slider
-            value={[currentPage]}
-            min={1}
-            max={numPages}
-            step={1}
-            onValueChange={handlePageChange}
-            className="my-2"
-          />
-        </div>
-        
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleNextPage}
-          disabled={currentPage >= numPages}
-          className="bg-neutral-700 hover:bg-neutral-600 text-white"
-        >
-          <ChevronRight size={18} />
-        </Button>
-      </div>
-
-      {/* Sidebar */}
-      <Sheet open={showSidebar} onOpenChange={setShowSidebar}>
-        <SheetContent side="left">
-          <SheetHeader>
-            <SheetTitle>PDF Navigator</SheetTitle>
-            <SheetClose className="absolute right-4 top-4">
-              <X className="h-4 w-4" />
-              <span className="sr-only">Fechar</span>
-            </SheetClose>
-          </SheetHeader>
-
-          <div className="mt-6 space-y-4">
-            {/* Sumário */}
-            {outline.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">Sumário</h3>
-                <ul className="space-y-1">
-                  {outline.map((item, index) => (
-                    <li key={index}>
-                      <button
-                        onClick={async () => {
-                          try {
-                            const dest = await pdf.getDestination(item.dest);
-                            const pageIndex = await pdf.getPageIndex(dest[0]);
-                            setCurrentPage(pageIndex + 1);
-                            setShowSidebar(false);
-                          } catch (error) {
-                            console.error("Erro ao navegar para destino:", error);
-                          }
-                        }}
-                        className="text-sm w-full text-left py-1.5 px-2 hover:bg-neutral-100 rounded"
-                      >
-                        {item.title}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Marcadores */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <h3 className="text-sm font-medium">Marcadores</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleBookmark}
-                >
-                  {bookmarks.includes(currentPage) ? "Remover marcador" : "Adicionar marcador"}
-                </Button>
-              </div>
+    // Adicionado meta tag noindex para evitar indexação pelo Google
+    <>
+      <meta name="robots" content="noindex, nofollow" />
+      
+      <div className="flex flex-col h-full bg-neutral-800">
+        {/* Barra de Ferramentas Aprimorada */}
+        <div className="bg-blue-700 text-white p-3 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowSidebar(true)}
+                    className="text-white hover:bg-blue-800"
+                  >
+                    <Menu size={20} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Sumário e Marcadores</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <Link to={`/livros/${bookId}`}>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-white hover:bg-blue-800"
+                    >
+                      <MoveLeft size={20} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Voltar para a página do livro</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </Link>
+            
+            <div className="hidden md:flex items-center gap-2">
+              <Badge variant="outline" className="bg-white/20 text-white">
+                Página {currentPage} de {numPages}
+              </Badge>
               
-              {bookmarks.length > 0 ? (
-                <ul className="space-y-1">
-                  {bookmarks.sort((a, b) => a - b).map((page) => (
-                    <li key={page}>
-                      <button
-                        onClick={() => {
-                          setCurrentPage(page);
-                          setShowSidebar(false);
-                        }}
-                        className="text-sm w-full text-left py-1.5 px-2 hover:bg-neutral-100 rounded flex justify-between items-center"
-                      >
-                        <span>Página {page}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setBookmarks(bookmarks.filter(p => p !== page));
-                          }}
-                        >
-                          <X size={14} />
-                        </Button>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-neutral-500">Nenhum marcador adicionado.</p>
-              )}
+              <Badge variant="outline" className="bg-white/20 text-white">
+                {Math.round((currentPage / numPages) * 100)}%
+              </Badge>
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
-    </div>
+          
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleZoomOut}
+                    className="text-white hover:bg-blue-800"
+                  >
+                    <ZoomOut size={20} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Diminuir zoom</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <span className="text-sm font-medium hidden sm:inline-block">
+              {Math.round(scale * 100)}%
+            </span>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleZoomIn}
+                    className="text-white hover:bg-blue-800"
+                  >
+                    <ZoomIn size={20} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Aumentar zoom</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleRotate}
+                    className="text-white hover:bg-blue-800"
+                  >
+                    <RotateCw size={20} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Girar página</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleBookmark}
+                    className="text-white hover:bg-blue-800"
+                  >
+                    <Bookmark size={20} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{bookmarks.includes(currentPage) ? "Remover marcador" : "Adicionar marcador"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleFullscreen}
+                    className="text-white hover:bg-blue-800"
+                  >
+                    <BookOpen size={20} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isFullscreen ? "Sair da tela cheia" : "Tela cheia"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+
+        {/* Container de Visualização Aprimorado */}
+        <div className="flex-grow overflow-auto bg-gray-900 flex items-center justify-center">
+          <div className="relative p-4">
+            <canvas ref={canvasRef} className="mx-auto shadow-xl bg-white rounded-sm" />
+            
+            {/* Indicador de Página Atual */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-white/90 rounded-full shadow-lg">
+              <Badge variant="secondary" className="bg-blue-700 text-white hover:bg-blue-800">
+                {currentPage}
+              </Badge>
+              <span className="text-sm font-medium">de {numPages}</span>
+            </div>
+            
+            {/* Botões de Navegação Aprimorados */}
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="bg-white/80 hover:bg-white shadow-lg"
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage <= 1}
+                    >
+                      <ChevronFirst size={20} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>Primeira página</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      onClick={handlePrevPage}
+                      disabled={currentPage <= 1}
+                      className="bg-white/80 hover:bg-white shadow-lg"
+                    >
+                      <ChevronLeft size={24} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>Página anterior</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      onClick={handleNextPage}
+                      disabled={currentPage >= numPages}
+                      className="bg-white/80 hover:bg-white shadow-lg"
+                    >
+                      <ChevronRight size={24} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    <p>Próxima página</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="bg-white/80 hover:bg-white shadow-lg"
+                      onClick={() => setCurrentPage(numPages)}
+                      disabled={currentPage >= numPages}
+                    >
+                      <ChevronLast size={20} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    <p>Última página</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
+        </div>
+
+        {/* Barra de Navegação Aprimorada */}
+        <div className="p-3 bg-blue-50 border-t border-blue-200 flex items-center space-x-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrevPage}
+            disabled={currentPage <= 1}
+            className="border-blue-300 hover:bg-blue-100"
+          >
+            <ChevronLeft size={18} className="mr-1" />
+            Anterior
+          </Button>
+          
+          <div className="flex-grow px-4">
+            <Slider
+              value={[currentPage]}
+              min={1}
+              max={numPages}
+              step={1}
+              onValueChange={handlePageChange}
+              className="my-2"
+            />
+            <div className="flex justify-between text-xs text-blue-900">
+              <span>1</span>
+              <span>Arraste para navegar</span>
+              <span>{numPages}</span>
+            </div>
+          </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleNextPage}
+            disabled={currentPage >= numPages}
+            className="border-blue-300 hover:bg-blue-100"
+          >
+            Próxima
+            <ChevronRight size={18} className="ml-1" />
+          </Button>
+        </div>
+
+        {/* Sidebar Aprimorada */}
+        <Sheet open={showSidebar} onOpenChange={setShowSidebar}>
+          <SheetContent side="left">
+            <SheetHeader>
+              <SheetTitle>Navegador do PDF</SheetTitle>
+              <SheetClose className="absolute right-4 top-4">
+                <X className="h-4 w-4" />
+                <span className="sr-only">Fechar</span>
+              </SheetClose>
+            </SheetHeader>
+
+            <div className="mt-6">
+              <Tabs defaultValue="contents">
+                <TabsList className="w-full">
+                  <TabsTrigger value="contents">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Sumário
+                  </TabsTrigger>
+                  <TabsTrigger value="bookmarks">
+                    <Bookmark className="h-4 w-4 mr-2" />
+                    Marcadores
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="contents" className="mt-4 space-y-4">
+                  {outline.length > 0 ? (
+                    <div className="max-h-[60vh] overflow-y-auto">
+                      <ul className="space-y-1">
+                        {outline.map((item, index) => (
+                          <li key={index}>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const dest = await pdf.getDestination(item.dest);
+                                  const pageIndex = await pdf.getPageIndex(dest[0]);
+                                  setCurrentPage(pageIndex + 1);
+                                  setShowSidebar(false);
+                                } catch (error) {
+                                  console.error("Erro ao navegar para destino:", error);
+                                }
+                              }}
+                              className="text-sm w-full text-left py-1.5 px-2 hover:bg-blue-50 rounded"
+                            >
+                              {item.title}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg p-6 text-center bg-gray-100">
+                      <Search className="h-10 w-10 mx-auto mb-3 text-gray-400" />
+                      <p className="text-sm text-gray-600">
+                        Este PDF não possui sumário estruturado.
+                        <br />
+                        Use a barra de navegação para ir para páginas específicas.
+                      </p>
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="bookmarks" className="mt-4 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-sm font-medium">Meus marcadores</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleBookmark}
+                      className="border-blue-300 hover:bg-blue-50"
+                    >
+                      {bookmarks.includes(currentPage) ? (
+                        <>
+                          <RotateCcw className="h-4 w-4 mr-2" />
+                          Remover
+                        </>
+                      ) : (
+                        <>
+                          <Bookmark className="h-4 w-4 mr-2" />
+                          Marcar
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  
+                  {bookmarks.length > 0 ? (
+                    <div className="max-h-[60vh] overflow-y-auto">
+                      <ul className="space-y-1">
+                        {bookmarks.sort((a, b) => a - b).map((page) => (
+                          <li key={page}>
+                            <button
+                              onClick={() => {
+                                setCurrentPage(page);
+                                setShowSidebar(false);
+                              }}
+                              className="text-sm w-full text-left py-1.5 px-2 hover:bg-blue-50 rounded flex justify-between items-center"
+                            >
+                              <div className="flex items-center">
+                                <Badge variant="outline" className="mr-2 bg-blue-100">
+                                  {page}
+                                </Badge>
+                                <span>Página {page}</span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setBookmarks(bookmarks.filter(p => p !== page));
+                                }}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
+                              >
+                                <X size={14} />
+                              </Button>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg p-6 text-center bg-gray-100">
+                      <Bookmark className="h-10 w-10 mx-auto mb-3 text-gray-400" />
+                      <p className="text-sm text-gray-600">
+                        Você ainda não tem marcadores.
+                        <br />
+                        Marque páginas para encontrá-las facilmente depois.
+                      </p>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
+            
+            <div className="absolute bottom-6 left-0 right-0 px-6">
+              <Link to="/">
+                <Button variant="outline" className="w-full">
+                  <Home className="h-4 w-4 mr-2" />
+                  Voltar para Biblioteca
+                </Button>
+              </Link>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+    </>
   );
 }
