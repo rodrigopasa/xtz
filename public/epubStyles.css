@@ -1,15 +1,25 @@
 /* epubStyles.css */
 
 :root {
-  --reader-bg: #f8f9fa;
-  --reader-text: #333;
+  --reader-bg: #ffffff;
+  --reader-text: #000000;
   --reader-line-height: 1.6;
   --reader-font-size: 1.2em;
   --reader-font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 }
 
-/* Estilos para o container do livro */
+/* Estilos para o container do livro e todos elementos para garantir fundo branco */
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, 
+p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, 
+dfn, em, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, 
+tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, 
+legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, 
+canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, 
+nav, output, ruby, section, summary, time, mark, audio, video {
+  background-color: var(--reader-bg) !important;
+}
+
 body {
   font-family: var(--reader-font-family) !important;
   line-height: var(--reader-line-height) !important;

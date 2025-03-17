@@ -126,7 +126,7 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
           stylesheet: "/epubStyles.css" // Arquivo de estilo opcional
         });
         
-        // Configurar estilos adicionais para melhor leitura
+        // Configurar estilos adicionais para melhor leitura com fundo branco
         epubRendition.themes.register("default", {
           "body": {
             "font-family": "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif",
@@ -134,11 +134,24 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
             "line-height": "1.5",
             "padding": "20px !important",
             "margin": "0 auto",
-            "max-width": "800px"
+            "max-width": "800px",
+            "background-color": "#ffffff !important",
+            "color": "#000000 !important"
+          },
+          "html": {
+            "background-color": "#ffffff !important"
           },
           "p": {
             "font-family": "inherit",
-            "margin-bottom": "1em"
+            "margin-bottom": "1em",
+            "color": "#000000 !important"
+          },
+          "div": {
+            "background-color": "#ffffff !important",
+            "color": "#000000 !important"
+          },
+          "section": {
+            "background-color": "#ffffff !important"
           },
           "img": {
             "max-width": "100% !important",
@@ -147,14 +160,15 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
             "margin": "1em auto"
           },
           "a": {
-            "color": "#3b82f6",
+            "color": "#3b82f6 !important",
             "text-decoration": "underline"
           },
           "h1, h2, h3, h4, h5, h6": {
             "margin-top": "1.5em",
             "margin-bottom": "0.5em",
             "font-weight": "bold",
-            "line-height": "1.2"
+            "line-height": "1.2",
+            "color": "#000000 !important"
           }
         });
         epubRendition.themes.select("default");
@@ -409,7 +423,7 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
       <div className="flex-grow relative overflow-hidden">
         <div 
           ref={viewerRef} 
-          className="absolute inset-0 bg-neutral-50"
+          className="absolute inset-0 bg-white"
         />
 
         {/* Navegação por cliques nas laterais */}
