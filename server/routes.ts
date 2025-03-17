@@ -10,6 +10,7 @@ import {
   insertUserSchema, 
   insertCategorySchema, 
   insertAuthorSchema, 
+  insertSeriesSchema, 
   insertBookSchema, 
   insertCommentSchema,
   insertFavoriteSchema,
@@ -562,6 +563,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Não é possível excluir autor em uso por livros" });
       }
       
+      // Verificar se existem séries usando este autor
+      const authorSeries = await storage.getSeriesByAuthor(id);
+      if (authorSeries.length > 0) {
+        return res.status(400).json({ message: "Não é possível excluir autor em uso por séries" });
+      }
+      
       const success = await storage.deleteAuthor(id);
       if (!success) {
         return res.status(404).json({ message: "Autor não encontrado" });
@@ -570,6 +577,171 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Autor excluído com sucesso" });
     } catch (error) {
       res.status(500).json({ message: "Erro ao excluir autor" });
+    }
+  });
+  
+  // Rotas para Séries
+  app.get("/api/series", async (req, res) => {
+    try {
+      const { author } = req.query;
+      
+      let seriesList: any[] = [];
+      
+      if (author) {
+        const authorObj = await storage.getAuthorBySlug(author as string);
+        if (authorObj) {
+          seriesList = await storage.getSeriesByAuthor(authorObj.id);
+        } else {
+          seriesList = [];
+        }
+      } else {
+        seriesList = await storage.getAllSeries();
+      }
+      
+      // Enriquecer séries com dados do autor
+      const enrichedSeries = await Promise.all(seriesList.map(async (series) => {
+        const author = await storage.getAuthor(series.authorId);
+        return {
+          ...series,
+          author: author ? { name: author.name, slug: author.slug } : null
+        };
+      }));
+      
+      res.json(enrichedSeries);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar séries" });
+    }
+  });
+  
+  app.get("/api/series/:slug", async (req, res) => {
+    try {
+      const series = await storage.getSeriesBySlug(req.params.slug);
+      if (!series) {
+        return res.status(404).json({ message: "Série não encontrada" });
+      }
+      
+      // Obter o autor da série
+      const author = await storage.getAuthor(series.authorId);
+      
+      // Obter livros da série
+      const books = await storage.getBooksBySeries(series.id);
+      
+      // Enriquecer com dados do autor e ordenar por número do volume
+      const enrichedBooks = books
+        .map(book => ({
+          id: book.id,
+          title: book.title,
+          slug: book.slug,
+          coverUrl: book.coverUrl,
+          volumeNumber: book.volumeNumber || 0, // Fallback para 0 se não tiver número
+          rating: book.rating || 0
+        }))
+        .sort((a, b) => a.volumeNumber - b.volumeNumber);
+      
+      const enrichedSeries = {
+        ...series,
+        author: author ? { name: author.name, slug: author.slug } : null,
+        books: enrichedBooks
+      };
+      
+      res.json(enrichedSeries);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar série" });
+    }
+  });
+  
+  app.post("/api/series", isAdmin, async (req, res) => {
+    try {
+      const { data, error } = validateSchema(insertSeriesSchema, req.body);
+      if (error) {
+        return res.status(400).json({ message: error });
+      }
+      
+      // Verificar se a série já existe
+      const existingSeries = await storage.getSeriesBySlug(data.slug);
+      if (existingSeries) {
+        return res.status(400).json({ message: "Slug de série já está em uso" });
+      }
+      
+      // Verificar se o autor existe
+      const authorExists = await storage.getAuthor(data.authorId);
+      if (!authorExists) {
+        return res.status(400).json({ message: "Autor não encontrado" });
+      }
+      
+      // Criar a série com contagem zerada de livros inicialmente
+      const newSeries = await storage.createSeries({
+        ...data,
+        bookCount: 0
+      });
+      
+      res.status(201).json(newSeries);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao criar série" });
+    }
+  });
+  
+  app.put("/api/series/:id", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      
+      const existingSeries = await storage.getSeries(id);
+      if (!existingSeries) {
+        return res.status(404).json({ message: "Série não encontrada" });
+      }
+      
+      const { data, error } = validateSchema(insertSeriesSchema, req.body);
+      if (error) {
+        return res.status(400).json({ message: error });
+      }
+      
+      // Verificar se o slug já está em uso por outra série
+      if (data.slug !== existingSeries.slug) {
+        const seriesWithSlug = await storage.getSeriesBySlug(data.slug);
+        if (seriesWithSlug && seriesWithSlug.id !== id) {
+          return res.status(400).json({ message: "Slug de série já está em uso" });
+        }
+      }
+      
+      // Verificar se o autor existe
+      if (data.authorId !== existingSeries.authorId) {
+        const authorExists = await storage.getAuthor(data.authorId);
+        if (!authorExists) {
+          return res.status(400).json({ message: "Autor não encontrado" });
+        }
+      }
+      
+      const updatedSeries = await storage.updateSeries(id, data);
+      res.json(updatedSeries);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao atualizar série" });
+    }
+  });
+  
+  app.delete("/api/series/:id", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      
+      // Verificar se existem livros usando esta série
+      const books = await storage.getBooksBySeries(id);
+      if (books.length > 0) {
+        return res.status(400).json({ message: "Não é possível excluir série em uso por livros. Remova os livros da série antes de excluí-la." });
+      }
+      
+      const success = await storage.deleteSeries(id);
+      if (!success) {
+        return res.status(404).json({ message: "Série não encontrada" });
+      }
+      
+      res.json({ message: "Série excluída com sucesso" });
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao excluir série" });
     }
   });
   
