@@ -2,6 +2,7 @@ import {
   users, type User, type InsertUser,
   categories, type Category, type InsertCategory,
   authors, type Author, type InsertAuthor,
+  series, type Series, type InsertSeries,
   books, type Book, type InsertBook,
   favorites, type Favorite, type InsertFavorite,
   readingHistory, type ReadingHistory, type InsertReadingHistory,
@@ -32,6 +33,16 @@ export interface IStorage {
   createAuthor(author: InsertAuthor): Promise<Author>;
   updateAuthor(id: number, author: Partial<Author>): Promise<Author | undefined>;
   deleteAuthor(id: number): Promise<boolean>;
+  
+  // Séries
+  getAllSeries(): Promise<Series[]>;
+  getSeries(id: number): Promise<Series | undefined>;
+  getSeriesBySlug(slug: string): Promise<Series | undefined>;
+  getSeriesByAuthor(authorId: number): Promise<Series[]>;
+  createSeries(series: InsertSeries): Promise<Series>;
+  updateSeries(id: number, series: Partial<Series>): Promise<Series | undefined>;
+  deleteSeries(id: number): Promise<boolean>;
+  getBooksBySeries(seriesId: number): Promise<Book[]>;
   
   // Livros
   getAllBooks(): Promise<Book[]>;
@@ -73,6 +84,7 @@ export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private categories: Map<number, Category>;
   private authors: Map<number, Author>;
+  private series: Map<number, Series>;
   private books: Map<number, Book>;
   private favorites: Map<number, Favorite>;
   private readingHistory: Map<number, ReadingHistory>;
@@ -81,6 +93,7 @@ export class MemStorage implements IStorage {
   private currentUserId: number;
   private currentCategoryId: number;
   private currentAuthorId: number;
+  private currentSeriesId: number;
   private currentBookId: number;
   private currentFavoriteId: number;
   private currentReadingHistoryId: number;
@@ -90,6 +103,7 @@ export class MemStorage implements IStorage {
     this.users = new Map();
     this.categories = new Map();
     this.authors = new Map();
+    this.series = new Map();
     this.books = new Map();
     this.favorites = new Map();
     this.readingHistory = new Map();
@@ -98,6 +112,7 @@ export class MemStorage implements IStorage {
     this.currentUserId = 1;
     this.currentCategoryId = 1;
     this.currentAuthorId = 1;
+    this.currentSeriesId = 1;
     this.currentBookId = 1;
     this.currentFavoriteId = 1;
     this.currentReadingHistoryId = 1;
@@ -381,6 +396,56 @@ export class MemStorage implements IStorage {
     return this.authors.delete(id);
   }
   
+  // Implementação dos métodos para Séries
+  async getAllSeries(): Promise<Series[]> {
+    return Array.from(this.series.values());
+  }
+  
+  async getSeries(id: number): Promise<Series | undefined> {
+    return this.series.get(id);
+  }
+  
+  async getSeriesBySlug(slug: string): Promise<Series | undefined> {
+    return Array.from(this.series.values()).find(series => series.slug === slug);
+  }
+  
+  async getSeriesByAuthor(authorId: number): Promise<Series[]> {
+    return Array.from(this.series.values()).filter(series => series.authorId === authorId);
+  }
+  
+  async createSeries(series: InsertSeries): Promise<Series> {
+    const id = this.currentSeriesId++;
+    const newSeries = { ...series, id };
+    this.series.set(id, newSeries);
+    return newSeries;
+  }
+  
+  async updateSeries(id: number, series: Partial<Series>): Promise<Series | undefined> {
+    const existingSeries = await this.getSeries(id);
+    if (!existingSeries) return undefined;
+    
+    const updatedSeries = { ...existingSeries, ...series };
+    this.series.set(id, updatedSeries);
+    return updatedSeries;
+  }
+  
+  async deleteSeries(id: number): Promise<boolean> {
+    // Verificar se existem livros associados a esta série
+    const books = await this.getBooksBySeries(id);
+    if (books.length > 0) {
+      // Opcional: atualizar os livros para remover a associação à série
+      for (const book of books) {
+        await this.updateBook(book.id, { seriesId: null, volumeNumber: null });
+      }
+    }
+    
+    return this.series.delete(id);
+  }
+  
+  async getBooksBySeries(seriesId: number): Promise<Book[]> {
+    return Array.from(this.books.values()).filter(book => book.seriesId === seriesId);
+  }
+  
   // Implementação dos métodos para Livros
   async getAllBooks(): Promise<Book[]> {
     return Array.from(this.books.values());
@@ -461,6 +526,16 @@ export class MemStorage implements IStorage {
       });
     }
     
+    // Atualizar contagem de livros na série, se aplicável
+    if (book.seriesId) {
+      const series = await this.getSeries(book.seriesId);
+      if (series) {
+        await this.updateSeries(series.id, {
+          bookCount: series.bookCount + 1
+        });
+      }
+    }
+    
     return newBook;
   }
   
@@ -470,6 +545,30 @@ export class MemStorage implements IStorage {
     
     const updatedBook = { ...existingBook, ...book };
     this.books.set(id, updatedBook);
+    
+    // Se houver uma alteração na série, atualizar as contagens
+    if (book.seriesId !== undefined && existingBook.seriesId !== book.seriesId) {
+      // Se o livro estava em uma série antes, decrementar a contagem da série antiga
+      if (existingBook.seriesId) {
+        const oldSeries = await this.getSeries(existingBook.seriesId);
+        if (oldSeries && oldSeries.bookCount > 0) {
+          await this.updateSeries(oldSeries.id, {
+            bookCount: oldSeries.bookCount - 1
+          });
+        }
+      }
+      
+      // Se o livro está sendo adicionado a uma nova série, incrementar a contagem da nova série
+      if (book.seriesId) {
+        const newSeries = await this.getSeries(book.seriesId);
+        if (newSeries) {
+          await this.updateSeries(newSeries.id, {
+            bookCount: newSeries.bookCount + 1
+          });
+        }
+      }
+    }
+    
     return updatedBook;
   }
   
@@ -483,6 +582,16 @@ export class MemStorage implements IStorage {
       await this.updateCategory(category.id, {
         bookCount: category.bookCount - 1
       });
+    }
+    
+    // Atualizar contagem de livros na série, se aplicável
+    if (book.seriesId) {
+      const series = await this.getSeries(book.seriesId);
+      if (series && series.bookCount > 0) {
+        await this.updateSeries(series.id, {
+          bookCount: series.bookCount - 1
+        });
+      }
     }
     
     return this.books.delete(id);
