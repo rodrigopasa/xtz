@@ -153,13 +153,24 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
   const handleDownload = async (format: string) => {
     if (!book) return;
     
+    if (!isAuthenticated) {
+      toast({
+        title: "Não autenticado",
+        description: "Faça login para fazer o download deste livro.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
-      const response = await apiRequest("GET", `/api/books/${book.id}/download/${format}`);
+      // URL para download do livro
+      const downloadUrl = `/api/books/download/${book.id}/${format}`;
       
-      if (response.url) {
-        // Em um sistema real, aqui redirecionaria para o download
-        window.open(response.url, "_blank");
-      }
+      // Abrir em uma nova aba para iniciar o download
+      window.open(downloadUrl, "_blank");
+      
+      // Incrementar contador de downloads
+      await apiRequest("POST", `/api/books/${book.id}/increment-downloads`);
       
       toast({
         title: "Download iniciado",
@@ -213,6 +224,17 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
 
   const handleReadOnline = (format: string) => {
     if (!book) return;
+    
+    if (!isAuthenticated) {
+      toast({
+        title: "Não autenticado",
+        description: "Faça login para ler este livro online.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Navegar para a página do leitor com o ID do livro e formato
     navigate(`/ler/${book.id}/${format}`);
   };
 
