@@ -1398,7 +1398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Livro não encontrado" });
       }
       
-      let filePath;
+      // Determinar qual URL de arquivo usar baseado no formato
       let fileUrl = format === 'epub' ? book.epubUrl : book.pdfUrl;
       console.log(`URL do arquivo ${format}: ${fileUrl}`);
       
@@ -1406,18 +1406,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: `Formato ${format} não disponível para este livro` });
       }
       
-      // Verificar se o URL começa com /uploads/ ou com /books/
+      // Determinar o caminho correto do arquivo, considerando nossa nova estrutura de diretórios
+      let filePath;
+      
       if (fileUrl.startsWith('/uploads/')) {
-        filePath = path.join(__dirname, '..', fileUrl);
+        // Arquivos em /uploads/ estão diretamente na pasta uploads
+        filePath = path.join(uploadsDirectory, fileUrl.replace(/^\/uploads\//, ''));
+        console.log(`Verificando arquivo em: ${filePath} (caminho de uploads)`);
       } else if (fileUrl.startsWith('/books/')) {
-        filePath = path.join(__dirname, '..', 'public', fileUrl);
+        // Arquivos em /books/ estão na pasta public/books
+        filePath = path.join(booksDirectory, fileUrl.replace(/^\/books\//, ''));
+        console.log(`Verificando arquivo em: ${filePath} (caminho de books)`);
       } else {
-        filePath = path.join(__dirname, '..', 'public', fileUrl);
+        // Para outras URLs, procurar na pasta public
+        filePath = path.join(publicDirectory, fileUrl.replace(/^\//, ''));
+        console.log(`Verificando arquivo em: ${filePath} (caminho padrão)`);
       }
       
+      // Verificar se o arquivo existe
       if (!fs.existsSync(filePath)) {
         console.error(`Arquivo não encontrado: ${filePath}`);
-        return res.status(404).json({ message: "Arquivo não encontrado no servidor" });
+        
+        // Tentar encontrar em outros locais possíveis como fallback
+        const possiblePaths = [
+          path.join(uploadsBooksDirectory, path.basename(fileUrl)),
+          path.join(booksDirectory, path.basename(fileUrl)),
+          path.join(__dirname, '..', fileUrl)
+        ];
+        
+        console.log('Tentando localizar o arquivo em caminhos alternativos...');
+        let foundPath = null;
+        
+        for (const altPath of possiblePaths) {
+          console.log(`Verificando: ${altPath}`);
+          if (fs.existsSync(altPath)) {
+            foundPath = altPath;
+            console.log(`Arquivo encontrado em caminho alternativo: ${foundPath}`);
+            break;
+          }
+        }
+        
+        if (!foundPath) {
+          return res.status(404).json({ message: "Arquivo não encontrado no servidor" });
+        }
+        
+        filePath = foundPath;
       }
       
       // Verificar se o arquivo tem conteúdo (tamanho maior que 0)
@@ -1433,10 +1466,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Arquivo sendo visualizado: ${filePath} (URL: ${fileUrl}, tamanho: ${stats.size} bytes)`);
       
-      // Enviar o arquivo para visualização (sem forçar download)
+      // Enviar o arquivo com o tipo MIME correto
       res.setHeader('Content-Type', format === 'epub' ? 'application/epub+zip' : 'application/pdf');
       
-      // Enviar o arquivo
+      // Enviar o arquivo como stream
       const fileStream = fs.createReadStream(filePath);
       fileStream.pipe(res);
     } catch (error) {
@@ -1451,6 +1484,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const format = req.params.format;
       
+      console.log(`Requisição para download de livro - ID: ${id}, Formato: ${format}`);
+      
       if (isNaN(id)) {
         return res.status(400).json({ message: "ID inválido" });
       }
@@ -1460,29 +1495,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const book = await storage.getBook(id);
+      console.log(`Livro encontrado:`, book ? `ID: ${book.id}, Título: ${book.title}` : 'Não encontrado');
+      
       if (!book) {
         return res.status(404).json({ message: "Livro não encontrado" });
       }
       
-      let filePath;
+      // Determinar qual URL de arquivo usar baseado no formato
       let fileUrl = format === 'epub' ? book.epubUrl : book.pdfUrl;
+      console.log(`URL do arquivo ${format}: ${fileUrl}`);
       
       if (!fileUrl) {
         return res.status(404).json({ message: `Formato ${format} não disponível para este livro` });
       }
       
-      // Verificar se o URL começa com /uploads/ ou com /books/
+      // Determinar o caminho correto do arquivo, considerando nossa nova estrutura de diretórios
+      let filePath;
+      
       if (fileUrl.startsWith('/uploads/')) {
-        filePath = path.join(__dirname, '..', fileUrl);
+        // Arquivos em /uploads/ estão diretamente na pasta uploads
+        filePath = path.join(uploadsDirectory, fileUrl.replace(/^\/uploads\//, ''));
+        console.log(`Verificando arquivo em: ${filePath} (caminho de uploads)`);
       } else if (fileUrl.startsWith('/books/')) {
-        filePath = path.join(__dirname, '..', 'public', fileUrl);
+        // Arquivos em /books/ estão na pasta public/books
+        filePath = path.join(booksDirectory, fileUrl.replace(/^\/books\//, ''));
+        console.log(`Verificando arquivo em: ${filePath} (caminho de books)`);
       } else {
-        filePath = path.join(__dirname, '..', 'public', fileUrl);
+        // Para outras URLs, procurar na pasta public
+        filePath = path.join(publicDirectory, fileUrl.replace(/^\//, ''));
+        console.log(`Verificando arquivo em: ${filePath} (caminho padrão)`);
       }
       
+      // Verificar se o arquivo existe
       if (!fs.existsSync(filePath)) {
         console.error(`Arquivo não encontrado: ${filePath}`);
-        return res.status(404).json({ message: "Arquivo não encontrado no servidor" });
+        
+        // Tentar encontrar em outros locais possíveis como fallback
+        const possiblePaths = [
+          path.join(uploadsBooksDirectory, path.basename(fileUrl)),
+          path.join(booksDirectory, path.basename(fileUrl)),
+          path.join(__dirname, '..', fileUrl)
+        ];
+        
+        console.log('Tentando localizar o arquivo em caminhos alternativos...');
+        let foundPath = null;
+        
+        for (const altPath of possiblePaths) {
+          console.log(`Verificando: ${altPath}`);
+          if (fs.existsSync(altPath)) {
+            foundPath = altPath;
+            console.log(`Arquivo encontrado em caminho alternativo: ${foundPath}`);
+            break;
+          }
+        }
+        
+        if (!foundPath) {
+          return res.status(404).json({ message: "Arquivo não encontrado no servidor" });
+        }
+        
+        filePath = foundPath;
       }
       
       // Verificar se o arquivo tem conteúdo (tamanho maior que 0)
@@ -1548,15 +1619,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log do upload
       console.log(`Upload de EPUB concluído: ${req.file.filename}`);
       console.log(`URL do EPUB: ${epubUrl}`);
-      console.log(`Caminho completo: ${path.join(__dirname, '..', epubUrl)}`);
       
       // Verificar se o arquivo existe no sistema de arquivos
-      const filePath = path.join(__dirname, '..', epubUrl);
+      const filePath = path.join(uploadsBooksDirectory, req.file.filename);
+      console.log(`Caminho completo verificado: ${filePath}`);
+      
       if (fs.existsSync(filePath)) {
         const stats = fs.statSync(filePath);
-        console.log(`Tamanho do arquivo: ${stats.size} bytes`);
+        console.log(`Arquivo verificado com sucesso - Tamanho: ${stats.size} bytes`);
+        
+        // Verificar se é um EPUB válido pelo tamanho mínimo (ao menos um arquivo ZIP válido)
+        if (stats.size < 100) {
+          console.warn(`Arquivo EPUB inválido ou vazio: ${filePath} (tamanho: ${stats.size} bytes)`);
+          return res.status(400).json({ 
+            message: "O arquivo enviado parece estar vazio ou corrompido. Tente novamente com outro arquivo."
+          });
+        }
       } else {
-        console.warn(`Arquivo não encontrado após upload: ${filePath}`);
+        console.error(`ERRO: Arquivo não encontrado após upload: ${filePath}`);
+        return res.status(500).json({ 
+          message: "Erro interno ao processar arquivo. O upload falhou." 
+        });
       }
       
       res.json({ epubUrl });
@@ -1578,15 +1661,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log do upload
       console.log(`Upload de PDF concluído: ${req.file.filename}`);
       console.log(`URL do PDF: ${pdfUrl}`);
-      console.log(`Caminho completo: ${path.join(__dirname, '..', pdfUrl)}`);
       
       // Verificar se o arquivo existe no sistema de arquivos
-      const filePath = path.join(__dirname, '..', pdfUrl);
+      const filePath = path.join(uploadsBooksDirectory, req.file.filename);
+      console.log(`Caminho completo verificado: ${filePath}`);
+      
       if (fs.existsSync(filePath)) {
         const stats = fs.statSync(filePath);
-        console.log(`Tamanho do arquivo: ${stats.size} bytes`);
+        console.log(`Arquivo verificado com sucesso - Tamanho: ${stats.size} bytes`);
+        
+        // Verificar se é um PDF válido pelo tamanho mínimo
+        if (stats.size < 100) {
+          console.warn(`Arquivo PDF inválido ou vazio: ${filePath} (tamanho: ${stats.size} bytes)`);
+          return res.status(400).json({ 
+            message: "O arquivo enviado parece estar vazio ou corrompido. Tente novamente com outro arquivo."
+          });
+        }
       } else {
-        console.warn(`Arquivo não encontrado após upload: ${filePath}`);
+        console.error(`ERRO: Arquivo não encontrado após upload: ${filePath}`);
+        return res.status(500).json({ 
+          message: "Erro interno ao processar arquivo. O upload falhou." 
+        });
       }
       
       res.json({ pdfUrl });
