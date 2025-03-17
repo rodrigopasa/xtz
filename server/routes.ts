@@ -820,7 +820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rotas para Livros
   app.get("/api/books", async (req, res) => {
     try {
-      const { category, author, featured, isNew, isFree } = req.query;
+      const { category, author, authorId, featured, isNew, isFree } = req.query;
       
       let books: any[] = [];
       
@@ -828,6 +828,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const categoryObj = await storage.getCategoryBySlug(category as string);
         if (categoryObj) {
           books = await storage.getBooksByCategory(categoryObj.id);
+        } else {
+          books = [];
+        }
+      } else if (authorId) {
+        // Buscar livros pelo ID do autor diretamente
+        const id = parseInt(authorId as string);
+        if (!isNaN(id)) {
+          books = await storage.getBooksByAuthor(id);
         } else {
           books = [];
         }
