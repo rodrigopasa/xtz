@@ -30,6 +30,8 @@ interface EPubReaderProps {
 }
 
 export default function EPubReader({ url, bookId }: EPubReaderProps) {
+  console.log(`EPubReader inicializado - BookID: ${bookId}, URL: ${url}`);
+  
   const viewerRef = useRef<HTMLDivElement>(null);
   const [book, setBook] = useState<Book | null>(null);
   const [rendition, setRendition] = useState<any>(null);

@@ -14,12 +14,15 @@ interface ReaderProps {
 }
 
 export default function Reader({ id, format }: ReaderProps) {
+  console.log(`Página Reader carregada - ID: ${id}, Formato: ${format}`);
+  
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
   
   // Verificar formato válido
   const isValidFormat = format === 'epub' || format === 'pdf';
+  console.log(`Formato válido: ${isValidFormat}`);
   
   // Definindo o tipo para o livro
   interface Book {

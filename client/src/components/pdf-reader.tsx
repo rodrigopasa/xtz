@@ -32,6 +32,8 @@ interface PDFReaderProps {
 }
 
 export default function PDFReader({ url, bookId }: PDFReaderProps) {
+  console.log(`PDFReader inicializado - BookID: ${bookId}, URL: ${url}`);
+  
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pdf, setPdf] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
