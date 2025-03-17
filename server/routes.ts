@@ -1211,6 +1211,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Verificar se a série foi alterada
+      if (data.seriesId !== existingBook.seriesId) {
+        // Verificar se a nova série existe, se especificada
+        if (data.seriesId) {
+          const newSeries = await storage.getSeries(data.seriesId);
+          if (!newSeries) {
+            return res.status(400).json({ message: "Série não encontrada" });
+          }
+        }
+        
+        // A lógica de atualização da contagem de livros nas séries é manipulada
+        // pelo método updateBook no storage, que cuida corretamente deste cenário
+      }
+      
       const updatedBook = await storage.updateBook(id, data);
       res.json(updatedBook);
     } catch (error) {
