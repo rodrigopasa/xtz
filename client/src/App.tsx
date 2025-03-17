@@ -45,6 +45,9 @@ import AdminComments from "@/pages/admin/comments";
 import AdminReports from "@/pages/admin/reports";
 import AdminSeries from "@/pages/admin/series"; // Add this import
 
+// Assuming Protected component is defined elsewhere and handles role-based access.
+import Protected from './components/Protected'; // Adjust path as needed
+
 // Router with layout wrappers
 function Router() {
   return (
@@ -273,17 +276,19 @@ function Router() {
         )}
       </Route>
 
-      <Route path="/admin/series"> {/* Add this route */}
+      <Route path="/admin/series">
         {() => (
-          <>
-            <AdminHeader />
-            <div className="flex-grow flex">
-              <AdminSidebar />
-              <AdminSeries />
-            </div>
-          </>
+          <Protected role="admin">
+            <>
+              <AdminHeader />
+              <div className="flex-grow flex">
+                <AdminSidebar />
+                <AdminSeries />
+              </div>
+            </>
+          </Protected>
         )}
-      </Route> {/* Add this route */}
+      </Route>
 
       <Route path="/admin/categorias">
         {() => (
