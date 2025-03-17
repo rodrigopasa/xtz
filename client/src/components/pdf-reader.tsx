@@ -23,8 +23,22 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 
-// Garantir que o worker do PDF.js esteja carregado
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+// Configurar PDF.js para usar um worker fake quando o worker real não está disponível
+// Isso garante que o PDF.js funcionará mesmo sem acesso ao worker externo
+console.log("Versão do PDF.js:", pdfjs.version);
+try {
+  // Tenta configurar o worker normal
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    `../../../node_modules/pdfjs-dist/build/pdf.worker.min.js`,
+    import.meta.url
+  ).toString();
+} catch (error) {
+  console.log("Usando worker fake devido a erro:", error);
+  // Fallback para worker fake (mais lento, mas funciona sem dependências externas)
+  pdfjs.GlobalWorkerOptions.workerSrc = '';
+  // @ts-ignore - Configuração de debug que permite usar um worker fake
+  pdfjs.disableWorker = true;
+}
 
 interface PDFReaderProps {
   url: string;
