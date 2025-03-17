@@ -14,13 +14,25 @@ export async function apiRequest<T = any>(
 ): Promise<T> {
   console.log(`API Request: ${method} ${url}`, data ? 'Com dados' : 'Sem dados');
   
+  let headers: HeadersInit = {
+    'Accept': 'application/json'
+  };
+  
+  let body: any = undefined;
+  
+  // Verificar se é FormData para não adicionar Content-Type
+  // O navegador definirá automaticamente o Content-Type correto com o boundary
+  if (data instanceof FormData) {
+    body = data;
+  } else if (data) {
+    headers['Content-Type'] = 'application/json';
+    body = JSON.stringify(data);
+  }
+  
   const options: RequestInit = {
     method,
-    headers: {
-      'Accept': 'application/json',
-      ...(data ? { 'Content-Type': 'application/json' } : {})
-    },
-    body: data ? JSON.stringify(data) : undefined,
+    headers,
+    body,
     credentials: 'include', // Inclui cookies nas requisições cross-origin
     mode: 'cors', // Habilita CORS
     cache: 'no-cache', // Evita cache
