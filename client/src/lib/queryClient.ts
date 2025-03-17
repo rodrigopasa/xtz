@@ -57,9 +57,11 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    console.log(`Query: ${queryKey[0]}`);
+    const endpoint = queryKey[0] as string;
+    console.log(`Query: ${endpoint}`);
+    console.log(`QueryKey completo:`, queryKey);
     
-    const res = await fetch(queryKey[0] as string, {
+    const res = await fetch(endpoint, {
       method: 'GET',
       headers: {
         'Accept': 'application/json'
@@ -69,17 +71,22 @@ export const getQueryFn: <T>(options: {
       cache: 'no-cache'
     });
     
-    console.log(`Query Response: ${res.status} ${res.statusText}`);
+    console.log(`Query Response para ${endpoint}: ${res.status} ${res.statusText}`);
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      console.log('Resposta 401, retornando null conforme configuração');
+      console.log(`Resposta 401 para ${endpoint}, retornando null conforme configuração`);
       return null;
     }
 
-    await throwIfResNotOk(res);
-    const data = await res.json();
-    console.log('Query Data:', data);
-    return data;
+    try {
+      await throwIfResNotOk(res);
+      const data = await res.json();
+      console.log(`Query Data para ${endpoint}:`, data);
+      return data;
+    } catch (error) {
+      console.error(`Erro ao processar resposta para ${endpoint}:`, error);
+      throw error;
+    }
   };
 
 export const queryClient = new QueryClient({
