@@ -89,11 +89,21 @@ export default function PDFReader({ url, bookId }: PDFReaderProps) {
         }
       } catch (error) {
         console.error("Erro ao carregar o PDF:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar o PDF. Tente novamente mais tarde.",
-          variant: "destructive",
-        });
+        
+        // Verificar se a resposta indica que o arquivo não foi encontrado
+        if (String(error).includes("404") || String(error).includes("not found")) {
+          toast({
+            title: "Arquivo não encontrado",
+            description: "O arquivo PDF deste livro não está disponível no servidor. Estamos usando um banco de dados com arquivos de exemplo.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar o PDF. Tente novamente mais tarde.",
+            variant: "destructive",
+          });
+        }
       }
     };
 
