@@ -81,6 +81,8 @@ const bookFormSchema = z.object({
   isFeatured: z.boolean().default(false),
   isNew: z.boolean().default(false),
   isFree: z.boolean().default(false),
+  seriesId: z.string().optional().or(z.literal("")),
+  volumeNumber: z.string().transform((val) => (val === "" ? null : parseInt(val, 10))).nullable().optional(),
 });
 
 export default function BookForm({ id }: BookFormProps) {
