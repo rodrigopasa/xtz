@@ -1475,10 +1475,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Usuário não encontrado" });
       }
       
-      // Excluir campos sensíveis
-      delete userProfile.password;
+      // Excluir campos sensíveis usando um objeto sem campos sensíveis
+      const safeProfile = { ...userProfile };
+      if (safeProfile.password) {
+        delete safeProfile.password;
+      }
       
-      res.json(userProfile);
+      res.json(safeProfile);
     } catch (error) {
       res.status(500).json({ message: "Erro ao buscar perfil" });
     }
@@ -1508,10 +1511,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Usuário não encontrado" });
       }
       
-      // Excluir campos sensíveis
-      delete updatedUser.password;
+      // Excluir campos sensíveis usando um objeto sem campos sensíveis
+      const safeUser = { ...updatedUser };
+      if (safeUser.password) {
+        delete safeUser.password;
+      }
       
-      res.json(updatedUser);
+      res.json(safeUser);
     } catch (error) {
       res.status(500).json({ message: "Erro ao atualizar perfil" });
     }
@@ -1534,8 +1540,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Usuário não encontrado" });
       }
       
-      // Excluir campos sensíveis
-      delete updatedUser.password;
+      // Excluir campos sensíveis usando um objeto sem campos sensíveis
+      const safeAvatarUser = { ...updatedUser };
+      if (safeAvatarUser.password) {
+        delete safeAvatarUser.password;
+      }
+      
+      // Substituir a referência
+      updatedUser = safeAvatarUser;
       
       res.json({
         message: "Avatar atualizado com sucesso",

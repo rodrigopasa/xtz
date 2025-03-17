@@ -1,0 +1,132 @@
+/* epubStyles.css */
+
+:root {
+  --reader-bg: #f8f9fa;
+  --reader-text: #333;
+  --reader-line-height: 1.6;
+  --reader-font-size: 1.2em;
+  --reader-font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+}
+
+/* Estilos para o container do livro */
+body {
+  font-family: var(--reader-font-family) !important;
+  line-height: var(--reader-line-height) !important;
+  color: var(--reader-text) !important;
+  background-color: var(--reader-bg) !important;
+  margin: 0 auto !important;
+  max-width: 800px !important;
+  padding: 20px !important;
+}
+
+/* Estilos para parágrafos */
+p {
+  margin-bottom: 1em !important;
+  text-align: justify;
+}
+
+/* Estilos para títulos */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: bold !important;
+  line-height: 1.2 !important;
+  margin-top: 1.5em !important;
+  margin-bottom: 0.5em !important;
+}
+
+h1 { font-size: 2em !important; }
+h2 { font-size: 1.75em !important; }
+h3 { font-size: 1.5em !important; }
+h4 { font-size: 1.25em !important; }
+h5 { font-size: 1.1em !important; }
+h6 { font-size: 1em !important; }
+
+/* Estilos para imagens */
+img {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block !important;
+  margin: 1em auto !important;
+}
+
+/* Estilos para links */
+a {
+  color: #3b82f6 !important;
+  text-decoration: underline !important;
+}
+
+a:hover {
+  text-decoration: none !important;
+}
+
+/* Estilos para listas */
+ul, ol {
+  margin-bottom: 1em !important;
+  padding-left: 2em !important;
+}
+
+li {
+  margin-bottom: 0.5em !important;
+}
+
+/* Estilos para citações */
+blockquote {
+  border-left: 4px solid #ccc !important;
+  padding-left: 1em !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  font-style: italic !important;
+}
+
+/* Estilos para tabelas */
+table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin-bottom: 1em !important;
+}
+
+th, td {
+  border: 1px solid #ccc !important;
+  padding: 0.5em !important;
+}
+
+th {
+  background-color: #f0f0f0 !important;
+}
+
+/* Estilos para código */
+pre, code {
+  font-family: monospace !important;
+  background-color: #f0f0f0 !important;
+  padding: 0.2em 0.4em !important;
+  border-radius: 3px !important;
+  font-size: 0.9em !important;
+}
+
+pre {
+  padding: 1em !important;
+  overflow-x: auto !important;
+  line-height: 1.4 !important;
+}
+
+pre code {
+  padding: 0 !important;
+  background-color: transparent !important;
+}
+
+/* Ajustes para melhorar o contraste */
+::selection {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}
+
+/* Comportamento de rolagem suave */
+html {
+  scroll-behavior: smooth !important;
+}
+
+/* Evitar cortes de texto em páginas */
+p, h1, h2, h3, h4, h5, h6, blockquote, ul, ol, dl, figure, pre {
+  orphans: 3 !important;
+  widows: 3 !important;
+}

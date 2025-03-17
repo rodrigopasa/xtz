@@ -45,14 +45,11 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (!viewerRef.current) return;
-
+    // Referência para armazenar funções de cleanup
+    let cleanupFunctions: (() => void)[] = [];
+    
     const initializeBook = async () => {
       try {
-        // Nós temos duas opções para carregar o EPUB:
-        // 1. Se temos uma URL direta (passada como prop), usamos ela
-        // 2. Se temos apenas o ID do livro, usamos a rota da API
-        
         // Determinar URL a usar (prioridade para URL direta, senão construir do ID)
         const fileUrl = url || `/api/books/view/${bookId}/epub`;
         console.log("EPubReader inicializado - BookID:", bookId, "URL:", url);
@@ -63,11 +60,29 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
         const cacheBustUrl = `${fileUrl}${fileUrl.includes('?') ? '&' : '?'}t=${timestamp}`;
         console.log("URL com cache bust:", cacheBustUrl);
         
+        // Correção para problemas de ResizeObserver
+        // Silenciar erros de ResizeObserver
+        const originalError = window.console.error;
+        window.console.error = (...args: any[]) => {
+          if (args[0]?.includes?.('ResizeObserver') || 
+              (typeof args[0] === 'object' && args[0]?.message?.includes?.('ResizeObserver'))) {
+            console.log("Erro de ResizeObserver ignorado:", args[0]);
+            return;
+          }
+          originalError(...args);
+        };
+        
+        // Adicionar função para restaurar o console.error original
+        cleanupFunctions.push(() => {
+          window.console.error = originalError;
+        });
+        
         // Opções avançadas para o leitor EPUB
         const bookOptions = {
           openAs: "epub",
           encoding: "binary",
-          withCredentials: true
+          withCredentials: true,
+          allowScriptedContent: true,  // Permitir conteúdo JavaScript no EPUB
         };
         
         console.log("Iniciando carregamento com opcões:", bookOptions);
@@ -75,6 +90,18 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
         // Criar instância do livro EPUB
         const epubBook = new Book(cacheBustUrl, bookOptions);
         setBook(epubBook);
+
+        // Adicionar função de cleanup para destruir o livro
+        cleanupFunctions.push(() => {
+          if (epubBook) {
+            try {
+              epubBook.destroy();
+              console.log("Livro EPUB destruído com sucesso");
+            } catch (e) {
+              console.log("Erro ao destruir livro:", e);
+            }
+          }
+        });
 
         // Aguardar o livro estar pronto
         console.log("Aguardando epubBook.ready...");
@@ -92,10 +119,11 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
         const epubRendition = epubBook.renderTo(container, {
           width: "100%",
           height: "100%",
-          spread: "auto", 
-          flow: "paginated",
-          minSpreadWidth: 800,
-          manager: "continuous"
+          spread: "none",  // Alterado para "none" para prevenir problemas
+          flow: "scrolled-doc",  // Alterado para scrolled-doc para melhor navegação
+          manager: "default",
+          allowScriptedContent: true,
+          stylesheet: "/epubStyles.css" // Arquivo de estilo opcional
         });
         
         // Configurar estilos adicionais para melhor leitura
@@ -104,14 +132,29 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
             "font-family": "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif",
             "font-size": "1.2em",
             "line-height": "1.5",
-            "padding": "0 !important",
-            "margin": "0 auto"
+            "padding": "20px !important",
+            "margin": "0 auto",
+            "max-width": "800px"
           },
           "p": {
-            "font-family": "inherit"
+            "font-family": "inherit",
+            "margin-bottom": "1em"
           },
           "img": {
-            "max-width": "100% !important"
+            "max-width": "100% !important",
+            "height": "auto !important",
+            "display": "block",
+            "margin": "1em auto"
+          },
+          "a": {
+            "color": "#3b82f6",
+            "text-decoration": "underline"
+          },
+          "h1, h2, h3, h4, h5, h6": {
+            "margin-top": "1.5em",
+            "margin-bottom": "0.5em",
+            "font-weight": "bold",
+            "line-height": "1.2"
           }
         });
         epubRendition.themes.select("default");
@@ -127,13 +170,21 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
         // Configurar eventos
         epubRendition.on("locationChanged", (location: any) => {
           console.log("Localização mudou:", location);
-          setCurrentLocation(location.start);
-          const currentPage = epubBook.locations.percentageFromCfi(location.start);
-          setProgress(currentPage * 100);
-          
-          // Salvar progresso se o usuário estiver autenticado
-          if (isAuthenticated && user) {
-            saveReadingProgress(Math.round(currentPage * 100));
+          if (location && location.start) {
+            setCurrentLocation(location.start);
+            try {
+              const currentPage = epubBook.locations.percentageFromCfi(location.start);
+              if (!isNaN(currentPage)) {
+                setProgress(currentPage * 100);
+                
+                // Salvar progresso se o usuário estiver autenticado
+                if (isAuthenticated && user) {
+                  saveReadingProgress(Math.round(currentPage * 100));
+                }
+              }
+            } catch (err) {
+              console.error("Erro ao calcular percentual da página:", err);
+            }
           }
         });
 
@@ -145,31 +196,46 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
           console.log("Relocação:", location);
         });
         
-        // Registrar eventos de erro
-        epubRendition.on("layout", (layout: any) => {
-          console.log("Layout alterado:", layout);
+        // Adicionar listeners para os botões de navegação via teclado
+        const keyListener = (e: KeyboardEvent) => {
+          // Esquerda (seta esquerda ou PageUp)
+          if ((e.key === "ArrowLeft" || e.key === "PageUp") && epubRendition) {
+            epubRendition.prev();
+          }
+          
+          // Direita (seta direita ou PageDown)
+          if ((e.key === "ArrowRight" || e.key === "PageDown") && epubRendition) {
+            epubRendition.next();
+          }
+        };
+        
+        document.addEventListener("keyup", keyListener);
+        cleanupFunctions.push(() => {
+          document.removeEventListener("keyup", keyListener);
         });
         
-        epubRendition.on("resized", (size: any) => {
-          console.log("Dimensão alterada:", size);
-        });
-        
-        epubRendition.on("keydown", (e: any) => {
-          console.log("Tecla pressionada:", e);
-        });
-
         setRendition(epubRendition);
 
         // Obter o sumário
         console.log("Carregando navegação...");
-        const navigation = await epubBook.loaded.navigation;
-        console.log("Navegação carregada:", navigation);
-        setToc(navigation.toc);
+        try {
+          const navigation = await epubBook.loaded.navigation;
+          console.log("Navegação carregada:", navigation);
+          if (navigation && navigation.toc) {
+            setToc(navigation.toc);
+          }
+        } catch (err) {
+          console.error("Erro ao carregar navegação:", err);
+        }
 
         // Gerar localizações para navegação precisa
         console.log("Gerando localizações...");
-        await epubBook.locations.generate(1024);
-        console.log("Localizações geradas com sucesso");
+        try {
+          await epubBook.locations.generate(1024);
+          console.log("Localizações geradas com sucesso");
+        } catch (err) {
+          console.error("Erro ao gerar localizações:", err);
+        }
 
       } catch (error) {
         console.error("Erro ao carregar o EPUB:", error);
@@ -200,19 +266,23 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
         } else {
           toast({
             title: "Erro no leitor",
-            description: "Não foi possível carregar o livro. Erro: " + errorStr.substring(0, 100),
+            description: "Não foi possível carregar o livro. Tente novamente mais tarde.",
             variant: "destructive",
           });
         }
       }
     };
 
-    initializeBook();
+    // Verificar se o elemento container existe antes de inicializar
+    if (viewerRef.current) {
+      initializeBook();
+    }
 
+    // Cleanup function que executa todas as funções registradas
     return () => {
-      if (book) {
-        book.destroy();
-      }
+      console.log("Executando limpeza do componente EPubReader");
+      cleanupFunctions.forEach(fn => fn());
+      cleanupFunctions = [];
     };
   }, [url, isAuthenticated, user, bookId, fontSize]);
 
