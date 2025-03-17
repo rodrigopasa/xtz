@@ -1404,7 +1404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Rotas de upload
-  app.post('/api/upload/cover', isAuthenticated, uploadCover.single('cover'), (req, res) => {
+  app.post('/api/upload/cover', isAuthenticated, uploadCover.single('file'), (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'Nenhum arquivo enviado ou tipo de arquivo inválido' });
@@ -1424,7 +1424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post('/api/upload/epub', isAuthenticated, uploadBookFile.single('epub'), (req, res) => {
+  app.post('/api/upload/epub', isAuthenticated, uploadBookFile.single('file'), (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'Nenhum arquivo enviado ou tipo de arquivo inválido' });
@@ -1444,7 +1444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post('/api/upload/pdf', isAuthenticated, uploadBookFile.single('pdf'), (req, res) => {
+  app.post('/api/upload/pdf', isAuthenticated, uploadBookFile.single('file'), (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'Nenhum arquivo enviado ou tipo de arquivo inválido' });

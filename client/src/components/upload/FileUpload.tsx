@@ -101,7 +101,7 @@ export default function FileUpload({
     try {
       // Criar FormData para upload do arquivo
       const formData = new FormData();
-      formData.append(fileType, file);
+      formData.append('file', file);
 
       // Simulação de progresso para feedback visual
       const progressInterval = setInterval(() => {
