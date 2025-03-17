@@ -387,6 +387,14 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, [checkAuth]);
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
+
   return (
     <>
       {children}
