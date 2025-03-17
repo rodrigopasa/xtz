@@ -65,12 +65,8 @@ const bookFormSchema = z.object({
   coverUrl: z.string().min(1, {
     message: "A URL da capa é obrigatória",
   }),
-  epubUrl: z.string().url({
-    message: "Insira uma URL válida para o arquivo EPUB.",
-  }).optional().or(z.literal("")),
-  pdfUrl: z.string().url({
-    message: "Insira uma URL válida para o arquivo PDF.",
-  }).optional().or(z.literal("")),
+  epubUrl: z.string().min(0).optional().or(z.literal("")),
+  pdfUrl: z.string().min(0).optional().or(z.literal("")),
   amazonUrl: z.string().url({
     message: "Insira uma URL válida para o livro na Amazon.",
   }).optional().or(z.literal("")),
