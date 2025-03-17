@@ -169,9 +169,9 @@ export default function Reader({ id, format }: ReaderProps) {
     <div className="h-[calc(100vh-64px)]">
       {format === 'epub' || fileUrl?.endsWith('.epub') ? (
         // Passar apenas o ID do livro para o leitor, as rotas de API de visualização são usadas internamente
-        <EPubReader url="" bookId={id} />
+        <EPubReader url={fileUrl || ""} bookId={id} />
       ) : (
-        <PDFReader url="" bookId={id} />
+        <PDFReader url={fileUrl || ""} bookId={id} />
       )}
     </div>
   );

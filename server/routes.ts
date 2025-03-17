@@ -1312,21 +1312,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const format = req.params.format;
       
+      console.log(`Requisição para visualização de livro - ID: ${id}, Formato: ${format}`);
+      
       if (isNaN(id)) {
+        console.log(`ID inválido: ${req.params.id}`);
         return res.status(400).json({ message: "ID inválido" });
       }
       
       if (format !== 'epub' && format !== 'pdf') {
+        console.log(`Formato inválido: ${format}`);
         return res.status(400).json({ message: "Formato inválido. Use 'epub' ou 'pdf'" });
       }
       
       const book = await storage.getBook(id);
+      console.log(`Livro encontrado:`, book ? `ID: ${book.id}, Título: ${book.title}` : 'Não encontrado');
+      
       if (!book) {
         return res.status(404).json({ message: "Livro não encontrado" });
       }
       
       let filePath;
       let fileUrl = format === 'epub' ? book.epubUrl : book.pdfUrl;
+      console.log(`URL do arquivo ${format}: ${fileUrl}`);
       
       if (!fileUrl) {
         return res.status(404).json({ message: `Formato ${format} não disponível para este livro` });

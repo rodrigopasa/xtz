@@ -43,7 +43,7 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (!url || !viewerRef.current) return;
+    if (!viewerRef.current) return;
 
     const initializeBook = async () => {
       try {

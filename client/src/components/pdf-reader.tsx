@@ -52,7 +52,10 @@ export default function PDFReader({ url, bookId }: PDFReaderProps) {
         const viewUrl = `/api/books/view/${bookId}/pdf`;
         console.log("Carregando PDF de:", viewUrl);
         
-        const loadingTask = pdfjs.getDocument(viewUrl);
+        // Adicionar timestamp para evitar cache
+        const urlWithTimestamp = `${viewUrl}?t=${new Date().getTime()}`;
+        
+        const loadingTask = pdfjs.getDocument(urlWithTimestamp);
         const pdfDocument = await loadingTask.promise;
         
         setPdf(pdfDocument);

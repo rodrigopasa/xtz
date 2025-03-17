@@ -48,14 +48,14 @@ export default function TesteLivros() {
             <CardContent className="pt-4">
               <div className="flex space-x-2">
                 {book.epubUrl && (
-                  <Link href={`/reader/${book.id}/epub`}>
+                  <Link href={`/ler/${book.id}/epub`}>
                     <Button size="sm" variant="outline">
                       Ler EPUB
                     </Button>
                   </Link>
                 )}
                 {book.pdfUrl && (
-                  <Link href={`/reader/${book.id}/pdf`}>
+                  <Link href={`/ler/${book.id}/pdf`}>
                     <Button size="sm" variant="outline">
                       Ler PDF
                     </Button>
