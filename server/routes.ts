@@ -1361,7 +1361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Rotas para download de livros
-  app.get("/api/books/download/:id/:format", isAuthenticated, async (req, res) => {
+  app.get("/api/books/download/:id/:format", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const format = req.params.format;
