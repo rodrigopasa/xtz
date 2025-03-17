@@ -53,25 +53,44 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
         const viewUrl = `/api/books/view/${bookId}/epub`;
         console.log("Carregando EPUB de:", viewUrl);
         
-        const epubBook = new Book(viewUrl);
+        // Adicionamos um timestamp para evitar cache no navegador
+        const cacheBustUrl = `${viewUrl}?t=${new Date().getTime()}`;
+        console.log("URL com cache bust:", cacheBustUrl);
+        
+        // Configuração de opções adicionais para o Book
+        const bookOptions = {
+          encoding: "binary",
+          replacements: "base64",
+          withCredentials: true
+        };
+        
+        const epubBook = new Book(cacheBustUrl, bookOptions);
         setBook(epubBook);
 
+        console.log("Aguardando epubBook.ready...");
         await epubBook.ready;
+        console.log("EPUB carregado com sucesso:", epubBook);
 
         const container = viewerRef.current;
         if (!container) {
           throw new Error("Container element not found");
         }
         
+        console.log("Criando renderização...");
         const epubRendition = epubBook.renderTo(container, {
           width: "100%",
           height: "100%",
           spread: "auto",
+          flow: "paginated",
+          minSpreadWidth: 800
         });
 
+        console.log("Exibindo EPUB...");
         await epubRendition.display();
+        console.log("EPUB exibido com sucesso");
 
         epubRendition.on("locationChanged", (location: any) => {
+          console.log("Localização mudou:", location);
           setCurrentLocation(location.start);
           const currentPage = epubBook.locations.percentageFromCfi(location.start);
           setProgress(currentPage * 100);
@@ -82,14 +101,26 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
           }
         });
 
+        epubRendition.on("rendered", (section: any) => {
+          console.log("Seção renderizada:", section.href);
+        });
+
+        epubRendition.on("relocated", (location: any) => {
+          console.log("Relocação:", location);
+        });
+
         setRendition(epubRendition);
 
         // Obter o sumário
+        console.log("Carregando navegação...");
         const navigation = await epubBook.loaded.navigation;
+        console.log("Navegação carregada:", navigation);
         setToc(navigation.toc);
 
         // Gerar localizações para navegação precisa
+        console.log("Gerando localizações...");
         await epubBook.locations.generate(1024);
+        console.log("Localizações geradas");
 
       } catch (error) {
         console.error("Erro ao carregar o EPUB:", error);
@@ -114,7 +145,7 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
         } else {
           toast({
             title: "Erro",
-            description: "Não foi possível carregar o livro. Tente novamente mais tarde.",
+            description: "Não foi possível carregar o livro. Tente novamente mais tarde. " + errorStr.substring(0, 100),
             variant: "destructive",
           });
         }
@@ -128,7 +159,7 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
         book.destroy();
       }
     };
-  }, [url, isAuthenticated, user]);
+  }, [url, isAuthenticated, user, bookId]);
 
   const saveReadingProgress = async (progressValue: number) => {
     try {

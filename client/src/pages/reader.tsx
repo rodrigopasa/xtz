@@ -38,9 +38,11 @@ export default function Reader({ id, format }: ReaderProps) {
     };
   }
   
-  // Carregar informações do livro usando a nova rota de ID
+  // Carregar informações do livro - tentativa com ID numérico
   const { data: book, isLoading, error } = useQuery<Book>({
-    queryKey: [`/api/books/id/${id}`],
+    queryKey: [`/api/books/${id}`],
+    retry: 1,
+    retryDelay: 1000
   });
   
   useEffect(() => {
