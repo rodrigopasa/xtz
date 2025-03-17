@@ -258,11 +258,18 @@ export default function BookForm({ id }: BookFormProps) {
       clearInterval(progressInterval);
       setUploadProgress(100);
       
-      if (response && response.url) {
-        form.setValue("epubUrl", response.url);
+      if (response && response.epubUrl) {
+        form.setValue("epubUrl", response.epubUrl);
         toast({
           title: "Arquivo EPUB enviado",
           description: "O arquivo EPUB foi enviado com sucesso.",
+        });
+      } else {
+        console.error("Resposta do upload não contém epubUrl:", response);
+        toast({
+          title: "Erro ao salvar arquivo",
+          description: "O arquivo foi enviado mas a URL não foi retornada corretamente.",
+          variant: "destructive",
         });
       }
     } catch (error: any) {
@@ -305,11 +312,18 @@ export default function BookForm({ id }: BookFormProps) {
       clearInterval(progressInterval);
       setUploadProgress(100);
       
-      if (response && response.url) {
-        form.setValue("pdfUrl", response.url);
+      if (response && response.pdfUrl) {
+        form.setValue("pdfUrl", response.pdfUrl);
         toast({
           title: "Arquivo PDF enviado",
           description: "O arquivo PDF foi enviado com sucesso.",
+        });
+      } else {
+        console.error("Resposta do upload não contém pdfUrl:", response);
+        toast({
+          title: "Erro ao salvar arquivo",
+          description: "O arquivo foi enviado mas a URL não foi retornada corretamente.",
+          variant: "destructive",
         });
       }
     } catch (error: any) {
