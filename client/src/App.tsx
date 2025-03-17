@@ -43,7 +43,8 @@ import AdminAuthors from "@/pages/admin/authors";
 import AdminUsers from "@/pages/admin/users";
 import AdminComments from "@/pages/admin/comments";
 import AdminReports from "@/pages/admin/reports";
-import AdminSeries from "@/pages/admin/series"; // Add this import
+import AdminSeries from "@/pages/admin/series";
+import AdminSettings from "@/pages/admin/settings"; // Add this import
 
 // Assuming Protected component is defined elsewhere and handles role-based access.
 import Protected from './components/Protected'; // Adjust path as needed
@@ -352,13 +353,15 @@ function Router() {
 
       <Route path="/admin/configuracoes">
         {() => (
-          <>
-            <AdminHeader />
-            <div className="flex-grow flex">
-              <AdminSidebar />
-              <NotFound />
-            </div>
-          </>
+          <Protected role="admin">
+            <>
+              <AdminHeader />
+              <div className="flex-grow flex">
+                <AdminSidebar />
+                <AdminSettings />
+              </div>
+            </>
+          </Protected>
         )}
       </Route>
 
