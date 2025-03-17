@@ -24,7 +24,8 @@ import {
   MoveLeft,
   Clock,
   TextSearch,
-  RefreshCw
+  RefreshCw,
+  Sunrise as SunMoon
 } from "lucide-react";
 import {
   Sheet,
