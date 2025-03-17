@@ -117,6 +117,12 @@ export default function BookForm({ id }: BookFormProps) {
     queryKey: ["/api/categories"],
   });
   
+  // Buscar séries disponíveis
+  const { data: series, isLoading: seriesLoading } = useQuery({
+    queryKey: ["/api/series"],
+    enabled: !!selectedAuthor, // Só buscar séries quando um autor for selecionado
+  });
+  
   // Configurar o formulário
   const form = useForm<z.infer<typeof bookFormSchema>>({
     resolver: zodResolver(bookFormSchema),
