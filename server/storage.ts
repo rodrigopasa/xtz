@@ -266,6 +266,32 @@ export class MemStorage implements IStorage {
       }
     ];
     
+    // Criar séries iniciais para testes
+    const seriesData: InsertSeries[] = [
+      {
+        name: 'O Senhor dos Anéis',
+        slug: 'senhor-dos-aneis',
+        authorId: 1,
+        description: 'Série épica de fantasia que narra a jornada para destruir o Um Anel',
+        bookCount: 0,
+        coverUrl: 'https://m.media-amazon.com/images/I/71jLBXtWJWL._AC_UF1000,1000_QL80_.jpg'
+      },
+      {
+        name: 'Crônicas de Duna',
+        slug: 'cronicas-de-duna',
+        authorId: 2,
+        description: 'Série de ficção científica passada em um futuro distante',
+        bookCount: 0,
+        coverUrl: 'https://m.media-amazon.com/images/I/61niMn9ftuL._AC_UF894,1000_QL80_.jpg'
+      }
+    ];
+    
+    for (let i = 0; i < seriesData.length; i++) {
+      const seriesId = i + 1;
+      const newSeries = { ...seriesData[i], id: seriesId };
+      this.series.set(seriesId, newSeries);
+    }
+    
     // Criar livros e armazenar corretamente com seus IDs
     for (let i = 0; i < booksData.length; i++) {
       const newBook = {
@@ -275,6 +301,39 @@ export class MemStorage implements IStorage {
         ratingCount: 0,
         downloadCount: 0
       };
+      
+      // Associar livros às séries para testes
+      if (i === 0) { // O Silmarillion
+        newBook.seriesId = null; // Este não pertence a nenhuma série
+        newBook.volumeNumber = null;
+      } else if (i === 1) { // Duna
+        newBook.seriesId = 2; // Associar à série Crônicas de Duna
+        newBook.volumeNumber = 1; // Primeiro volume
+        
+        // Atualizar contagem de livros na série
+        const series = this.series.get(2);
+        if (series) {
+          this.series.set(2, { ...series, bookCount: series.bookCount + 1 });
+        }
+      } else if (i === 2) { // Admirável Mundo Novo - Para testes, vamos associar à série de Duna como volume 3
+        newBook.seriesId = 2; // Associar à série Crônicas de Duna (só para teste)
+        newBook.volumeNumber = 3; // Terceiro volume
+        
+        // Atualizar contagem de livros na série
+        const series = this.series.get(2);
+        if (series) {
+          this.series.set(2, { ...series, bookCount: series.bookCount + 1 });
+        }
+      } else if (i === 4) { // Biblioteca da Meia-Noite - Para testes, vamos associar à série de Duna como volume 2
+        newBook.seriesId = 2; // Associar à série Crônicas de Duna (só para teste)
+        newBook.volumeNumber = 2; // Segundo volume
+        
+        // Atualizar contagem de livros na série
+        const series = this.series.get(2);
+        if (series) {
+          this.series.set(2, { ...series, bookCount: series.bookCount + 1 });
+        }
+      }
       
       // Armazenar diretamente no Map com o ID como chave
       this.books.set(i + 1, newBook);
