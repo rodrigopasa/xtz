@@ -117,10 +117,10 @@ declare module "express-session" {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configuração do CORS
   app.use(cors({
-    origin: true, // Permite requisições do mesmo domínio
+    origin: 'https://' + process.env.REPLIT_SLUG + '.' + process.env.REPLIT_SLUG_DOMAIN,
     credentials: true, // Permite cookies nas requisições de CORS
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
   }));
   
   // Endpoint para health check (usado para monitoramento em Coolify/Docker)
@@ -134,17 +134,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Configuração de sessão
   const MemoryStoreSession = MemoryStore(session);
-  const isProduction = process.env.NODE_ENV === 'production';
+  // Forçando ambiente de desenvolvimento para garantir cookies em HTTPS
+  const isProduction = false; // process.env.NODE_ENV === 'production';
   
   app.use(session({
     secret: process.env.SESSION_SECRET || "bibliotech-secret-key",
-    resave: true, 
-    saveUninitialized: true,
+    resave: false, 
+    saveUninitialized: false,
     cookie: { 
       maxAge: 24 * 60 * 60 * 1000, // 24 horas
       httpOnly: true,
-      secure: isProduction, // True em produção, false em dev
-      sameSite: isProduction ? 'strict' : 'lax',
+      secure: false, // Desativando secure para ambiente de desenvolvimento
+      sameSite: 'lax',
       path: '/' // Garante que o cookie seja enviado para todas as rotas
     },
     name: 'bibliotech.sid', // Nome personalizado para o cookie de sessão
