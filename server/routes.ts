@@ -31,9 +31,11 @@ const __dirname = dirname(__filename);
 const coversDirectory = path.join(__dirname, "../public/covers");
 const booksDirectory = path.join(__dirname, "../public/books");
 const uploadsDirectory = path.join(__dirname, "../public/uploads");
+const uploadsCoversDirectory = path.join(__dirname, "../public/uploads/covers");
+const uploadsBooksDirectory = path.join(__dirname, "../public/uploads/books");
 
 // Garantir que os diretórios existam
-[coversDirectory, booksDirectory, uploadsDirectory].forEach(dir => {
+[coversDirectory, booksDirectory, uploadsDirectory, uploadsCoversDirectory, uploadsBooksDirectory].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
