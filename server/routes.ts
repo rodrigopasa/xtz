@@ -811,10 +811,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const author = await storage.getAuthor(book.authorId);
       const category = await storage.getCategory(book.categoryId);
       
+      // Obter informações da série, se o livro pertencer a uma
+      let seriesInfo = null;
+      if (book.seriesId) {
+        const series = await storage.getSeries(book.seriesId);
+        if (series) {
+          seriesInfo = {
+            id: series.id,
+            name: series.name,
+            slug: series.slug,
+            volume: book.volumeNumber
+          };
+        }
+      }
+      
       const enrichedBook = {
         ...book,
         author: author ? { id: author.id, name: author.name, slug: author.slug } : null,
-        category: category ? { id: category.id, name: category.name, slug: category.slug } : null
+        category: category ? { id: category.id, name: category.name, slug: category.slug } : null,
+        series: seriesInfo
       };
       
       res.json(enrichedBook);
@@ -840,10 +855,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const author = await storage.getAuthor(book.authorId);
       const category = await storage.getCategory(book.categoryId);
       
+      // Obter informações da série, se o livro pertencer a uma
+      let seriesInfo = null;
+      if (book.seriesId) {
+        const series = await storage.getSeries(book.seriesId);
+        if (series) {
+          seriesInfo = {
+            id: series.id,
+            name: series.name,
+            slug: series.slug,
+            volume: book.volumeNumber
+          };
+        }
+      }
+      
       const enrichedBook = {
         ...book,
         author: author ? { id: author.id, name: author.name, slug: author.slug } : null,
-        category: category ? { id: category.id, name: category.name, slug: category.slug } : null
+        category: category ? { id: category.id, name: category.name, slug: category.slug } : null,
+        series: seriesInfo
       };
       
       res.json(enrichedBook);
@@ -967,10 +997,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const author = await storage.getAuthor(book.authorId);
       const category = await storage.getCategory(book.categoryId);
       
+      // Obter informações da série, se o livro pertencer a uma
+      let seriesInfo = null;
+      if (book.seriesId) {
+        const series = await storage.getSeries(book.seriesId);
+        if (series) {
+          seriesInfo = {
+            id: series.id,
+            name: series.name,
+            slug: series.slug,
+            volume: book.volumeNumber
+          };
+        }
+      }
+      
       const enrichedBook = {
         ...book,
         author: author ? { id: author.id, name: author.name, slug: author.slug } : null,
-        category: category ? { id: category.id, name: category.name, slug: category.slug } : null
+        category: category ? { id: category.id, name: category.name, slug: category.slug } : null,
+        series: seriesInfo
       };
       
       res.json(enrichedBook);
@@ -1309,10 +1354,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const enrichedBooks = await Promise.all(favoriteBooks.map(async (book) => {
         const author = await storage.getAuthor(book.authorId);
         const category = await storage.getCategory(book.categoryId);
+        
+        // Obter informações da série, se o livro pertencer a uma
+        let seriesInfo = null;
+        if (book.seriesId) {
+          const series = await storage.getSeries(book.seriesId);
+          if (series) {
+            seriesInfo = {
+              id: series.id,
+              name: series.name,
+              slug: series.slug,
+              volume: book.volumeNumber
+            };
+          }
+        }
+        
         return {
           ...book,
           author: author ? { name: author.name, slug: author.slug } : null,
-          category: category ? { name: category.name, slug: category.slug } : null
+          category: category ? { name: category.name, slug: category.slug } : null,
+          series: seriesInfo
         };
       }));
       

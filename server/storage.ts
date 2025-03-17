@@ -665,14 +665,37 @@ export class MemStorage implements IStorage {
       .sort((a, b) => b.lastReadAt.getTime() - a.lastReadAt.getTime());
   }
   
-  async getReadingHistoryBooks(userId: number): Promise<(ReadingHistory & { book: Book })[]> {
+  async getReadingHistoryBooks(userId: number): Promise<(ReadingHistory & { book: Book & { author?: { name: string, slug: string }, series?: { id: number, name: string, slug: string, volume: number | null } } })[]> {
     const histories = await this.getReadingHistoryByUser(userId);
-    const result: (ReadingHistory & { book: Book })[] = [];
+    const result: (ReadingHistory & { book: Book & { author?: { name: string, slug: string }, series?: { id: number, name: string, slug: string, volume: number | null } } })[] = [];
     
     for (const history of histories) {
       const book = await this.getBook(history.bookId);
       if (book) {
-        result.push({ ...history, book });
+        // Obter autor
+        const author = await this.getAuthor(book.authorId);
+        
+        // Obter série se existir
+        let seriesInfo = undefined;
+        if (book.seriesId) {
+          const series = await this.getSeries(book.seriesId);
+          if (series) {
+            seriesInfo = {
+              id: series.id,
+              name: series.name,
+              slug: series.slug,
+              volume: book.volumeNumber
+            };
+          }
+        }
+        
+        const enrichedBook = { 
+          ...book, 
+          author: author ? { name: author.name, slug: author.slug } : undefined,
+          series: seriesInfo
+        };
+        
+        result.push({ ...history, book: enrichedBook });
       }
     }
     
