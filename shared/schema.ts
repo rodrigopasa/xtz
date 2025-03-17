@@ -190,6 +190,9 @@ export type Category = typeof categories.$inferSelect;
 export type InsertAuthor = z.infer<typeof insertAuthorSchema>;
 export type Author = typeof authors.$inferSelect;
 
+export type InsertSeries = z.infer<typeof insertSeriesSchema>;
+export type Series = typeof series.$inferSelect;
+
 export type InsertBook = z.infer<typeof insertBookSchema>;
 export type Book = typeof books.$inferSelect;
 
