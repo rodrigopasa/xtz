@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
+import { Book, ArrowLeft, BookOpen, Download, ExternalLink } from "lucide-react";
 import EPubReader from "@/components/epub-reader";
 import PDFReader from "@/components/pdf-reader";
 
@@ -17,8 +20,9 @@ export default function Reader({ id, format }: ReaderProps) {
   console.log(`Página Reader carregada - ID: ${id}, Formato: ${format}`);
   
   const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [previousReading, setPreviousReading] = useState<number | null>(null);
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   
   // Verificar formato válido
   const isValidFormat = format === 'epub' || format === 'pdf';
@@ -32,6 +36,12 @@ export default function Reader({ id, format }: ReaderProps) {
     epubUrl?: string;
     pdfUrl?: string;
     format: 'epub' | 'pdf' | 'both';
+    coverUrl?: string;
+    series?: {
+      name: string;
+      volume: number;
+      slug: string;
+    } | null;
     author: {
       name: string;
       slug: string;
@@ -169,15 +179,64 @@ export default function Reader({ id, format }: ReaderProps) {
     );
   }
   
-  // Renderizar o leitor apropriado
+  // Renderizar o leitor apropriado com meta noindex
   return (
-    <div className="h-[calc(100vh-64px)]">
-      {format === 'epub' || fileUrl?.endsWith('.epub') ? (
-        // Passar apenas o ID do livro para o leitor, as rotas de API de visualização são usadas internamente
-        <EPubReader url={fileUrl || ""} bookId={id} />
-      ) : (
-        <PDFReader url={fileUrl || ""} bookId={id} />
-      )}
-    </div>
+    <>
+      <Helmet>
+        <title>{book?.title ? `Lendo: ${book.title}` : 'Leitor de livros'}</title>
+        <meta name="robots" content="noindex, nofollow" />
+        <meta name="description" content="Leitor de livros interativo" />
+      </Helmet>
+      
+      {/* Barra superior com informações do livro */}
+      <div className="bg-white border-b shadow-sm py-2 px-4">
+        <div className="container mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Link href={`/livro/${book?.slug}/${book?.author.slug}`}>
+              <Button variant="ghost" size="sm" className="text-blue-600">
+                <ArrowLeft size={18} className="mr-1" />
+                Voltar
+              </Button>
+            </Link>
+            
+            <div className="hidden md:block">
+              <span className="text-sm font-medium">{book?.title}</span>
+              {book?.series && (
+                <Badge variant="outline" className="ml-2">
+                  Série: {book.series.name} #{book.series.volume}
+                </Badge>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            {book?.format === 'both' && (
+              <Link href={`/ler/${id}/${format === 'epub' ? 'pdf' : 'epub'}`}>
+                <Button variant="outline" size="sm">
+                  <BookOpen size={16} className="mr-1" />
+                  Ver em {format === 'epub' ? 'PDF' : 'EPUB'}
+                </Button>
+              </Link>
+            )}
+            
+            <Link href={format === 'epub' ? `/api/books/download/${id}/epub` : `/api/books/download/${id}/pdf`} target="_blank">
+              <Button variant="outline" size="sm">
+                <Download size={16} className="mr-1" />
+                Download
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+      
+      {/* Container do leitor */}
+      <div className="h-[calc(100vh-110px)]">
+        {format === 'epub' || fileUrl?.endsWith('.epub') ? (
+          <EPubReader url={fileUrl || ""} bookId={id} />
+        ) : (
+          <PDFReader url={fileUrl || ""} bookId={id} />
+        )}
+      </div>
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, pgEnum, foreignKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -58,6 +58,26 @@ export const insertAuthorSchema = createInsertSchema(authors).pick({
   imageUrl: true,
 });
 
+// Séries
+export const series = pgTable("series", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  coverUrl: text("cover_url"),
+  authorId: integer("author_id").notNull(),
+  bookCount: integer("book_count").default(0).notNull(),
+});
+
+export const insertSeriesSchema = createInsertSchema(series).pick({
+  name: true,
+  slug: true,
+  description: true,
+  coverUrl: true,
+  authorId: true,
+  bookCount: true,
+});
+
 // Livros
 export const books = pgTable("books", {
   id: serial("id").primaryKey(),
@@ -82,6 +102,9 @@ export const books = pgTable("books", {
   isFeatured: boolean("is_featured").default(false),
   isNew: boolean("is_new").default(false),
   isFree: boolean("is_free").default(false),
+  // Campos para séries
+  seriesId: integer("series_id"),
+  volumeNumber: integer("volume_number"),
 });
 
 export const insertBookSchema = createInsertSchema(books).pick({
@@ -103,6 +126,8 @@ export const insertBookSchema = createInsertSchema(books).pick({
   isFeatured: true,
   isNew: true,
   isFree: true,
+  seriesId: true,
+  volumeNumber: true,
 });
 
 // Favoritos

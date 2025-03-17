@@ -53,8 +53,9 @@ try {
   console.log("Usando worker fake devido a erro:", error);
   // Fallback para worker fake (mais lento, mas funciona sem dependências externas)
   pdfjs.GlobalWorkerOptions.workerSrc = '';
-  // @ts-ignore - Configuração de debug que permite usar um worker fake
-  pdfjs.disableWorker = true;
+  // Configuração alternativa para usar worker fake
+  // Não podemos modificar importações diretamente
+  (window as any).PDFJS_DISABLE_WORKER = true;
 }
 
 interface PDFReaderProps {
