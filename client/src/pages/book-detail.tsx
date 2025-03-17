@@ -330,12 +330,18 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                 </div>
                 
                 <div className="mt-6 flex flex-col gap-3">
-                  <Button 
-                    className="flex items-center justify-center" 
-                    onClick={() => handleReadOnline(book.format === 'pdf' ? 'pdf' : 'epub')}
-                  >
-                    <Book className="mr-2" size={18} /> Ler online
-                  </Button>
+                  {/* Só mostrar o botão de leitura online se houver pelo menos um formato disponível */}
+                  {(book.pdfUrl || book.epubUrl) && (
+                    <Button 
+                      className="flex items-center justify-center" 
+                      onClick={() => handleReadOnline(
+                        // Priorizar o formato disponível, ou o primeiro se ambos estiverem disponíveis
+                        book.epubUrl ? 'epub' : 'pdf'
+                      )}
+                    >
+                      <Book className="mr-2" size={18} /> Ler online
+                    </Button>
+                  )}
                   
                   <div className="grid grid-cols-2 gap-3">
                     {book.pdfUrl && (

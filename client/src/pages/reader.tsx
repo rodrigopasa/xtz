@@ -165,9 +165,9 @@ export default function Reader({ id, format }: ReaderProps) {
   return (
     <div className="h-[calc(100vh-64px)]">
       {format === 'epub' || fileUrl?.endsWith('.epub') ? (
-        <EPubReader url={""} bookId={id} />
+        <EPubReader url={fileUrl || ""} bookId={id} />
       ) : (
-        <PDFReader url={""} bookId={id} />
+        <PDFReader url={fileUrl || ""} bookId={id} />
       )}
     </div>
   );
