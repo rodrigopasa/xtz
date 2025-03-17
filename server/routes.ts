@@ -44,7 +44,7 @@ const uploadsBooksDirectory = path.join(__dirname, "../public/uploads/books");
 // Configurar storage para upload de capas
 const coverStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, coversDirectory);
+    cb(null, uploadsCoversDirectory);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -56,7 +56,7 @@ const coverStorage = multer.diskStorage({
 // Configurar storage para upload de arquivos de livro (EPUB/PDF)
 const bookFileStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, booksDirectory);
+    cb(null, uploadsBooksDirectory);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -1305,6 +1305,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Iniciar servidor HTTP para o Express
   const server = createServer(app);
   
+  // Rota para visualização de livros (sem download)
+  app.get("/api/books/view/:id/:format", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const format = req.params.format;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      
+      if (format !== 'epub' && format !== 'pdf') {
+        return res.status(400).json({ message: "Formato inválido. Use 'epub' ou 'pdf'" });
+      }
+      
+      const book = await storage.getBook(id);
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      let filePath;
+      if (format === 'epub' && book.epubUrl) {
+        filePath = path.join(__dirname, '..', book.epubUrl);
+      } else if (format === 'pdf' && book.pdfUrl) {
+        filePath = path.join(__dirname, '..', book.pdfUrl);
+      } else {
+        return res.status(404).json({ message: `Formato ${format} não disponível para este livro` });
+      }
+      
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ message: "Arquivo não encontrado no servidor" });
+      }
+      
+      console.log(`Arquivo sendo visualizado: ${filePath}`);
+      
+      // Enviar o arquivo para visualização (sem forçar download)
+      res.setHeader('Content-Type', format === 'epub' ? 'application/epub+zip' : 'application/pdf');
+      
+      // Enviar o arquivo
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error('Erro na visualização do livro:', error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+  
+  // Rotas para download de livros
+  app.get("/api/books/download/:id/:format", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const format = req.params.format;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      
+      if (format !== 'epub' && format !== 'pdf') {
+        return res.status(400).json({ message: "Formato inválido. Use 'epub' ou 'pdf'" });
+      }
+      
+      const book = await storage.getBook(id);
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      let filePath;
+      if (format === 'epub' && book.epubUrl) {
+        filePath = path.join(__dirname, '..', book.epubUrl);
+      } else if (format === 'pdf' && book.pdfUrl) {
+        filePath = path.join(__dirname, '..', book.pdfUrl);
+      } else {
+        return res.status(404).json({ message: `Formato ${format} não disponível para este livro` });
+      }
+      
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ message: "Arquivo não encontrado no servidor" });
+      }
+      
+      // Incrementar contador de downloads
+      await storage.incrementDownloadCount(id);
+      
+      console.log(`Arquivo sendo baixado: ${filePath}`);
+      
+      // Configurar headers para forçar download
+      const fileName = path.basename(filePath);
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Type', format === 'epub' ? 'application/epub+zip' : 'application/pdf');
+      
+      // Enviar o arquivo
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error('Erro no download do livro:', error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+  
   // Rotas de upload
   app.post('/api/upload/cover', isAuthenticated, uploadCover.single('cover'), (req, res) => {
     try {
@@ -1313,7 +1410,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Construir URL para o arquivo
-      const coverUrl = `/covers/${req.file.filename}`;
+      const coverUrl = `/uploads/covers/${req.file.filename}`;
+      
+      // Log do upload
+      console.log(`Upload de capa concluído: ${req.file.filename}`);
+      console.log(`URL da capa: ${coverUrl}`);
       
       res.json({ coverUrl });
     } catch (error) {
@@ -1329,7 +1430,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Construir URL para o arquivo
-      const epubUrl = `/books/${req.file.filename}`;
+      const epubUrl = `/uploads/books/${req.file.filename}`;
+      
+      // Log do upload
+      console.log(`Upload de EPUB concluído: ${req.file.filename}`);
+      console.log(`URL do EPUB: ${epubUrl}`);
       
       res.json({ epubUrl });
     } catch (error) {
@@ -1345,7 +1450,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Construir URL para o arquivo
-      const pdfUrl = `/books/${req.file.filename}`;
+      const pdfUrl = `/uploads/books/${req.file.filename}`;
+      
+      // Log do upload
+      console.log(`Upload de PDF concluído: ${req.file.filename}`);
+      console.log(`URL do PDF: ${pdfUrl}`);
       
       res.json({ pdfUrl });
     } catch (error) {
