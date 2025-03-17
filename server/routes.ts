@@ -1326,19 +1326,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       let filePath;
-      if (format === 'epub' && book.epubUrl) {
-        filePath = path.join(__dirname, '..', book.epubUrl);
-      } else if (format === 'pdf' && book.pdfUrl) {
-        filePath = path.join(__dirname, '..', book.pdfUrl);
-      } else {
+      let fileUrl = format === 'epub' ? book.epubUrl : book.pdfUrl;
+      
+      if (!fileUrl) {
         return res.status(404).json({ message: `Formato ${format} não disponível para este livro` });
       }
       
+      // Verificar se o URL começa com /uploads/ ou com /books/
+      if (fileUrl.startsWith('/uploads/')) {
+        filePath = path.join(__dirname, '..', fileUrl);
+      } else if (fileUrl.startsWith('/books/')) {
+        filePath = path.join(__dirname, '..', 'public', fileUrl);
+      } else {
+        filePath = path.join(__dirname, '..', 'public', fileUrl);
+      }
+      
       if (!fs.existsSync(filePath)) {
+        console.error(`Arquivo não encontrado: ${filePath}`);
         return res.status(404).json({ message: "Arquivo não encontrado no servidor" });
       }
       
-      console.log(`Arquivo sendo visualizado: ${filePath}`);
+      console.log(`Arquivo sendo visualizado: ${filePath} (URL: ${fileUrl})`);
       
       // Enviar o arquivo para visualização (sem forçar download)
       res.setHeader('Content-Type', format === 'epub' ? 'application/epub+zip' : 'application/pdf');
@@ -1372,15 +1380,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       let filePath;
-      if (format === 'epub' && book.epubUrl) {
-        filePath = path.join(__dirname, '..', book.epubUrl);
-      } else if (format === 'pdf' && book.pdfUrl) {
-        filePath = path.join(__dirname, '..', book.pdfUrl);
-      } else {
+      let fileUrl = format === 'epub' ? book.epubUrl : book.pdfUrl;
+      
+      if (!fileUrl) {
         return res.status(404).json({ message: `Formato ${format} não disponível para este livro` });
       }
       
+      // Verificar se o URL começa com /uploads/ ou com /books/
+      if (fileUrl.startsWith('/uploads/')) {
+        filePath = path.join(__dirname, '..', fileUrl);
+      } else if (fileUrl.startsWith('/books/')) {
+        filePath = path.join(__dirname, '..', 'public', fileUrl);
+      } else {
+        filePath = path.join(__dirname, '..', 'public', fileUrl);
+      }
+      
       if (!fs.existsSync(filePath)) {
+        console.error(`Arquivo não encontrado: ${filePath}`);
         return res.status(404).json({ message: "Arquivo não encontrado no servidor" });
       }
       
