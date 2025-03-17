@@ -123,8 +123,8 @@ const bookFormSchema = z.object({
   isFeatured: z.boolean().default(false),
   isNew: z.boolean().default(false),
   isFree: z.boolean().default(false),
-  seriesId: z.number().optional().nullable(),
-  volumeNumber: z.number().optional().nullable(),
+  seriesId: z.string().optional().nullable(),
+  volumeNumber: z.coerce.number().optional().nullable(),
 });
 
 export default function BookForm({ id }: BookFormProps) {
@@ -214,7 +214,7 @@ export default function BookForm({ id }: BookFormProps) {
         isFeatured: book.isFeatured || false,
         isNew: book.isNew || false,
         isFree: book.isFree || false,
-        seriesId: book.seriesId,
+        seriesId: book.seriesId?.toString() || "none",
         volumeNumber: book.volumeNumber,
       });
 
@@ -242,8 +242,8 @@ export default function BookForm({ id }: BookFormProps) {
         ...values,
         authorId: parseInt(values.authorId),
         categoryId: parseInt(values.categoryId),
-        seriesId: values.seriesId,
-        volumeNumber: values.volumeNumber,
+        seriesId: values.seriesId === "none" || !values.seriesId ? null : parseInt(values.seriesId),
+        volumeNumber: values.volumeNumber || null,
         pageCount: values.pageCount || null,
         publishYear: values.publishYear || null,
       };
@@ -1003,7 +1003,7 @@ export default function BookForm({ id }: BookFormProps) {
                                   className="h-4 w-4 ml-1"
                                   onClick={() => setEpubFile(null)}
                                 >
-                                  <X className="h-3 w-3" />
+                                  <X className="h3 w-3" />
                                 </Button>
                               </div>
                             )}
