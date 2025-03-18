@@ -337,8 +337,8 @@ export default function AdminBooks() {
                             <span className="font-medium line-clamp-1">{book.title}</span>
                           </div>
                         </TableCell>
-                        <TableCell>{book.author.name}</TableCell>
-                        <TableCell>{book.category.name}</TableCell>
+                        <TableCell>{book.author?.name || 'Sem autor'}</TableCell>
+                        <TableCell>{book.category?.name || 'Sem categoria'}</TableCell>
                         <TableCell>
                           <div className="flex space-x-1">
                             {book.epubUrl && <Badge variant="outline" className="text-xs">EPUB</Badge>}
@@ -370,7 +370,7 @@ export default function AdminBooks() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Ações</DropdownMenuLabel>
                               <DropdownMenuItem asChild>
-                                <Link href={`/livro/${book.slug}/${book.author.slug}`} className="flex items-center cursor-pointer">
+                                <Link href={`/livro/${book.slug}/${book.author?.slug || ''}`} className="flex items-center cursor-pointer">
                                   <Eye className="mr-2 h-4 w-4" /> Visualizar
                                 </Link>
                               </DropdownMenuItem>
