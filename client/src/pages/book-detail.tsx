@@ -52,7 +52,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
 
   // Buscar detalhes do livro
   const { data: book, isLoading } = useQuery({
-    queryKey: [`/api/books/${slug}`],
+    queryKey: [`/api/books/slug/${slug}`],
   });
 
   // Buscar comentários do livro
