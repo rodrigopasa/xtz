@@ -337,15 +337,39 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(favoritesTable).where(eq(favoritesTable.userId, userId));
   }
 
-  async getFavoriteBooks(userId: number): Promise<Book[]> {
+  async getFavoriteBooks(userId: number): Promise<(Book & { author?: { name: string; slug: string }, category?: { name: string; slug: string } })[]> {
     const favorites = await this.getFavoritesByUser(userId);
     
     if (favorites.length === 0) {
       return [];
     }
     
-    // Precisamos usar o operador 'in' para encontrar todos os livros cujos IDs estão na lista
-    return db.select().from(booksTable).where(inArray(booksTable.id, favorites.map(fav => fav.bookId)));
+    // Buscar livros com informações de autor e categoria
+    const result = await db
+      .select({
+        ...booksTable,
+        authorName: authorsTable.name,
+        authorSlug: authorsTable.slug,
+        categoryName: categoriesTable.name,
+        categorySlug: categoriesTable.slug
+      })
+      .from(booksTable)
+      .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
+      .leftJoin(categoriesTable, eq(booksTable.categoryId, categoriesTable.id))
+      .where(inArray(booksTable.id, favorites.map(fav => fav.bookId)));
+      
+    // Formatar o resultado para incluir objetos aninhados para autor e categoria
+    return result.map(book => ({
+      ...book,
+      author: book.authorName ? {
+        name: book.authorName,
+        slug: book.authorSlug
+      } : undefined,
+      category: book.categoryName ? {
+        name: book.categoryName,
+        slug: book.categorySlug
+      } : undefined
+    }));
   }
 
   async createFavorite(favorite: InsertFavorite): Promise<Favorite> {
@@ -369,7 +393,12 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(readingHistoryTable).where(eq(readingHistoryTable.userId, userId)).orderBy(desc(readingHistoryTable.lastReadAt));
   }
 
-  async getReadingHistoryBooks(userId: number): Promise<(ReadingHistory & { book: Book })[]> {
+  async getReadingHistoryBooks(userId: number): Promise<(ReadingHistory & { 
+    book: Book & { 
+      author?: { name: string; slug: string }, 
+      category?: { name: string; slug: string } 
+    } 
+  })[]> {
     const histories = await this.getReadingHistoryByUser(userId);
     
     if (histories.length === 0) {
@@ -377,11 +406,37 @@ export class DatabaseStorage implements IStorage {
     }
     
     const bookIds = histories.map(h => h.bookId);
-    // Usar inArray ao invés de eq para IDs múltiplos
-    const books = await db.select().from(booksTable).where(inArray(booksTable.id, bookIds));
     
+    // Buscar livros com informações de autor e categoria
+    const result = await db
+      .select({
+        ...booksTable,
+        authorName: authorsTable.name,
+        authorSlug: authorsTable.slug,
+        categoryName: categoriesTable.name,
+        categorySlug: categoriesTable.slug
+      })
+      .from(booksTable)
+      .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
+      .leftJoin(categoriesTable, eq(booksTable.categoryId, categoriesTable.id))
+      .where(inArray(booksTable.id, bookIds));
+      
+    // Formatar o resultado para incluir objetos aninhados para autor e categoria
+    const enrichedBooks = result.map(book => ({
+      ...book,
+      author: book.authorName ? {
+        name: book.authorName,
+        slug: book.authorSlug
+      } : undefined,
+      category: book.categoryName ? {
+        name: book.categoryName,
+        slug: book.categorySlug
+      } : undefined
+    }));
+    
+    // Mapear o histórico com os livros enriquecidos
     return histories.map(history => {
-      const book = books.find(b => b.id === history.bookId);
+      const book = enrichedBooks.find(b => b.id === history.bookId);
       return { ...history, book: book! };
     });
   }

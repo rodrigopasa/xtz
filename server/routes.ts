@@ -1051,7 +1051,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Atualizar progresso de leitura
+  // Atualizar progresso de leitura (com ID do livro no corpo da requisição)
+  app.post("/api/reading-history", async (req, res) => {
+    try {
+      // Verificar autenticação
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const userId = (req.user as any).id;
+      const { bookId, currentPage, totalPages, progress, lastLocation } = req.body;
+      
+      if (!bookId) {
+        return res.status(400).json({ message: "ID do livro é obrigatório" });
+      }
+      
+      // Verificar se o livro existe
+      const book = await storage.getBook(bookId);
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      // Calcular progresso em porcentagem (0-100)
+      let calculatedProgress = progress;
+      if (currentPage && totalPages && totalPages > 0) {
+        calculatedProgress = Math.round((currentPage / totalPages) * 100);
+      }
+      
+      const historyEntry = await storage.createOrUpdateReadingHistory({
+        userId,
+        bookId,
+        progress: calculatedProgress || 0,
+        isCompleted: calculatedProgress === 100
+      });
+      
+      res.status(200).json(historyEntry);
+    } catch (error) {
+      console.error("Erro ao atualizar progresso de leitura:", error);
+      res.status(500).json({ message: "Erro ao atualizar progresso de leitura" });
+    }
+  });
+  
+  // Atualizar progresso de leitura (com ID do livro na URL)
   app.post("/api/reading-history/:bookId", async (req, res) => {
     try {
       // Verificar autenticação
