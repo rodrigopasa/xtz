@@ -23,6 +23,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import MemoryStore from "memorystore";
 import cors from "cors";
+import { compare } from 'bcryptjs'; // Import bcrypt's compare function
 
 // ESM module compatibility - definir __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -213,27 +214,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log(`- /books -> ${booksDirectory}`);
   console.log(`- /uploads -> ${uploadsDirectory}`);
   
+
   passport.use(new LocalStrategy(async (username, password, done) => {
     try {
       const user = await storage.getUserByUsername(username);
-      if (!user || user.password !== password) {
+      if (!user) {
+        console.log("Usuário não encontrado:", username);
         return done(null, false, { message: "Credenciais inválidas" });
       }
+
+      const isValidPassword = await compare(password, user.password);
+      if (!isValidPassword) {
+        console.log("Senha inválida para usuário:", username);
+        return done(null, false, { message: "Credenciais inválidas" });
+      }
+
+      console.log("Login bem-sucedido para:", username);
       return done(null, user);
     } catch (error) {
+      console.error("Erro na autenticação:", error);
       return done(error);
     }
   }));
-  
+
   passport.serializeUser((user: any, done) => {
+    console.log("Serializando usuário:", user.id);
     done(null, user.id);
   });
-  
+
   passport.deserializeUser(async (id: number, done) => {
     try {
+      console.log("Deserializando usuário ID:", id);
       const user = await storage.getUser(id);
+      if (!user) {
+        console.log("Usuário não encontrado na deserialização:", id);
+        return done(null, false);
+      }
       done(null, user);
     } catch (error) {
+      console.error("Erro na deserialização:", error);
       done(error);
     }
   });
@@ -268,40 +287,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Rotas de autenticação
   app.post("/api/auth/login", (req, res, next) => {
-    console.log("Tentativa de login:", req.body);
-    
+    console.log("Tentativa de login:", req.body.username);
+
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
         console.error("Erro na autenticação:", err);
         return next(err);
       }
-      
+
       if (!user) {
-        console.log("Falha no login:", info);
+        console.log("Falha no login:", info?.message);
         return res.status(401).json({ message: info?.message || "Credenciais inválidas" });
       }
-      
+
       req.login(user, (loginErr) => {
         if (loginErr) {
           console.error("Erro ao estabelecer sessão:", loginErr);
           return next(loginErr);
         }
-        
+
         console.log("Login bem-sucedido para:", user.username);
         console.log("ID de sessão:", req.sessionID);
         console.log("Cookies configurados:", res.getHeader('set-cookie'));
-        
+
         return res.json({
           id: user.id,
           username: user.username,
           email: user.email,
           name: user.name,
-          role: user.role
+          role: user.role,
+          avatarUrl: user.avatarUrl
         });
       });
     })(req, res, next);
   });
   
+
   app.post("/api/auth/register", async (req, res) => {
     try {
       const { data, error } = validateSchema(insertUserSchema, req.body);
@@ -773,13 +794,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ message: "ID de série inválido" });
       }
-
+      
       // Verificar se a série existe
       const series = await storage.getSeries(id);
       if (!series) {
         return res.status(404).json({ message: "Série não encontrada" });
       }
-
+      
       // Usar o método atualizado que já retorna livros com informações de autor
       const books = await storage.getBooksBySeries(id);
       
@@ -816,7 +837,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Erro ao buscar livros da série" });
     }
   });
-
+  
   // Rotas para Livros
   app.get("/api/books", async (req, res) => {
     try {
@@ -824,7 +845,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let books: any[] = [];
       
-      if (category) {
+      if(category) {
         const categoryObj = await storage.getCategoryBySlug(category as string);
         if (categoryObj) {
           books = await storage.getBooksByCategory(categoryObj.id);
@@ -885,6 +906,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(enrichedBooks);
     } catch (error) {
+      console.error("Erro ao buscar livros:", error);
       res.status(500).json({ message: "Erro ao buscar livros" });
     }
   });
@@ -1253,6 +1275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Erro ao processar upload do PDF" });
     }
   });
+  
 
   app.put("/api/books/:id", isAdmin, async (req, res) => {
     try {
@@ -1942,7 +1965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).send("Erro ao verificar arquivo: " + String(error));
     }
   });
-
+  
   // Iniciar servidor HTTP para o Express
   const server = createServer(app);
   
@@ -2263,6 +2286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Erro no processamento do upload' });
     }
   });
+  
 
   return server;
 }
