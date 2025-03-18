@@ -40,7 +40,7 @@ export default function Categorias() {
                 </CardContent>
               </Card>
             ))
-          ) : categories?.length > 0 ? (
+          ) : Array.isArray(categories) && categories.length > 0 ? (
             // Display categories
             categories.map((category: any) => (
               <CategoryCard 

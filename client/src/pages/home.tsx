@@ -113,7 +113,7 @@ export default function Home() {
                 </div>
               ))
             ) : (
-              categories?.slice(0, 6).map((category: any) => (
+              Array.isArray(categories) && categories.slice(0, 6).map((category: any) => (
                 <CategoryCard 
                   key={category.id}
                   name={category.name}
@@ -156,7 +156,7 @@ export default function Home() {
                 </div>
               ))
             ) : (
-              featuredBooks?.slice(0, 4).map((book: any) => (
+              Array.isArray(featuredBooks) && featuredBooks.slice(0, 4).map((book: any) => (
                 <BookCard
                   key={book.id}
                   id={book.id}
@@ -204,7 +204,7 @@ export default function Home() {
                 </div>
               ))
             ) : (
-              newBooks?.slice(0, 4).map((book: any) => (
+              Array.isArray(newBooks) && newBooks.slice(0, 4).map((book: any) => (
                 <BookCard
                   key={book.id}
                   id={book.id}
@@ -243,7 +243,7 @@ export default function Home() {
                 </div>
               ))
             ) : (
-              freeBooks?.slice(0, 6).map((book: any) => (
+              Array.isArray(freeBooks) && freeBooks.slice(0, 6).map((book: any) => (
                 <div key={book.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all">
                   <Link href={`/livro/${book.slug}/${book.author.slug}`} className="block relative pb-[140%]">
                     <img 
