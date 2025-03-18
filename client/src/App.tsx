@@ -12,6 +12,7 @@ import Footer from "@/components/layout/footer";
 import AdminHeader from "@/components/layout/admin-header";
 import AdminSidebar from "@/components/layout/admin-sidebar";
 import Sidebar from "@/components/layout/sidebar";
+import SEOHead from "@/components/SEOHead";
 
 // Public Pages
 import Home from "@/pages/home";
@@ -474,6 +475,8 @@ function App() {
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          {/* Componente global para SEO e códigos personalizados */}
+          <SEOHead />
           <div className="min-h-screen flex flex-col">
             <FallingStars />
             <Router />

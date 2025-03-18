@@ -2,17 +2,48 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" id="dynamic-favicon" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="BiblioTech - Sua biblioteca digital com milhares de livros em EPUB e PDF. Faça download ou leia online." />
-    <title>BiblioTech - Sua Biblioteca Digital</title>
+    <meta name="description" content="BiblioTech - Sua biblioteca digital com milhares de livros em EPUB e PDF. Faça download ou leia online." id="meta-description" />
+    <title id="site-title">BiblioTech - Sua Biblioteca Digital</title>
+    
+    <!-- META Tags para SEO -->
+    <meta name="keywords" content="livros, ebooks, epub, pdf, biblioteca digital" id="meta-keywords" />
+    <meta property="og:title" content="BiblioTech - Sua Biblioteca Digital" id="og-title" />
+    <meta property="og:description" content="BiblioTech - Sua biblioteca digital com milhares de livros em EPUB e PDF. Faça download ou leia online." id="og-description" />
+    <meta property="og:image" content="" id="og-image" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="BiblioTech - Sua Biblioteca Digital" id="twitter-title" />
+    <meta name="twitter:description" content="BiblioTech - Sua biblioteca digital com milhares de livros em EPUB e PDF. Faça download ou leia online." id="twitter-description" />
+    <meta name="twitter:image" content="" id="twitter-image" />
+    <meta name="twitter:site" content="" id="twitter-site" />
+    
+    <!-- Fonts e Estilos -->
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Nunito+Sans:wght@300;400;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Scripts para leitores -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfjs-dist/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+    
+    <!-- Google Analytics -->
+    <script id="google-analytics"></script>
+    
+    <!-- Google Tag Manager -->
+    <script id="google-tag-manager"></script>
+    
+    <!-- Header Custom Code -->
+    <div id="header-custom-code"></div>
   </head>
   <body>
+    <!-- Body Start Custom Code -->
+    <div id="body-start-custom-code"></div>
+    
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Body End Custom Code -->
+    <div id="body-end-custom-code"></div>
   </body>
 </html>

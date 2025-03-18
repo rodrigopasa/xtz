@@ -6,8 +6,26 @@ import {
   Instagram,
   Youtube
 } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Footer() {
+  const footerCustomCodeRef = useRef<HTMLDivElement>(null);
+  
+  // Obter configurações do site
+  const { data: settings } = useQuery({
+    queryKey: ['/api/settings'],
+    queryFn: () => apiRequest('GET', '/api/settings')
+  });
+
+  // Injetar código personalizado no rodapé
+  useEffect(() => {
+    if (footerCustomCodeRef.current && settings?.footerCode) {
+      footerCustomCodeRef.current.innerHTML = settings.footerCode;
+    }
+  }, [settings?.footerCode]);
+
   return (
     <footer className="bg-neutral-800 text-white py-12">
       <div className="container mx-auto px-4">
@@ -17,10 +35,10 @@ export default function Footer() {
               <span className="text-white text-3xl">
                 <Book />
               </span>
-              <span className="font-serif font-bold text-2xl">BiblioTech</span>
+              <span className="font-serif font-bold text-2xl">{settings?.siteName || "BiblioTech"}</span>
             </div>
             <p className="text-neutral-400 mb-4">
-              Sua biblioteca digital completa, disponível quando e onde você quiser.
+              {settings?.siteDescription || "Sua biblioteca digital completa, disponível quando e onde você quiser."}
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-neutral-400 hover:text-white transition-colors">
@@ -132,8 +150,11 @@ export default function Footer() {
           </div>
         </div>
         
+        {/* Código personalizado do rodapé */}
+        <div ref={footerCustomCodeRef} className="mt-8"></div>
+        
         <div className="border-t border-neutral-700 mt-10 pt-6 text-center text-neutral-500 text-sm">
-          <p>&copy; {new Date().getFullYear()} BiblioTech. Todos os direitos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} {settings?.siteName || "BiblioTech"}. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>

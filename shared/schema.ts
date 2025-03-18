@@ -183,20 +183,57 @@ export const insertCommentSchema = createInsertSchema(comments).pick({
 // Nova tabela de configurações do site
 export const siteSettings = pgTable("site_settings", {
   id: serial("id").primaryKey(),
+  // Informações básicas
   siteName: text("site_name").notNull().default("BiblioTech"),
   siteDescription: text("site_description").notNull().default("Sua biblioteca digital"),
   primaryColor: text("primary_color").notNull().default("#3b82f6"),
   logoUrl: text("logo_url"),
   faviconUrl: text("favicon_url"),
+  
+  // SEO
+  metaTitle: text("meta_title"),
+  metaDescription: text("meta_description"),
+  metaKeywords: text("meta_keywords"),
+  ogImage: text("og_image"),
+  twitterHandle: text("twitter_handle"),
+  
+  // Códigos personalizados
+  headerCode: text("header_code"),
+  bodyStartCode: text("body_start_code"),
+  bodyEndCode: text("body_end_code"),
+  footerCode: text("footer_code"),
+  
+  // Google Analytics e Tags
+  googleAnalyticsId: text("google_analytics_id"),
+  googleTagManagerId: text("google_tag_manager_id"),
+  
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertSettingsSchema = createInsertSchema(siteSettings).pick({
+  // Informações básicas
   siteName: true,
   siteDescription: true,
   primaryColor: true,
   logoUrl: true,
   faviconUrl: true,
+  
+  // SEO
+  metaTitle: true,
+  metaDescription: true,
+  metaKeywords: true,
+  ogImage: true,
+  twitterHandle: true,
+  
+  // Códigos personalizados
+  headerCode: true,
+  bodyStartCode: true,
+  bodyEndCode: true,
+  footerCode: true,
+  
+  // Google Analytics e Tags
+  googleAnalyticsId: true,
+  googleTagManagerId: true,
 });
 
 
