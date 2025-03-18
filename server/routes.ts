@@ -13,6 +13,9 @@ import { fromZodError } from "zod-validation-error";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { insertSettingsSchema, insertSeriesSchema, insertBookSchema, siteSettings } from "@shared/schema";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 // Middleware para verificar se o usuário é administrador
 const isAdmin = (req: Request, res: Response, next: NextFunction) => {
