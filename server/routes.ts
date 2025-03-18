@@ -925,8 +925,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para download de livros
+  app.get("/api/books/download/:id/:format", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "É necessário estar logado para baixar livros" });
+      }
+
+      const bookId = parseInt(req.params.id);
+      const format = req.params.format.toLowerCase();
+
+      if (format !== 'epub' && format !== 'pdf') {
+        return res.status(400).json({ message: "Formato inválido" });
+      }
+
+      const book = await storage.getBook(bookId);
+      
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+
+      // Verificar se o formato solicitado está disponível
+      const fileUrl = format === 'epub' ? book.epubUrl : book.pdfUrl;
+      
+      if (!fileUrl) {
+        return res.status(404).json({ message: `Este livro não possui versão ${format.toUpperCase()}` });
+      }
+
+      // Construir caminho para o arquivo
+      const filePath = path.join(__dirname, '..', fileUrl);
+      
+      // Verificar se o arquivo existe
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ message: "Arquivo não encontrado no servidor" });
+      }
+
+      // Definir nome para download
+      const fileName = `${book.title} - ${book.author.name} (${format.toUpperCase()})${path.extname(fileUrl)}`;
+      
+      // Incrementar contagem de downloads
+      await storage.incrementDownloadCount(bookId);
+      
+      // Configurar cabeçalhos para download
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+      res.setHeader('Content-Type', format === 'epub' ? 'application/epub+zip' : 'application/pdf');
+      
+      // Enviar o arquivo
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error("Erro ao processar download:", error);
+      res.status(500).json({ message: "Erro ao processar o download" });
+    }
+  });
+
   // Incrementar contagem de downloads
-  app.post("/api/books/:id/download", async (req, res) => {
+  app.post("/api/books/:id/increment-downloads", async (req, res) => {
     try {
       const bookId = parseInt(req.params.id);
 

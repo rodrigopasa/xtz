@@ -525,9 +525,10 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
   };
 
   return (
-    // Adicionado meta tag noindex para evitar indexação pelo Google
+    // Adicionado meta tags para SEO e identificação do conteúdo
     <>
       <meta name="robots" content="noindex, nofollow" />
+      <title>{epubBook?.package?.metadata?.title || "Leitura"} em EPUB - BiblioTech</title>
       
       <div className="flex flex-col h-full bg-white">
         {/* Nova Barra de Ferramentas Aprimorada */}
