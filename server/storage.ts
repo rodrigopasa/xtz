@@ -204,8 +204,8 @@ export class MemStorage implements IStorage {
         categoryId: 1,
         description: 'O Silmarillion é uma coletânea de obras de J. R. R. Tolkien, editada e publicada postumamente por seu filho Christopher Tolkien, com a assistência de Guy Gavriel Kay.',
         coverUrl: 'https://m.media-amazon.com/images/I/81TmHlRleJL._AC_UF894,1000_QL80_.jpg',
-        epubUrl: '/books/o-silmarillion.epub',
-        pdfUrl: '/books/o-silmarillion.pdf',
+        epubUrl: '/uploads/books/o-silmarillion.epub',
+        pdfUrl: '/uploads/books/o-silmarillion.pdf',
         amazonUrl: 'https://www.amazon.com.br/Silmarillion-J-R-Tolkien/dp/8595084742',
         format: 'both',
         pageCount: 496,
@@ -224,8 +224,8 @@ export class MemStorage implements IStorage {
         categoryId: 1,
         description: 'Duna é um romance de ficção científica escrito por Frank Herbert e publicado em 1965. A história se passa em um futuro distante, em meio a um império interplanetário feudal no qual as Casas Nobres controlam territórios planetários.',
         coverUrl: 'https://m.media-amazon.com/images/I/71uQShDujJL._AC_UF894,1000_QL80_.jpg',
-        epubUrl: '/books/duna.epub',
-        pdfUrl: '/books/duna.pdf',
+        epubUrl: '/uploads/books/duna.epub',
+        pdfUrl: '/uploads/books/duna.pdf',
         amazonUrl: 'https://www.amazon.com.br/Duna-1-Frank-Herbert/dp/6558380519',
         format: 'both',
         pageCount: 680,
@@ -244,8 +244,8 @@ export class MemStorage implements IStorage {
         categoryId: 1,
         description: 'Admirável Mundo Novo é um romance distópico escrito por Aldous Huxley e publicado em 1932. A história se passa em Londres no ano 2540, em um futuro onde as pessoas são pré-condicionadas biologicamente e condicionadas psicologicamente a viverem em harmonia com as leis e regras sociais.',
         coverUrl: 'https://m.media-amazon.com/images/I/61hOp6UFvCL._AC_UF894,1000_QL80_.jpg',
-        epubUrl: '/books/admiravel-mundo-novo.epub',
-        pdfUrl: '/books/admiravel-mundo-novo.pdf',
+        epubUrl: '/uploads/books/admiravel-mundo-novo.epub',
+        pdfUrl: '/uploads/books/admiravel-mundo-novo.pdf',
         amazonUrl: 'https://www.amazon.com.br/Admirável-mundo-novo-Aldous-Huxley/dp/8525056006',
         format: 'both',
         pageCount: 312,
@@ -264,8 +264,8 @@ export class MemStorage implements IStorage {
         categoryId: 2,
         description: 'Orgulho e Preconceito é um romance da escritora britânica Jane Austen publicado pela primeira vez em 1813. A história acompanha as aventuras de Elizabeth Bennet, uma das cinco filhas de um cavalheiro rural da Inglaterra do século XIX.',
         coverUrl: 'https://m.media-amazon.com/images/I/71tT8HA+n0L._AC_UF894,1000_QL80_.jpg',
-        epubUrl: '/books/orgulho-e-preconceito.epub',
-        pdfUrl: '/books/orgulho-e-preconceito.pdf',
+        epubUrl: '/uploads/books/orgulho-e-preconceito.epub',
+        pdfUrl: '/uploads/books/orgulho-e-preconceito.pdf',
         amazonUrl: 'https://www.amazon.com.br/Orgulho-preconceito-Jane-Austen/dp/8544001823',
         format: 'both',
         pageCount: 448,
@@ -284,8 +284,8 @@ export class MemStorage implements IStorage {
         categoryId: 1,
         description: 'A Biblioteca da Meia-Noite é um romance do escritor britânico Matt Haig publicado em 2020. A história segue Nora Seed, que vive uma vida de arrependimentos até encontrar a Biblioteca da Meia-Noite, onde cada livro oferece a chance de experimentar outra vida que ela poderia ter vivido.',
         coverUrl: 'https://m.media-amazon.com/images/I/81iqH8dpjuL._AC_UF894,1000_QL80_.jpg',
-        epubUrl: '/books/a-biblioteca-da-meia-noite.epub',
-        pdfUrl: '/books/a-biblioteca-da-meia-noite.pdf',
+        epubUrl: '/uploads/books/a-biblioteca-da-meia-noite.epub',
+        pdfUrl: '/uploads/books/a-biblioteca-da-meia-noite.pdf',
         amazonUrl: 'https://www.amazon.com.br/biblioteca-meia-noite-Matt-Haig/dp/6558380063',
         format: 'both',
         pageCount: 308,
@@ -750,7 +750,7 @@ export class MemStorage implements IStorage {
 
   async isFavorite(userId: number, bookId: number): Promise<boolean> {
     return Array.from(this.favorites.values()).some(
-      favorite => favorite.userId === userId && favorite.bookId ===<previous_generation> bookId
+      favorite => favorite.userId === userId && favorite.bookId === bookId
     );
   }
 
