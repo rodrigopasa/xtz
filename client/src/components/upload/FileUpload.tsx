@@ -123,6 +123,8 @@ export default function FileUpload({
         }
       );
       
+      console.log("Resposta do upload:", fileType, response);
+      
       clearInterval(progressInterval);
       setProgress(100);
       setSuccess(true);

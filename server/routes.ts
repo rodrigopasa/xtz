@@ -1302,6 +1302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Retornar URL relativa para o frontend
       const fileUrl = `/uploads/covers/${req.file.filename}`;
+      console.log("Upload de capa realizado com sucesso:", fileUrl);
       
       res.json({ coverUrl: fileUrl });
     } catch (error) {
@@ -1319,6 +1320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Retornar URL relativa para o frontend
       const fileUrl = `/uploads/books/${req.file.filename}`;
+      console.log("Upload de EPUB realizado com sucesso:", fileUrl);
       
       res.json({ epubUrl: fileUrl });
     } catch (error) {
@@ -1336,6 +1338,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Retornar URL relativa para o frontend
       const fileUrl = `/uploads/books/${req.file.filename}`;
+      console.log("Upload de PDF realizado com sucesso:", fileUrl);
       
       res.json({ pdfUrl: fileUrl });
     } catch (error) {
