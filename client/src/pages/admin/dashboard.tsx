@@ -73,14 +73,14 @@ export default function AdminDashboard() {
   ];
 
   // Dados para a tabela de livros recentes
-  const recentBooks = books?.slice(0, 3) || [];
+  const recentBooks = Array.isArray(books) ? books.slice(0, 3) : [];
 
   // Calcular estatísticas
   const stats = {
-    books: books?.length || 0,
-    users: users?.length || 0,
-    downloads: books?.reduce((total: number, book: any) => total + (book.downloadCount || 0), 0) || 0,
-    comments: comments?.length || 0,
+    books: Array.isArray(books) ? books.length : 0,
+    users: Array.isArray(users) ? users.length : 0,
+    downloads: Array.isArray(books) ? books.reduce((total: number, book: any) => total + (book.downloadCount || 0), 0) : 0,
+    comments: Array.isArray(comments) ? comments.length : 0,
     // Demonstrar crescimento com valores simulados
     booksGrowth: 12,
     usersGrowth: 18,
