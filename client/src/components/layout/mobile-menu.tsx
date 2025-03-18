@@ -2,6 +2,8 @@ import { Link } from "wouter";
 import { X } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Sheet,
   SheetContent,
@@ -18,6 +20,12 @@ interface MobileMenuProps {
 
 export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const { user, isAuthenticated, logout } = useAuth();
+  
+  // Buscar configurações do site
+  const { data: settings } = useQuery({
+    queryKey: ['/api/settings'],
+    queryFn: () => apiRequest('GET', '/api/settings')
+  });
 
   const handleLogout = async () => {
     await logout();
@@ -28,7 +36,9 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="left" className="sm:max-w-md w-full bg-gray-900 border-r border-purple-500/20 text-white">
         <SheetHeader className="border-b border-purple-500/20 pb-4">
-          <SheetTitle className="font-serif font-bold text-2xl gradient-heading">BiblioTech</SheetTitle>
+          <SheetTitle className="font-serif font-bold text-2xl gradient-heading">
+            {settings?.siteName || "BiblioTech"}
+          </SheetTitle>
           <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 text-white">
             <X className="h-5 w-5" />
             <span className="sr-only">Fechar</span>

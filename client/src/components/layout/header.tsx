@@ -3,6 +3,8 @@ import { Link, useLocation } from "wouter";
 import { Book, Search, Heart, User, Menu } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import MobileMenu from "./mobile-menu";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   DropdownMenu,
   DropdownMenuTrigger,
@@ -20,6 +22,12 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [location, navigate] = useLocation();
   const { user, isAuthenticated, logout, checkAuth } = useAuth();
+  
+  // Buscar configurações do site
+  const { data: settings } = useQuery({
+    queryKey: ['/api/settings'],
+    queryFn: () => apiRequest('GET', '/api/settings')
+  });
   
   // DEBUG: Verificar estado de autenticação
   useEffect(() => {
@@ -59,7 +67,9 @@ export default function Header() {
             <span className="text-white text-3xl">
               <Book />
             </span>
-            <span className="font-serif font-bold text-2xl gradient-heading">BiblioTech</span>
+            <span className="font-serif font-bold text-2xl gradient-heading">
+              {settings?.siteName || "BiblioTech"}
+            </span>
           </Link>
 
           {/* Search Bar (Desktop) */}
