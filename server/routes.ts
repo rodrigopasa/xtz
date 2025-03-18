@@ -41,14 +41,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const MemoryStoreSession = MemoryStore(session);
   const sessionSecret = process.env.SESSION_SECRET || "bibliotech-secret-key-2025";
 
-  console.log("Usando SESSION_SECRET para configurar a sessão");
+  console.log("Configurando sessão e autenticação...");
 
   app.use(session({
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 24 * 60 * 60 * 1000, // 24 horas
       httpOnly: true,
       secure: false,
       sameSite: 'lax'
@@ -64,14 +64,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Serialização do usuário
   passport.serializeUser((user: any, done) => {
+    console.log("Serializando usuário:", user.id);
     done(null, user.id);
   });
 
+  // Deserialização do usuário
   passport.deserializeUser(async (id: number, done) => {
     try {
+      console.log("Deserializando usuário:", id);
       const user = await storage.getUser(id);
       done(null, user);
     } catch (error) {
+      console.error("Erro na deserialização:", error);
       done(error);
     }
   });
@@ -79,55 +83,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Estratégia de autenticação local
   passport.use(new LocalStrategy(async (username, password, done) => {
     try {
+      console.log("Tentativa de login para usuário:", username);
+
       const user = await storage.getUserByUsername(username);
       if (!user) {
+        console.log("Usuário não encontrado:", username);
         return done(null, false, { message: "Credenciais inválidas" });
       }
 
       const isValidPassword = await compare(password, user.password);
       if (!isValidPassword) {
+        console.log("Senha inválida para usuário:", username);
         return done(null, false, { message: "Credenciais inválidas" });
       }
 
+      console.log("Login bem sucedido para usuário:", username);
       return done(null, user);
     } catch (error) {
+      console.error("Erro na autenticação:", error);
       return done(error);
     }
   }));
 
-  // Helper para validação de schemas
-  const validateSchema = (schema: any, data: any) => {
-    try {
-      return { data: schema.parse(data), error: null };
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return { data: null, error: fromZodError(error).message };
-      }
-      return { data: null, error: "Erro de validação desconhecido" };
-    }
-  };
-
   // Rota de login
-  app.post("/api/auth/login", async (req, res, next) => {
-    try {
-      const { username, password } = req.body;
+  app.post("/api/auth/login", (req, res, next) => {
+    console.log("Requisição de login recebida:", req.body);
 
-      // Buscar usuário
-      const user = await storage.getUserByUsername(username);
+    passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (err) {
+        console.error("Erro na autenticação:", err);
+        return next(err);
+      }
+
       if (!user) {
-        return res.status(401).json({ message: "Credenciais inválidas" });
+        console.log("Login falhou:", info?.message);
+        return res.status(401).json({ message: info?.message || "Credenciais inválidas" });
       }
 
-      // Verificar senha
-      const isValidPassword = await compare(password, user.password);
-      if (!isValidPassword) {
-        return res.status(401).json({ message: "Credenciais inválidas" });
-      }
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error("Erro no login:", loginErr);
+          return next(loginErr);
+        }
 
-      // Login bem sucedido
-      req.login(user, (err) => {
-        if (err) return next(err);
-
+        console.log("Login bem sucedido para:", user.username);
         return res.json({
           id: user.id,
           username: user.username,
@@ -136,10 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role: user.role
         });
       });
-    } catch (error) {
-      console.error("Erro no login:", error);
-      next(error);
-    }
+    })(req, res, next);
   });
 
   // Rota para verificar autenticação
