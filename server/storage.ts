@@ -1,5 +1,5 @@
 import { db } from './db';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import {
   users as usersTable, type User, type InsertUser,
   categories as categoriesTable, type Category, type InsertCategory,
@@ -339,7 +339,13 @@ export class DatabaseStorage implements IStorage {
 
   async getFavoriteBooks(userId: number): Promise<Book[]> {
     const favorites = await this.getFavoritesByUser(userId);
-    return db.select().from(booksTable).where(and(eq(booksTable.id, favorites.map(fav => fav.bookId))));
+    
+    if (favorites.length === 0) {
+      return [];
+    }
+    
+    // Precisamos usar o operador 'in' para encontrar todos os livros cujos IDs estão na lista
+    return db.select().from(booksTable).where(inArray(booksTable.id, favorites.map(fav => fav.bookId)));
   }
 
   async createFavorite(favorite: InsertFavorite): Promise<Favorite> {
@@ -348,8 +354,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteFavorite(userId: number, bookId: number): Promise<boolean> {
-    const deleteCount = await db.delete(favoritesTable).where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.bookId, bookId)));
-    return deleteCount > 0;
+    await db.delete(favoritesTable).where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.bookId, bookId)));
+    return true;
   }
 
   async isFavorite(userId: number, bookId: number): Promise<boolean> {
@@ -360,14 +366,24 @@ export class DatabaseStorage implements IStorage {
 
   // Implementação dos métodos para Histórico de Leitura
   async getReadingHistoryByUser(userId: number): Promise<ReadingHistory[]> {
-    return db.select().from(readingHistoryTable).where(eq(readingHistoryTable.userId, userId)).orderBy(readingHistoryTable.lastReadAt, { direction: 'desc' });
+    return db.select().from(readingHistoryTable).where(eq(readingHistoryTable.userId, userId)).orderBy(desc(readingHistoryTable.lastReadAt));
   }
 
   async getReadingHistoryBooks(userId: number): Promise<(ReadingHistory & { book: Book })[]> {
     const histories = await this.getReadingHistoryByUser(userId);
+    
+    if (histories.length === 0) {
+      return [];
+    }
+    
     const bookIds = histories.map(h => h.bookId);
-    const books = await db.select().from(booksTable).where(eq(booksTable.id, bookIds));
-    return histories.map(history => ({ ...history, book: books.find(book => book.id === history.bookId)! }));
+    // Usar inArray ao invés de eq para IDs múltiplos
+    const books = await db.select().from(booksTable).where(inArray(booksTable.id, bookIds));
+    
+    return histories.map(history => {
+      const book = books.find(b => b.id === history.bookId);
+      return { ...history, book: book! };
+    });
   }
 
   async createOrUpdateReadingHistory(history: InsertReadingHistory): Promise<ReadingHistory> {
@@ -383,15 +399,15 @@ export class DatabaseStorage implements IStorage {
 
   // Implementação dos métodos para Comentários
   async getCommentsByBook(bookId: number): Promise<Comment[]> {
-    return db.select().from(commentsTable).where(and(eq(commentsTable.bookId, bookId), eq(commentsTable.isApproved, true))).orderBy(commentsTable.createdAt, {direction: 'desc'});
+    return db.select().from(commentsTable).where(and(eq(commentsTable.bookId, bookId), eq(commentsTable.isApproved, true))).orderBy(desc(commentsTable.createdAt));
   }
 
   async getCommentsByUser(userId: number): Promise<Comment[]> {
-    return db.select().from(commentsTable).where(eq(commentsTable.userId, userId)).orderBy(commentsTable.createdAt, {direction: 'desc'});
+    return db.select().from(commentsTable).where(eq(commentsTable.userId, userId)).orderBy(desc(commentsTable.createdAt));
   }
 
   async getAllComments(): Promise<Comment[]> {
-    return db.select().from(commentsTable).orderBy(commentsTable.createdAt, {direction: 'desc'});
+    return db.select().from(commentsTable).orderBy(desc(commentsTable.createdAt));
   }
 
   async createComment(comment: InsertComment): Promise<Comment> {
@@ -400,8 +416,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteComment(id: number): Promise<boolean> {
-    const deleteCount = await db.delete(commentsTable).where(eq(commentsTable.id, id));
-    return deleteCount > 0;
+    await db.delete(commentsTable).where(eq(commentsTable.id, id));
+    return true;
   }
 
   async approveComment(id: number): Promise<Comment | undefined> {

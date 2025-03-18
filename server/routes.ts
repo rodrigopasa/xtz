@@ -1069,13 +1069,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Livro não encontrado" });
       }
       
+      // Calcular progresso em porcentagem (0-100)
+      let calculatedProgress = progress;
+      if (currentPage && totalPages && totalPages > 0) {
+        calculatedProgress = Math.round((currentPage / totalPages) * 100);
+      }
+      
       const historyEntry = await storage.createOrUpdateReadingHistory({
         userId,
         bookId,
-        currentPage: currentPage || 1,
-        totalPages: totalPages || 0,
-        progress: progress || 0,
-        lastLocation: lastLocation || ""
+        progress: calculatedProgress || 0,
+        isCompleted: calculatedProgress === 100
       });
       
       res.status(200).json(historyEntry);
@@ -1163,10 +1167,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const comment = await storage.createComment({
         userId,
         bookId,
-        text,
-        rating: rating || null,
-        isApproved: isAdmin,
-        helpfulCount: 0
+        content: text,
+        rating: rating || 0,
+        isApproved: isAdmin
       });
       
       res.status(201).json(comment);
