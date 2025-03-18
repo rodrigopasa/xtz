@@ -1,4 +1,4 @@
-import { 
+import {
   users, type User, type InsertUser,
   categories, type Category, type InsertCategory,
   authors, type Author, type InsertAuthor,
@@ -17,7 +17,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<User>): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
-  
+
   // Categorias
   getAllCategories(): Promise<Category[]>;
   getCategory(id: number): Promise<Category | undefined>;
@@ -25,7 +25,7 @@ export interface IStorage {
   createCategory(category: InsertCategory): Promise<Category>;
   updateCategory(id: number, category: Partial<Category>): Promise<Category | undefined>;
   deleteCategory(id: number): Promise<boolean>;
-  
+
   // Autores
   getAllAuthors(): Promise<Author[]>;
   getAuthor(id: number): Promise<Author | undefined>;
@@ -33,7 +33,7 @@ export interface IStorage {
   createAuthor(author: InsertAuthor): Promise<Author>;
   updateAuthor(id: number, author: Partial<Author>): Promise<Author | undefined>;
   deleteAuthor(id: number): Promise<boolean>;
-  
+
   // Séries
   getAllSeries(): Promise<Series[]>;
   getSeries(id: number): Promise<Series | undefined>;
@@ -43,7 +43,7 @@ export interface IStorage {
   updateSeries(id: number, series: Partial<Series>): Promise<Series | undefined>;
   deleteSeries(id: number): Promise<boolean>;
   getBooksBySeries(seriesId: number): Promise<(Book & { author?: { name: string, slug: string } })[]>;
-  
+
   // Livros
   getAllBooks(): Promise<Book[]>;
   getBook(id: number): Promise<Book | undefined>;
@@ -57,19 +57,19 @@ export interface IStorage {
   updateBook(id: number, book: Partial<Book>): Promise<Book | undefined>;
   deleteBook(id: number): Promise<boolean>;
   incrementDownloadCount(id: number): Promise<Book | undefined>;
-  
+
   // Favoritos
   getFavoritesByUser(userId: number): Promise<Favorite[]>;
   getFavoriteBooks(userId: number): Promise<Book[]>;
   createFavorite(favorite: InsertFavorite): Promise<Favorite>;
   deleteFavorite(userId: number, bookId: number): Promise<boolean>;
   isFavorite(userId: number, bookId: number): Promise<boolean>;
-  
+
   // Histórico de leitura
   getReadingHistoryByUser(userId: number): Promise<ReadingHistory[]>;
   getReadingHistoryBooks(userId: number): Promise<(ReadingHistory & { book: Book })[]>;
   createOrUpdateReadingHistory(history: InsertReadingHistory): Promise<ReadingHistory>;
-  
+
   // Comentários
   getCommentsByBook(bookId: number): Promise<Comment[]>;
   getCommentsByUser(userId: number): Promise<Comment[]>;
@@ -89,7 +89,7 @@ export class MemStorage implements IStorage {
   private favorites: Map<number, Favorite>;
   private readingHistory: Map<number, ReadingHistory>;
   private comments: Map<number, Comment>;
-  
+
   private currentUserId: number;
   private currentCategoryId: number;
   private currentAuthorId: number;
@@ -108,7 +108,7 @@ export class MemStorage implements IStorage {
     this.favorites = new Map();
     this.readingHistory = new Map();
     this.comments = new Map();
-    
+
     this.currentUserId = 1;
     this.currentCategoryId = 1;
     this.currentAuthorId = 1;
@@ -117,7 +117,7 @@ export class MemStorage implements IStorage {
     this.currentFavoriteId = 1;
     this.currentReadingHistoryId = 1;
     this.currentCommentId = 1;
-    
+
     // Inicializar com dados de exemplo
     this.initializeData();
   }
@@ -132,11 +132,11 @@ export class MemStorage implements IStorage {
       { name: 'Autoajuda', slug: 'autoajuda', iconName: 'seedling', bookCount: 0 },
       { name: 'Infantil', slug: 'infantil', iconName: 'child', bookCount: 0 }
     ];
-    
+
     categoriesData.forEach(category => {
       this.createCategory(category);
     });
-    
+
     // Autores iniciais
     const authorsData: InsertAuthor[] = [
       { name: 'J. R. R. Tolkien', slug: 'j-r-r-tolkien', bio: 'Autor de O Senhor dos Anéis', imageUrl: 'https://randomuser.me/api/portraits/men/1.jpg' },
@@ -145,23 +145,56 @@ export class MemStorage implements IStorage {
       { name: 'Jane Austen', slug: 'jane-austen', bio: 'Autora de Orgulho e Preconceito', imageUrl: 'https://randomuser.me/api/portraits/women/4.jpg' },
       { name: 'Matt Haig', slug: 'matt-haig', bio: 'Autor de A Biblioteca da Meia-Noite', imageUrl: 'https://randomuser.me/api/portraits/men/5.jpg' }
     ];
-    
+
     authorsData.forEach(author => {
       this.createAuthor(author);
     });
-    
-    // Usuário Admin
+
+    // Usuário Admin com role definido corretamente
     const adminUser: InsertUser = {
       username: 'admin',
       password: 'admin123',
       email: 'admin@bibliotech.com',
       name: 'Administrador',
-      role: 'admin',
+      role: 'admin' as const,
       avatarUrl: 'https://randomuser.me/api/portraits/men/35.jpg'
     };
-    
+
     this.createUser(adminUser);
-    
+
+    // Séries iniciais com campos obrigatórios definidos corretamente
+    const seriesData: InsertSeries[] = [
+      {
+        name: 'O Senhor dos Anéis',
+        slug: 'senhor-dos-aneis',
+        authorId: 1,
+        description: 'Série épica de fantasia que narra a jornada para destruir o Um Anel',
+        bookCount: 0,
+        coverUrl: 'https://m.media-amazon.com/images/I/71jLBXtWJWL._AC_UF1000,1000_QL80_.jpg'
+      },
+      {
+        name: 'Crônicas de Duna',
+        slug: 'cronicas-de-duna',
+        authorId: 2,
+        description: 'Série de ficção científica passada em um futuro distante',
+        bookCount: 0,
+        coverUrl: 'https://m.media-amazon.com/images/I/61niMn9ftuL._AC_UF894,1000_QL80_.jpg'
+      }
+    ];
+
+    // Corrigir a criação das séries para garantir valores não nulos
+    seriesData.forEach((seriesItem) => {
+      const id = this.currentSeriesId++;
+      const newSeries: Series = {
+        ...seriesItem,
+        id,
+        description: seriesItem.description || null,
+        coverUrl: seriesItem.coverUrl || null,
+        bookCount: seriesItem.bookCount || 0
+      };
+      this.series.set(id, newSeries);
+    });
+
     // Livros iniciais
     const booksData: InsertBook[] = [
       {
@@ -265,33 +298,7 @@ export class MemStorage implements IStorage {
         isFree: false
       }
     ];
-    
-    // Criar séries iniciais para testes
-    const seriesData: InsertSeries[] = [
-      {
-        name: 'O Senhor dos Anéis',
-        slug: 'senhor-dos-aneis',
-        authorId: 1,
-        description: 'Série épica de fantasia que narra a jornada para destruir o Um Anel',
-        bookCount: 0,
-        coverUrl: 'https://m.media-amazon.com/images/I/71jLBXtWJWL._AC_UF1000,1000_QL80_.jpg'
-      },
-      {
-        name: 'Crônicas de Duna',
-        slug: 'cronicas-de-duna',
-        authorId: 2,
-        description: 'Série de ficção científica passada em um futuro distante',
-        bookCount: 0,
-        coverUrl: 'https://m.media-amazon.com/images/I/61niMn9ftuL._AC_UF894,1000_QL80_.jpg'
-      }
-    ];
-    
-    for (let i = 0; i < seriesData.length; i++) {
-      const seriesId = i + 1;
-      const newSeries = { ...seriesData[i], id: seriesId };
-      this.series.set(seriesId, newSeries);
-    }
-    
+
     // Criar livros e armazenar corretamente com seus IDs
     for (let i = 0; i < booksData.length; i++) {
       const newBook = {
@@ -301,7 +308,7 @@ export class MemStorage implements IStorage {
         ratingCount: 0,
         downloadCount: 0
       };
-      
+
       // Associar livros às séries para testes
       if (i === 0) { // O Silmarillion
         newBook.seriesId = null; // Este não pertence a nenhuma série
@@ -309,7 +316,7 @@ export class MemStorage implements IStorage {
       } else if (i === 1) { // Duna
         newBook.seriesId = 2; // Associar à série Crônicas de Duna
         newBook.volumeNumber = 1; // Primeiro volume
-        
+
         // Atualizar contagem de livros na série
         const series = this.series.get(2);
         if (series) {
@@ -318,7 +325,7 @@ export class MemStorage implements IStorage {
       } else if (i === 2) { // Admirável Mundo Novo - Para testes, vamos associar à série de Duna como volume 3
         newBook.seriesId = 2; // Associar à série Crônicas de Duna (só para teste)
         newBook.volumeNumber = 3; // Terceiro volume
-        
+
         // Atualizar contagem de livros na série
         const series = this.series.get(2);
         if (series) {
@@ -327,17 +334,17 @@ export class MemStorage implements IStorage {
       } else if (i === 4) { // Biblioteca da Meia-Noite - Para testes, vamos associar à série de Duna como volume 2
         newBook.seriesId = 2; // Associar à série Crônicas de Duna (só para teste)
         newBook.volumeNumber = 2; // Segundo volume
-        
+
         // Atualizar contagem de livros na série
         const series = this.series.get(2);
         if (series) {
           this.series.set(2, { ...series, bookCount: series.bookCount + 1 });
         }
       }
-      
+
       // Armazenar diretamente no Map com o ID como chave
       this.books.set(i + 1, newBook);
-      
+
       // Atualizar contagem de livros na categoria
       const category = this.categories.get(newBook.categoryId);
       if (category) {
@@ -346,11 +353,11 @@ export class MemStorage implements IStorage {
           bookCount: category.bookCount + 1
         });
       }
-      
+
       // Garantir que o próximo ID seja maior que o último usado
       this.currentBookId = Math.max(this.currentBookId, i + 2);
     }
-    
+
     console.log(`Livros inicializados: ${this.books.size}`);
     console.log(`IDs de livros: ${Array.from(this.books.keys()).join(', ')}`);
     console.log(`Próximo ID de livro: ${this.currentBookId}`);
@@ -360,134 +367,146 @@ export class MemStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
     return this.users.get(id);
   }
-  
+
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(user => user.username === username);
   }
-  
+
   async getUserByEmail(email: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(user => user.email === email);
   }
-  
+
   async createUser(user: InsertUser): Promise<User> {
     const id = this.currentUserId++;
     const newUser = { ...user, id };
     this.users.set(id, newUser);
     return newUser;
   }
-  
+
   async updateUser(id: number, user: Partial<User>): Promise<User | undefined> {
     const existingUser = await this.getUser(id);
     if (!existingUser) return undefined;
-    
+
     const updatedUser = { ...existingUser, ...user };
     this.users.set(id, updatedUser);
     return updatedUser;
   }
-  
+
   async getAllUsers(): Promise<User[]> {
     return Array.from(this.users.values());
   }
-  
+
   // Implementação dos métodos para Categorias
   async getAllCategories(): Promise<Category[]> {
     return Array.from(this.categories.values());
   }
-  
+
   async getCategory(id: number): Promise<Category | undefined> {
     return this.categories.get(id);
   }
-  
+
   async getCategoryBySlug(slug: string): Promise<Category | undefined> {
     return Array.from(this.categories.values()).find(category => category.slug === slug);
   }
-  
+
   async createCategory(category: InsertCategory): Promise<Category> {
     const id = this.currentCategoryId++;
     const newCategory = { ...category, id };
     this.categories.set(id, newCategory);
     return newCategory;
   }
-  
+
   async updateCategory(id: number, category: Partial<Category>): Promise<Category | undefined> {
     const existingCategory = await this.getCategory(id);
     if (!existingCategory) return undefined;
-    
+
     const updatedCategory = { ...existingCategory, ...category };
     this.categories.set(id, updatedCategory);
     return updatedCategory;
   }
-  
+
   async deleteCategory(id: number): Promise<boolean> {
     return this.categories.delete(id);
   }
-  
+
   // Implementação dos métodos para Autores
   async getAllAuthors(): Promise<Author[]> {
     return Array.from(this.authors.values());
   }
-  
+
   async getAuthor(id: number): Promise<Author | undefined> {
     return this.authors.get(id);
   }
-  
+
   async getAuthorBySlug(slug: string): Promise<Author | undefined> {
     return Array.from(this.authors.values()).find(author => author.slug === slug);
   }
-  
+
   async createAuthor(author: InsertAuthor): Promise<Author> {
     const id = this.currentAuthorId++;
     const newAuthor = { ...author, id };
     this.authors.set(id, newAuthor);
     return newAuthor;
   }
-  
+
   async updateAuthor(id: number, author: Partial<Author>): Promise<Author | undefined> {
     const existingAuthor = await this.getAuthor(id);
     if (!existingAuthor) return undefined;
-    
+
     const updatedAuthor = { ...existingAuthor, ...author };
     this.authors.set(id, updatedAuthor);
     return updatedAuthor;
   }
-  
+
   async deleteAuthor(id: number): Promise<boolean> {
     return this.authors.delete(id);
   }
-  
+
   // Implementação dos métodos para Séries
   async getAllSeries(): Promise<Series[]> {
     return Array.from(this.series.values());
   }
-  
+
   async getSeries(id: number): Promise<Series | undefined> {
     return this.series.get(id);
   }
-  
+
   async getSeriesBySlug(slug: string): Promise<Series | undefined> {
     return Array.from(this.series.values()).find(series => series.slug === slug);
   }
-  
+
   async getSeriesByAuthor(authorId: number): Promise<Series[]> {
     return Array.from(this.series.values()).filter(series => series.authorId === authorId);
   }
-  
+
   async createSeries(series: InsertSeries): Promise<Series> {
     const id = this.currentSeriesId++;
-    const newSeries = { ...series, id };
+    const newSeries: Series = {
+      ...series,
+      id,
+      description: series.description || null,
+      coverUrl: series.coverUrl || null,
+      bookCount: series.bookCount || 0
+    };
     this.series.set(id, newSeries);
     return newSeries;
   }
-  
+
   async updateSeries(id: number, series: Partial<Series>): Promise<Series | undefined> {
     const existingSeries = await this.getSeries(id);
     if (!existingSeries) return undefined;
-    
-    const updatedSeries = { ...existingSeries, ...series };
+
+    const updatedSeries: Series = {
+      ...existingSeries,
+      ...series,
+      description: series.description ?? existingSeries.description,
+      coverUrl: series.coverUrl ?? existingSeries.coverUrl,
+      bookCount: series.bookCount ?? existingSeries.bookCount
+    };
     this.series.set(id, updatedSeries);
     return updatedSeries;
   }
-  
+
   async deleteSeries(id: number): Promise<boolean> {
     // Verificar se existem livros associados a esta série
     const books = await this.getBooksBySeries(id);
@@ -497,10 +516,10 @@ export class MemStorage implements IStorage {
         await this.updateBook(book.id, { seriesId: null, volumeNumber: null });
       }
     }
-    
+
     return this.series.delete(id);
   }
-  
+
   async getBooksBySeries(seriesId: number): Promise<(Book & { author?: { name: string, slug: string } })[]> {
     const seriesBooks = Array.from(this.books.values())
       .filter(book => book.seriesId === seriesId)
@@ -510,7 +529,7 @@ export class MemStorage implements IStorage {
         if (b.volumeNumber === null) return -1;
         return (a.volumeNumber || 0) - (b.volumeNumber || 0);
       });
-    
+
     // Enriquecer livros com informações de autor
     const enrichedBooks = await Promise.all(seriesBooks.map(async (book) => {
       const author = await this.getAuthor(book.authorId);
@@ -519,82 +538,82 @@ export class MemStorage implements IStorage {
         author: author ? { name: author.name, slug: author.slug } : undefined
       };
     }));
-    
+
     return enrichedBooks;
   }
-  
+
   // Implementação dos métodos para Livros
   async getAllBooks(): Promise<Book[]> {
     return Array.from(this.books.values());
   }
-  
+
   async getBook(id: number): Promise<Book | undefined> {
     console.log(`MemStorage.getBook - ID: ${id}, Tipo: ${typeof id}`);
     console.log(`Chaves disponíveis no Map: ${Array.from(this.books.keys()).join(', ')}`);
-    
+
     // Garantir que o ID seja um número
     const numericId = Number(id);
     if (isNaN(numericId)) {
       console.log(`ID inválido: ${id}`);
       return undefined;
     }
-    
+
     // Tentar buscar diretamente
     const book = this.books.get(numericId);
     console.log(`Livro encontrado direto: ${book ? 'Sim' : 'Não'}`);
-    
+
     // Se não encontrou, vamos tentar verificar iterando por todos
     if (!book) {
       console.log('Buscando por iteração...');
       const allBooks = Array.from(this.books.values());
       const foundBook = allBooks.find(book => book.id === numericId);
-      
+
       if (foundBook) {
         console.log(`Encontrado por iteração: ${foundBook.title}`);
         return foundBook;
       }
-      
+
       console.log('Livro não encontrado por ID em nenhum método');
     }
-    
+
     return book;
   }
-  
+
   async getBookBySlug(slug: string): Promise<Book | undefined> {
     return Array.from(this.books.values()).find(book => book.slug === slug);
   }
-  
+
   async getBooksByCategory(categoryId: number): Promise<Book[]> {
     return Array.from(this.books.values()).filter(book => book.categoryId === categoryId);
   }
-  
+
   async getBooksByAuthor(authorId: number): Promise<Book[]> {
     return Array.from(this.books.values()).filter(book => book.authorId === authorId);
   }
-  
+
   async getFeaturedBooks(): Promise<Book[]> {
     return Array.from(this.books.values()).filter(book => book.isFeatured);
   }
-  
+
   async getNewBooks(): Promise<Book[]> {
     return Array.from(this.books.values()).filter(book => book.isNew);
   }
-  
+
   async getFreeBooks(): Promise<Book[]> {
     return Array.from(this.books.values()).filter(book => book.isFree);
   }
-  
+
   async createBook(book: InsertBook): Promise<Book> {
     const id = this.currentBookId++;
-    const newBook = { 
-      ...book, 
-      id, 
+    const newBook = {
+      ...book,
+      id,
       rating: 0,
       ratingCount: 0,
       downloadCount: 0
     };
     this.books.set(id, newBook);
-    
+
     // Atualizar contagem de livros na categoria
     const category = await this.getCategory(book.categoryId);
     if (category) {
@@ -602,7 +621,7 @@ export class MemStorage implements IStorage {
         bookCount: category.bookCount + 1
       });
     }
-    
+
     // Atualizar contagem de livros na série, se aplicável
     if (book.seriesId) {
       const series = await this.getSeries(book.seriesId);
@@ -612,17 +631,17 @@ export class MemStorage implements IStorage {
         });
       }
     }
-    
+
     return newBook;
   }
-  
+
   async updateBook(id: number, book: Partial<Book>): Promise<Book | undefined> {
     const existingBook = await this.getBook(id);
     if (!existingBook) return undefined;
-    
+
     const updatedBook = { ...existingBook, ...book };
     this.books.set(id, updatedBook);
-    
+
     // Se houver uma alteração na série, atualizar as contagens
     if (book.seriesId !== undefined && existingBook.seriesId !== book.seriesId) {
       // Se o livro estava em uma série antes, decrementar a contagem da série antiga
@@ -634,7 +653,7 @@ export class MemStorage implements IStorage {
           });
         }
       }
-      
+
       // Se o livro está sendo adicionado a uma nova série, incrementar a contagem da nova série
       if (book.seriesId) {
         const newSeries = await this.getSeries(book.seriesId);
@@ -645,14 +664,14 @@ export class MemStorage implements IStorage {
         }
       }
     }
-    
+
     return updatedBook;
   }
-  
+
   async deleteBook(id: number): Promise<boolean> {
     const book = await this.getBook(id);
     if (!book) return false;
-    
+
     // Atualizar contagem de livros na categoria
     const category = await this.getCategory(book.categoryId);
     if (category && category.bookCount > 0) {
@@ -660,7 +679,7 @@ export class MemStorage implements IStorage {
         bookCount: category.bookCount - 1
       });
     }
-    
+
     // Atualizar contagem de livros na série, se aplicável
     if (book.seriesId) {
       const series = await this.getSeries(book.seriesId);
@@ -670,36 +689,36 @@ export class MemStorage implements IStorage {
         });
       }
     }
-    
+
     return this.books.delete(id);
   }
-  
+
   async incrementDownloadCount(id: number): Promise<Book | undefined> {
     const book = await this.getBook(id);
     if (!book) return undefined;
-    
+
     const updatedBook = { ...book, downloadCount: book.downloadCount + 1 };
     this.books.set(id, updatedBook);
     return updatedBook;
   }
-  
+
   // Implementação dos métodos para Favoritos
   async getFavoritesByUser(userId: number): Promise<Favorite[]> {
     return Array.from(this.favorites.values()).filter(favorite => favorite.userId === userId);
   }
-  
+
   async getFavoriteBooks(userId: number): Promise<Book[]> {
     const favorites = await this.getFavoritesByUser(userId);
     const books: Book[] = [];
-    
+
     for (const favorite of favorites) {
       const book = await this.getBook(favorite.bookId);
       if (book) books.push(book);
     }
-    
+
     return books;
   }
-  
+
   async createFavorite(favorite: InsertFavorite): Promise<Favorite> {
     // Verificar se já existe
     const existing = await this.isFavorite(favorite.userId, favorite.bookId);
@@ -709,49 +728,49 @@ export class MemStorage implements IStorage {
       );
       if (existingFavorite) return existingFavorite;
     }
-    
+
     const id = this.currentFavoriteId++;
-    const newFavorite = { 
-      ...favorite, 
-      id, 
-      createdAt: new Date() 
+    const newFavorite = {
+      ...favorite,
+      id,
+      createdAt: new Date()
     };
     this.favorites.set(id, newFavorite);
     return newFavorite;
   }
-  
+
   async deleteFavorite(userId: number, bookId: number): Promise<boolean> {
     const favorite = Array.from(this.favorites.values()).find(
       f => f.userId === userId && f.bookId === bookId
     );
-    
+
     if (!favorite) return false;
     return this.favorites.delete(favorite.id);
   }
-  
+
   async isFavorite(userId: number, bookId: number): Promise<boolean> {
     return Array.from(this.favorites.values()).some(
-      favorite => favorite.userId === userId && favorite.bookId === bookId
+      favorite => favorite.userId === userId && favorite.bookId ===<previous_generation> bookId
     );
   }
-  
+
   // Implementação dos métodos para Histórico de Leitura
   async getReadingHistoryByUser(userId: number): Promise<ReadingHistory[]> {
     return Array.from(this.readingHistory.values())
       .filter(history => history.userId === userId)
       .sort((a, b) => b.lastReadAt.getTime() - a.lastReadAt.getTime());
   }
-  
+
   async getReadingHistoryBooks(userId: number): Promise<(ReadingHistory & { book: Book & { author?: { name: string, slug: string }, series?: { id: number, name: string, slug: string, volume: number | null } } })[]> {
     const histories = await this.getReadingHistoryByUser(userId);
     const result: (ReadingHistory & { book: Book & { author?: { name: string, slug: string }, series?: { id: number, name: string, slug: string, volume: number | null } } })[] = [];
-    
+
     for (const history of histories) {
       const book = await this.getBook(history.bookId);
       if (book) {
         // Obter autor
         const author = await this.getAuthor(book.authorId);
-        
+
         // Obter série se existir
         let seriesInfo = undefined;
         if (book.seriesId) {
@@ -765,75 +784,75 @@ export class MemStorage implements IStorage {
             };
           }
         }
-        
-        const enrichedBook = { 
-          ...book, 
+
+        const enrichedBook = {
+          ...book,
           author: author ? { name: author.name, slug: author.slug } : undefined,
           series: seriesInfo
         };
-        
+
         result.push({ ...history, book: enrichedBook });
       }
     }
-    
+
     return result;
   }
-  
+
   async createOrUpdateReadingHistory(history: InsertReadingHistory): Promise<ReadingHistory> {
     // Verificar se já existe
     const existing = Array.from(this.readingHistory.values()).find(
       h => h.userId === history.userId && h.bookId === history.bookId
     );
-    
+
     if (existing) {
-      const updatedHistory = { 
-        ...existing, 
-        progress: history.progress, 
+      const updatedHistory = {
+        ...existing,
+        progress: history.progress,
         isCompleted: history.isCompleted,
-        lastReadAt: new Date() 
+        lastReadAt: new Date()
       };
       this.readingHistory.set(existing.id, updatedHistory);
       return updatedHistory;
     }
-    
+
     const id = this.currentReadingHistoryId++;
-    const newHistory = { 
-      ...history, 
-      id, 
-      lastReadAt: new Date() 
+    const newHistory = {
+      ...history,
+      id,
+      lastReadAt: new Date()
     };
     this.readingHistory.set(id, newHistory);
     return newHistory;
   }
-  
+
   // Implementação dos métodos para Comentários
   async getCommentsByBook(bookId: number): Promise<Comment[]> {
     return Array.from(this.comments.values())
       .filter(comment => comment.bookId === bookId && comment.isApproved)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
-  
+
   async getCommentsByUser(userId: number): Promise<Comment[]> {
     return Array.from(this.comments.values())
       .filter(comment => comment.userId === userId)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
-  
+
   async getAllComments(): Promise<Comment[]> {
     return Array.from(this.comments.values())
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
-  
+
   async createComment(comment: InsertComment): Promise<Comment> {
     const id = this.currentCommentId++;
-    const newComment = { 
-      ...comment, 
-      id, 
+    const newComment = {
+      ...comment,
+      id,
       createdAt: new Date(),
       helpfulCount: 0
     };
     this.comments.set(id, newComment);
-    
+
     // Atualizar a avaliação média do livro
     const book = await this.getBook(comment.bookId);
     if (book) {
@@ -841,52 +860,52 @@ export class MemStorage implements IStorage {
       const totalRating = bookComments.reduce((sum, c) => sum + c.rating, comment.rating);
       const newRatingCount = book.ratingCount + 1;
       const newRating = Math.round(totalRating / newRatingCount);
-      
+
       await this.updateBook(book.id, {
         rating: newRating,
         ratingCount: newRatingCount
       });
     }
-    
+
     return newComment;
   }
-  
+
   async deleteComment(id: number): Promise<boolean> {
     const comment = await this.comments.get(id);
     if (!comment) return false;
-    
+
     // Atualizar a avaliação média do livro
     const book = await this.getBook(comment.bookId);
     if (book && book.ratingCount > 0) {
       const bookComments = (await this.getCommentsByBook(book.id))
         .filter(c => c.id !== id);
-      
+
       const totalRating = bookComments.reduce((sum, c) => sum + c.rating, 0);
       const newRatingCount = book.ratingCount - 1;
       const newRating = newRatingCount > 0 ? Math.round(totalRating / newRatingCount) : 0;
-      
+
       await this.updateBook(book.id, {
         rating: newRating,
         ratingCount: newRatingCount
       });
     }
-    
+
     return this.comments.delete(id);
   }
-  
+
   async approveComment(id: number): Promise<Comment | undefined> {
     const comment = await this.comments.get(id);
     if (!comment) return undefined;
-    
+
     const updatedComment = { ...comment, isApproved: true };
     this.comments.set(id, updatedComment);
     return updatedComment;
   }
-  
+
   async incrementHelpfulCount(id: number): Promise<Comment | undefined> {
     const comment = await this.comments.get(id);
     if (!comment) return undefined;
-    
+
     const updatedComment = { ...comment, helpfulCount: comment.helpfulCount + 1 };
     this.comments.set(id, updatedComment);
     return updatedComment;
