@@ -961,7 +961,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Definir nome para download
-      const fileName = `${book.title} - ${book.author.name} (${format.toUpperCase()})${path.extname(fileUrl)}`;
+      const fileName = `${book.title}${book.author ? ` - ${book.author.name}` : ''} (${format.toUpperCase()})${path.extname(fileUrl)}`;
       
       // Incrementar contagem de downloads
       await storage.incrementDownloadCount(bookId);
@@ -1424,7 +1424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ epubUrl: fileUrl });
     } catch (error) {
       console.error("Erro no upload de EPUB:", error);
-      res.status(500).json({ message: error.message || "Erro no upload de EPUB" });
+      res.status(500).json({ message: error instanceof Error ? error.message : "Erro no upload de EPUB" });
     }
   });
 
@@ -1449,7 +1449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ pdfUrl: fileUrl });
     } catch (error) {
       console.error("Erro no upload de PDF:", error);
-      res.status(500).json({ message: error.message || "Erro no upload de PDF" });
+      res.status(500).json({ message: error instanceof Error ? error.message : "Erro no upload de PDF" });
     }
   });
 

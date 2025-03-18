@@ -281,9 +281,10 @@ export default function PDFReader({ url, bookId }: PDFReaderProps) {
   }, [currentPage, numPages]);
 
   return (
-    // Adicionado meta tag noindex para evitar indexação pelo Google
+    // Adicionado meta tags para SEO e identificação do conteúdo
     <>
       <meta name="robots" content="noindex, nofollow" />
+      <title>{pdf?.documentInfo?.Title || "Leitura"} em PDF - BiblioTech</title>
       
       <div className="flex flex-col h-full bg-neutral-800">
         {/* Barra de Ferramentas Aprimorada */}
