@@ -307,6 +307,8 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
 
   return (
     <div className="min-h-screen">
+      {/* SEO - Meta Title */}
+      <title>{book.title} - {book.author.name} | BiblioTech</title>
       {/* Breadcrumb */}
       <div className="bg-neutral-100 py-3">
         <div className="container mx-auto px-4">
