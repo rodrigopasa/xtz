@@ -180,6 +180,26 @@ export const insertCommentSchema = createInsertSchema(comments).pick({
   isApproved: true,
 });
 
+// Nova tabela de configurações do site
+export const siteSettings = pgTable("site_settings", {
+  id: serial("id").primaryKey(),
+  siteName: text("site_name").notNull().default("BiblioTech"),
+  siteDescription: text("site_description").notNull().default("Sua biblioteca digital"),
+  primaryColor: text("primary_color").notNull().default("#3b82f6"),
+  logoUrl: text("logo_url"),
+  faviconUrl: text("favicon_url"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSettingsSchema = createInsertSchema(siteSettings).pick({
+  siteName: true,
+  siteDescription: true,
+  primaryColor: true,
+  logoUrl: true,
+  faviconUrl: true,
+});
+
+
 // Tipos exportados
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -204,3 +224,6 @@ export type ReadingHistory = typeof readingHistory.$inferSelect;
 
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type Comment = typeof comments.$inferSelect;
+
+export type InsertSettings = z.infer<typeof insertSettingsSchema>;
+export type SiteSettings = typeof siteSettings.$inferSelect;

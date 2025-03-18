@@ -14,7 +14,8 @@ import {
   insertBookSchema, 
   insertCommentSchema,
   insertFavoriteSchema,
-  insertReadingHistorySchema
+  insertReadingHistorySchema,
+  insertSettingsSchema // Add import for settings schema
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -24,6 +25,8 @@ import { Strategy as LocalStrategy } from "passport-local";
 import MemoryStore from "memorystore";
 import cors from "cors";
 import { compare } from 'bcryptjs'; // Import bcrypt's compare function
+import { eq } from 'drizzle-orm'; // Import eq from drizzle-orm
+
 
 // ESM module compatibility - definir __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -398,7 +401,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Logout realizado com sucesso" });
     });
   });
-  
+
+  // Nova rota para obter configurações do site
+  app.get("/api/settings", async (req, res) => {
+    try {
+      const [settings] = await db.select().from(siteSettings);
+      res.json(settings || {
+        siteName: "BiblioTech",
+        siteDescription: "Sua biblioteca digital",
+        primaryColor: "#3b82f6"
+      });
+    } catch (error) {
+      console.error("Erro ao buscar configurações:", error);
+      res.status(500).json({ message: "Erro ao buscar configurações" });
+    }
+  });
+
+  // Nova rota para atualizar configurações do site
+  app.put("/api/settings", isAdmin, async (req, res) => {
+    try {
+      const { data, error } = validateSchema(insertSettingsSchema, req.body);
+      if (error) {
+        return res.status(400).json({ message: error });
+      }
+
+      const [settings] = await db.select().from(siteSettings);
+
+      if (settings) {
+        const [updatedSettings] = await db
+          .update(siteSettings)
+          .set({ ...data, updatedAt: new Date() })
+          .where(eq(siteSettings.id, settings.id))
+          .returning();
+        res.json(updatedSettings);
+      } else {
+        const [newSettings] = await db
+          .insert(siteSettings)
+          .values({ ...data, updatedAt: new Date() })
+          .returning();
+        res.json(newSettings);
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar configurações:", error);
+      res.status(500).json({ message: "Erro ao atualizar configurações" });
+    }
+  });
+
+
   // Rotas para Categorias
   app.get("/api/categories", async (req, res) => {
     try {
