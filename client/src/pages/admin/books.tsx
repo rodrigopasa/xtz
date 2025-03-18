@@ -223,11 +223,11 @@ export default function AdminBooks() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todas categorias</SelectItem>
-                    {categories?.map((category: any) => (
+                    {categories && Array.isArray(categories) ? categories.map((category: any) => (
                       <SelectItem key={category.id} value={category.id.toString()}>
                         {category.name}
                       </SelectItem>
-                    ))}
+                    )) : null}
                   </SelectContent>
                 </Select>
                 
