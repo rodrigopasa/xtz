@@ -1241,6 +1241,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== API de Upload de Arquivos =====
+  
+  // Configuração de diretórios para upload
+  const uploadDir = './uploads';
+  const coverDir = path.join(uploadDir, 'covers');
+  const booksDir = path.join(uploadDir, 'books');
+  
+  // Garantir que os diretórios existam
+  [uploadDir, coverDir, booksDir].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  });
+  
+  // Configuração do Multer para upload de capas
+  const coverStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, coverDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E6);
+      const ext = path.extname(file.originalname);
+      cb(null, 'cover-' + uniqueSuffix + ext);
+    }
+  });
+  
+  const coverUpload = multer({
+    storage: coverStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Tipo de arquivo não suportado. Use JPEG, PNG, WEBP ou GIF.'));
+      }
+    }
+  });
+  
+  // Configuração do Multer para upload de e-books (EPUB, PDF)
+  const bookStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, booksDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E6);
+      const ext = path.extname(file.originalname);
+      cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    }
+  });
+  
+  const bookUpload = multer({
+    storage: bookStorage,
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    fileFilter: (req, file, cb) => {
+      if (file.fieldname === 'epub' && file.mimetype === 'application/epub+zip') {
+        cb(null, true);
+      } else if (file.fieldname === 'pdf' && file.mimetype === 'application/pdf') {
+        cb(null, true);
+      } else {
+        cb(new Error(`Tipo de arquivo não suportado para ${file.fieldname}. Use formato apropriado.`));
+      }
+    }
+  });
+  
+  // Rota para upload de capa
+  app.post("/api/upload/cover", isAdmin, coverUpload.single('file'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhum arquivo foi enviado" });
+      }
+      
+      // Retornar URL relativa para o frontend
+      const fileUrl = `/uploads/covers/${req.file.filename}`;
+      
+      res.json({ coverUrl: fileUrl });
+    } catch (error) {
+      console.error("Erro no upload de capa:", error);
+      res.status(500).json({ message: "Erro no upload de capa" });
+    }
+  });
+  
+  // Rota para upload de EPUB
+  app.post("/api/upload/epub", isAdmin, bookUpload.single('file'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhum arquivo foi enviado" });
+      }
+      
+      // Retornar URL relativa para o frontend
+      const fileUrl = `/uploads/books/${req.file.filename}`;
+      
+      res.json({ epubUrl: fileUrl });
+    } catch (error) {
+      console.error("Erro no upload de EPUB:", error);
+      res.status(500).json({ message: "Erro no upload de EPUB" });
+    }
+  });
+  
+  // Rota para upload de PDF
+  app.post("/api/upload/pdf", isAdmin, bookUpload.single('file'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhum arquivo foi enviado" });
+      }
+      
+      // Retornar URL relativa para o frontend
+      const fileUrl = `/uploads/books/${req.file.filename}`;
+      
+      res.json({ pdfUrl: fileUrl });
+    } catch (error) {
+      console.error("Erro no upload de PDF:", error);
+      res.status(500).json({ message: "Erro no upload de PDF" });
+    }
+  });
+
   const server = createServer(app);
   return server;
 }
