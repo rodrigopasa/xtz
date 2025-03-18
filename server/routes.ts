@@ -886,11 +886,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (bookData.slug !== existingBook.slug) {
         const bookBySlug = await storage.getBookBySlug(bookData.slug);
         if (bookBySlug && bookBySlug.id !== bookId) {
-          return res.status(400).json({ message: "Já existe um livro com este slug" });}
+          return res.status(400).json({ message: "Já existe um livro com este slug" });
+        }
       }
 
-      const updatedBook = await storage.updateBook(bookId, bookData);      res.json(updatedBook);
-    } catch (error) {
+      const updatedBook = await storage.updateBook(bookId, bookData);
+      res.json(updatedBook);    } catch (error) {
       console.error("Erro ao atualizar livro:", error);
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: "Dados inválidos", errors: error.errors });
@@ -1300,38 +1301,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Configuração do Multer para upload de e-books
+  // Configuração do multer para arquivos EPUB e PDF
   const bookStorage = multer.diskStorage({
     destination: (req, file, cb) => {
       cb(null, booksDir);
     },
     filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E6);
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
       const ext = path.extname(file.originalname);
       cb(null, file.fieldname + '-' + uniqueSuffix + ext);
     }
   });
 
+  // Configuração do multer para arquivos EPUB e PDF
   const bookUpload = multer({
     storage: bookStorage,
     limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
     fileFilter: (req, file, cb) => {
-      if (file.fieldname === 'epub') {
-        if (file.mimetype === 'application/epub+zip' || 
-            file.originalname.toLowerCase().endsWith('.epub')) {
+      // Aceitar qualquer tipo de arquivo se a extensão for correta
+      const ext = path.extname(file.originalname).toLowerCase();
+      if (file.fieldname === 'file') {
+        if (ext === '.epub' || ext === '.pdf') {
           cb(null, true);
         } else {
-          cb(new Error('Arquivo inválido. Use apenas arquivos EPUB.'));
-        }
-      } else if (file.fieldname === 'pdf') {
-        if (file.mimetype === 'application/pdf' || 
-            file.originalname.toLowerCase().endsWith('.pdf')) {
-          cb(null, true);
-        } else {
-          cb(new Error('Arquivo inválido. Use apenas arquivos PDF.'));
+          cb(new Error('Apenas arquivos EPUB ou PDF são permitidos.'));
         }
       } else {
-        cb(new Error('Tipo de arquivo não suportado'));
+        cb(new Error('Campo de arquivo inválido'));
       }
     }
   });
@@ -1354,10 +1350,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rota para upload de EPUB
-  app.post("/api/upload/epub", isAdmin, bookUpload.single('epub'), (req, res) => {
+  app.post("/api/upload/epub", isAdmin, bookUpload.single('file'), (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Nenhum arquivo foi enviado" });
+      }
+
+      // Verificar extensão
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      if (ext !== '.epub') {
+        // Remover arquivo enviado se não for EPUB
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ message: "Apenas arquivos EPUB são permitidos" });
       }
 
       const fileUrl = `/uploads/books/${req.file.filename}`;
@@ -1371,10 +1375,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rota para upload de PDF
-  app.post("/api/upload/pdf", isAdmin, bookUpload.single('pdf'), (req, res) => {
+  app.post("/api/upload/pdf", isAdmin, bookUpload.single('file'), (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Nenhum arquivo foi enviado" });
+      }
+
+      // Verificar extensão
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      if (ext !== '.pdf') {
+        // Remover arquivo enviado se não for PDF
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ message: "Apenas arquivos PDF são permitidos" });
       }
 
       const fileUrl = `/uploads/books/${req.file.filename}`;
