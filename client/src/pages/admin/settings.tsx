@@ -41,6 +41,7 @@ export default function AdminSettings() {
 
   // Handler para salvar configurações
   const handleSaveSettings = (section: string, data: any) => {
+    console.log("Salvando configurações:", data);
     updateSettings.mutate(data);
   };
 
@@ -68,7 +69,7 @@ export default function AdminSettings() {
               <Input 
                 id="site-name" 
                 defaultValue={settings?.siteName} 
-                onChange={(e) => {
+                onBlur={(e) => {
                   handleSaveSettings('site', {
                     ...settings,
                     siteName: e.target.value
@@ -81,7 +82,7 @@ export default function AdminSettings() {
               <Input 
                 id="site-description" 
                 defaultValue={settings?.siteDescription}
-                onChange={(e) => {
+                onBlur={(e) => {
                   handleSaveSettings('site', {
                     ...settings,
                     siteDescription: e.target.value
@@ -114,44 +115,8 @@ export default function AdminSettings() {
                 }}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="logo">Logo</Label>
-              <Input 
-                id="logo" 
-                type="file"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const formData = new FormData();
-                    formData.append('logo', file);
-
-                    try {
-                      const response = await fetch('/api/settings/logo', {
-                        method: 'POST',
-                        body: formData
-                      });
-
-                      if (response.ok) {
-                        const { logoUrl } = await response.json();
-                        handleSaveSettings('theme', {
-                          ...settings,
-                          logoUrl
-                        });
-                      }
-                    } catch (error) {
-                      toast({
-                        title: "Erro",
-                        description: "Não foi possível fazer upload do logo.",
-                        variant: "destructive"
-                      });
-                    }
-                  }
-                }}
-              />
-            </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader>
             <CardTitle>Cache e Otimização</CardTitle>
