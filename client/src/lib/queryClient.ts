@@ -7,14 +7,12 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest(
-  url: string,
-  options: {
-    method: string;
-    data?: unknown;
-  } = { method: 'GET' }
-): Promise<any> {
-  console.log(`API Request: ${options.method} ${url}`, options.data ? 'Com dados' : 'Sem dados');
+export async function apiRequest<T = any>(
+  method: string,
+  endpoint: string,
+  data?: unknown
+): Promise<T> {
+  console.log(`API Request: ${method} ${endpoint}`, data ? 'Com dados' : 'Sem dados');
 
   let headers: HeadersInit = {
     'Accept': 'application/json'
@@ -23,15 +21,15 @@ export async function apiRequest(
   let body: any = undefined;
 
   // Verificar se é FormData para não adicionar Content-Type
-  if (options.data instanceof FormData) {
-    body = options.data;
-  } else if (options.data) {
+  if (data instanceof FormData) {
+    body = data;
+  } else if (data) {
     headers['Content-Type'] = 'application/json';
-    body = JSON.stringify(options.data);
+    body = JSON.stringify(data);
   }
 
   const requestOptions: RequestInit = {
-    method: options.method,
+    method,
     headers,
     body,
     credentials: 'include',
@@ -41,6 +39,9 @@ export async function apiRequest(
 
   console.log('Opções da requisição:', requestOptions);
 
+  // Garantir que a URL comece com /api/
+  const url = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  
   const res = await fetch(url, requestOptions);
 
   console.log(`API Response: ${res.status} ${res.statusText}`, 

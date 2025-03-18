@@ -24,8 +24,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Configuração da sessão
   const MemoryStoreSession = MemoryStore(session);
+  const sessionSecret = process.env.SESSION_SECRET || "bibliotech-secret-key-2025";
+  
+  console.log("Usando SESSION_SECRET para configurar a sessão");
+  
   app.use(session({
-    secret: process.env.SESSION_SECRET || "bibliotech-secret-key",
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -121,6 +125,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
     res.status(401).json({ message: "Não autenticado" });
+  });
+
+  // Rota de registro
+  app.post("/api/auth/register", async (req, res, next) => {
+    try {
+      const { username, password, email, name } = req.body;
+      
+      // Verifica se o usuário já existe
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ message: "Nome de usuário já está em uso" });
+      }
+      
+      // Verifica se o email já existe
+      const existingEmail = await storage.getUserByEmail(email);
+      if (existingEmail) {
+        return res.status(400).json({ message: "Email já está em uso" });
+      }
+      
+      // Cria o usuário
+      const newUser = await storage.createUser({
+        username,
+        password,
+        email,
+        name,
+        role: "user",
+      });
+      
+      // Faz login automático após registro
+      req.login(newUser, (loginErr) => {
+        if (loginErr) return next(loginErr);
+        
+        return res.status(201).json({
+          id: newUser.id,
+          username: newUser.username,
+          email: newUser.email,
+          name: newUser.name,
+          role: newUser.role
+        });
+      });
+    } catch (error) {
+      console.error("Erro no registro:", error);
+      res.status(500).json({ message: "Erro ao registrar usuário" });
+    }
   });
 
   // Rota de logout
