@@ -68,13 +68,10 @@ app.use((req, res, next) => {
       res.status(status).json({ message });
     });
 
-    if (app.get("env") === "development") {
-      console.log("Configurando Vite para ambiente de desenvolvimento...");
-      await setupVite(app, server);
-    } else {
-      console.log("Configurando arquivos estáticos para produção...");
-      serveStatic(app);
-    }
+    // Para evitar erros com o Vite em produção, sempre usamos o setupVite no Dockerfile
+    // Isso é porque copiamos todos os node_modules, incluindo o Vite
+    console.log(`Configurando servidor para ambiente: ${app.get("env")}`);
+    await setupVite(app, server);
 
     const port = process.env.PORT || 5000;
     const host = process.env.HOST || "0.0.0.0";

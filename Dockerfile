@@ -24,9 +24,10 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.env ./.env
+COPY --from=builder /app/uploads ./uploads
 
-# Install only production dependencies
-RUN npm ci --omit=dev
+# Install production dependencies including vite for production use
+COPY --from=builder /app/node_modules ./node_modules
 
 # Expose the port the app runs on
 EXPOSE 5000
