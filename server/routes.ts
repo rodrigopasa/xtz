@@ -182,10 +182,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Configuração de sessão
+  // Ajustes na configuração da sessão e Passport
   const MemoryStoreSession = MemoryStore(session);
-  // Forçando ambiente de desenvolvimento para garantir cookies em HTTPS
-  const isProduction = false; // process.env.NODE_ENV === 'production';
+  const isProduction = process.env.NODE_ENV === 'production';
 
   app.use(session({
     secret: process.env.SESSION_SECRET || "bibliotech-secret-key",
@@ -194,35 +193,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 24 horas
       httpOnly: true,
-      secure: false, // Desativando secure para ambiente de desenvolvimento
-      sameSite: 'lax',
-      path: '/' // Garante que o cookie seja enviado para todas as rotas
+      secure: isProduction,
+      sameSite: 'lax'
     },
-    name: 'bibliotech.sid', // Nome personalizado para o cookie de sessão
-    store: new MemoryStoreSession({
-      checkPeriod: 86400000 // 24 horas
-    })
+    name: 'bibliotech.sid'
   }));
 
-  // Configuração do Passport
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Configuração de arquivos estáticos
-  app.use('/covers', express.static(coversDirectory));
-  app.use('/books', express.static(booksDirectory));
-  app.use('/uploads', express.static(uploadsDirectory));
+  // Configuração do Passport com logs detalhados
+  passport.serializeUser((user: any, done) => {
+    console.log("Serializando usuário:", user.id);
+    done(null, user.id);
+  });
 
-  // Mostra no console as configurações de arquivos estáticos
-  console.log("Rotas de arquivos estáticos:");
-  console.log(`- /covers -> ${coversDirectory}`);
-  console.log(`- /books -> ${booksDirectory}`);
-  console.log(`- /uploads -> ${uploadsDirectory}`);
-
+  passport.deserializeUser(async (id: number, done) => {
+    try {
+      console.log("Deserializando usuário ID:", id);
+      const user = await storage.getUser(id);
+      if (!user) {
+        console.log("Usuário não encontrado na deserialização:", id);
+        return done(null, false);
+      }
+      console.log("Usuário deserializado com sucesso:", user.username);
+      done(null, user);
+    } catch (error) {
+      console.error("Erro na deserialização:", error);
+      done(error);
+    }
+  });
 
   passport.use(new LocalStrategy(async (username, password, done) => {
     try {
+      console.log("Tentativa de login para usuário:", username);
       const user = await storage.getUserByUsername(username);
+
       if (!user) {
         console.log("Usuário não encontrado:", username);
         return done(null, false, { message: "Credenciais inválidas" });
@@ -242,25 +248,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
-  passport.serializeUser((user: any, done) => {
-    console.log("Serializando usuário:", user.id);
-    done(null, user.id);
+  // Rota de login com logs detalhados
+  app.post("/api/auth/login", (req, res, next) => {
+    console.log("Requisição de login recebida:", req.body.username);
+
+    passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (err) {
+        console.error("Erro na autenticação:", err);
+        return next(err);
+      }
+
+      if (!user) {
+        console.log("Login falhou:", info?.message);
+        return res.status(401).json({ message: info?.message || "Credenciais inválidas" });
+      }
+
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error("Erro ao estabelecer sessão:", loginErr);
+          return next(loginErr);
+        }
+
+        console.log("Login bem-sucedido:");
+        console.log("- Usuário:", user.username);
+        console.log("- ID da sessão:", req.sessionID);
+        console.log("- Cookies:", req.headers.cookie);
+
+        return res.json({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          avatarUrl: user.avatarUrl
+        });
+      });
+    })(req, res, next);
   });
 
-  passport.deserializeUser(async (id: number, done) => {
-    try {
-      console.log("Deserializando usuário ID:", id);
-      const user = await storage.getUser(id);
-      if (!user) {
-        console.log("Usuário não encontrado na deserialização:", id);
-        return done(null, false);
-      }
-      done(null, user);
-    } catch (error) {
-      console.error("Erro na deserialização:", error);
-      done(error);
-    }
-  });
+  // Configuração de arquivos estáticos
+  app.use('/covers', express.static(coversDirectory));
+  app.use('/books', express.static(booksDirectory));
+  app.use('/uploads', express.static(uploadsDirectory));
+
+  // Mostra no console as configurações de arquivos estáticos
+  console.log("Rotas de arquivos estáticos:");
+  console.log(`- /covers -> ${coversDirectory}`);
+  console.log(`- /books -> ${booksDirectory}`);
+  console.log(`- /uploads -> ${uploadsDirectory}`);
+
 
   // Middleware para verificar autenticação
   const isAuthenticated = (req: Request, res: Response, next: Function) => {
@@ -289,120 +325,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return { data: null, error: "Erro de validação desconhecido" };
     }
   };
-
-  // Rotas de autenticação
-  app.post("/api/auth/login", (req, res, next) => {
-    console.log("Tentativa de login:", req.body.username);
-
-    passport.authenticate("local", (err: any, user: any, info: any) => {
-      if (err) {
-        console.error("Erro na autenticação:", err);
-        return next(err);
-      }
-
-      if (!user) {
-        console.log("Falha no login:", info?.message);
-        return res.status(401).json({ message: info?.message || "Credenciais inválidas" });
-      }
-
-      req.login(user, (loginErr) => {
-        if (loginErr) {
-          console.error("Erro ao estabelecer sessão:", loginErr);
-          return next(loginErr);
-        }
-
-        console.log("Login bem-sucedido para:", user.username);
-        console.log("ID de sessão:", req.sessionID);
-        console.log("Cookies configurados:", res.getHeader('set-cookie'));
-
-        return res.json({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          avatarUrl: user.avatarUrl
-        });
-      });
-    })(req, res, next);
-  });
-
-
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      const { data, error } = validateSchema(insertUserSchema, req.body);
-      if (error) {
-        return res.status(400).json({ message: error });
-      }
-
-      // Verificar se o usuário já existe
-      const existingUser = await storage.getUserByUsername(data.username);
-      if (existingUser) {
-        return res.status(400).json({ message: "Nome de usuário já está em uso" });
-      }
-
-      const existingEmail = await storage.getUserByEmail(data.email);
-      if (existingEmail) {
-        return res.status(400).json({ message: "E-mail já está em uso" });
-      }
-
-      // Criar o usuário
-      const newUser = await storage.createUser({
-        ...data,
-        role: "user"  // Forçar role como user para segurança
-      });
-
-      // Login automático após registro
-      req.login(newUser, (err) => {
-        if (err) {
-          return res.status(500).json({ message: "Erro ao fazer login automático" });
-        }
-        return res.status(201).json({
-          id: newUser.id,
-          username: newUser.username,
-          email: newUser.email,
-          name: newUser.name,
-          role: newUser.role
-        });
-      });
-    } catch (error) {
-      res.status(500).json({ message: "Erro interno do servidor" });
-    }
-  });
-
-  app.get("/api/auth/me", (req, res) => {
-    console.log("Verificando sessão...");
-    console.log("ID de sessão:", req.sessionID);
-    console.log("Cookies recebidos:", req.headers.cookie);
-    console.log("req.user:", req.user);
-    console.log("isAuthenticated:", req.isAuthenticated());
-
-    if (req.isAuthenticated()) {
-      const user = req.user as any;
-      console.log("Usuário autenticado:", user.username);
-
-      return res.json({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        avatarUrl: user.avatarUrl
-      });
-    }
-
-    console.log("Usuário não autenticado");
-    res.status(401).json({ message: "Não autenticado" });
-  });
-
-  app.post("/api/auth/logout", (req, res) => {
-    req.logout(function (err) {
-      if (err) {
-        return res.status(500).json({ message: "Erro ao sair" });
-      }
-      res.json({ message: "Logout realizado com sucesso" });
-    });
-  });
 
   // Nova rota para obter configurações do site
   app.get("/api/settings", async (req, res) => {
@@ -864,8 +786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Formatar a resposta
       const response = {
-        series: {
-          ...series,
+        series: {          ...series,
           author: author ? {
             id: author.id,
             name: author.name,
@@ -1765,17 +1686,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/comments/:id/helpful", isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-
       if (isNaN(id)) {
-        return res.status(400).json({ message: "ID do comentário inválido" });
+        return res.status(400).json({ message: "ID inválido" });
       }
 
-      const comment = await storage.incrementHelpfulCount(id);
+      const comment = await storage.getComment(id);
       if (!comment) {
         return res.status(404).json({ message: "Comentário não encontrado" });
       }
 
-      res.json(comment);
+      const updatedComment = await storage.incrementHelpfulCount(id);
+      res.json(updatedComment);
     } catch (error) {
       res.status(500).json({ message: "Erro ao marcar comentário como útil" });
     }
@@ -1830,12 +1751,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/comments/:id", isAdmin, async (req, res) => {
+  // Corrigindo o erro de sintaxe na rota de exclusão de comentários
+  app.delete("/api/comments/:id", isAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-
       if (isNaN(id)) {
-        return res.status(400).json({ message: "ID do comentário inválido" });
+        return res.status(400).json({ message: "ID inválido" });
       }
 
       const success = await storage.deleteComment(id);
