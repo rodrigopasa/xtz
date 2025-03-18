@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import dotenv from "dotenv";
+import path from "path";
 
 // Carrega as variáveis de ambiente do arquivo .env
 dotenv.config();
@@ -9,6 +10,10 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Configuração para servir arquivos estáticos
+app.use('/uploads', express.static('uploads'));
+app.use('/public', express.static('public'));
 
 // Middleware de logging
 app.use((req, res, next) => {
