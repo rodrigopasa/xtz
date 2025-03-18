@@ -28,7 +28,7 @@ const isAdmin = (req: Request, res: Response, next: NextFunction) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configuração para aceitar JSON no corpo das requisições
   app.use(express.json());
-  
+
   // Configuração do CORS
   app.use(cors({
     origin: true,
@@ -40,9 +40,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configuração da sessão
   const MemoryStoreSession = MemoryStore(session);
   const sessionSecret = process.env.SESSION_SECRET || "bibliotech-secret-key-2025";
-  
+
   console.log("Usando SESSION_SECRET para configurar a sessão");
-  
+
   app.use(session({
     secret: sessionSecret,
     resave: false,
@@ -108,13 +108,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Rota de login
-  app.post("/api/auth/login", (req, res, next) => {
-    passport.authenticate("local", (err: any, user: any, info: any) => {
-      if (err) return next(err);
-      if (!user) return res.status(401).json({ message: info?.message || "Credenciais inválidas" });
+  app.post("/api/auth/login", async (req, res, next) => {
+    try {
+      const { username, password } = req.body;
 
-      req.login(user, (loginErr) => {
-        if (loginErr) return next(loginErr);
+      // Buscar usuário
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ message: "Credenciais inválidas" });
+      }
+
+      // Verificar senha
+      const isValidPassword = await compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Credenciais inválidas" });
+      }
+
+      // Login bem sucedido
+      req.login(user, (err) => {
+        if (err) return next(err);
 
         return res.json({
           id: user.id,
@@ -124,7 +136,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role: user.role
         });
       });
-    })(req, res, next);
+    } catch (error) {
+      console.error("Erro no login:", error);
+      next(error);
+    }
   });
 
   // Rota para verificar autenticação
@@ -146,22 +161,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", async (req, res, next) => {
     try {
       const { username, password, email, name } = req.body;
-      
+
       // Verifica se o usuário já existe
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
         return res.status(400).json({ message: "Nome de usuário já está em uso" });
       }
-      
+
       // Verifica se o email já existe
       const existingEmail = await storage.getUserByEmail(email);
       if (existingEmail) {
         return res.status(400).json({ message: "Email já está em uso" });
       }
-      
-      // Hash da senha antes de armazenar
+
+      // Hash da senha
       const hashedPassword = await hash(password, 10);
-      
+
       // Cria o usuário
       const newUser = await storage.createUser({
         username,
@@ -170,11 +185,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         role: "user",
       });
-      
-      // Faz login automático após registro
-      req.login(newUser, (loginErr) => {
-        if (loginErr) return next(loginErr);
-        
+
+      // Login automático após registro
+      req.login(newUser, (err) => {
+        if (err) return next(err);
+
         return res.status(201).json({
           id: newUser.id,
           username: newUser.username,
@@ -246,15 +261,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated() || (req.user as any)?.role !== "admin") {
         return res.status(403).json({ message: "Acesso não autorizado" });
       }
-      
+
       const comments = await storage.getAllComments();
-      
+
       // Enriquecer os dados dos comentários com informações do usuário e livro
       const enrichedComments = await Promise.all(
         comments.map(async (comment) => {
           const user = await storage.getUser(comment.userId);
           const book = await storage.getBook(comment.bookId);
-          
+
           return {
             ...comment,
             user: user ? {
@@ -272,7 +287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         })
       );
-      
+
       res.json(enrichedComments);
     } catch (error) {
       console.error("Erro ao buscar comentários:", error);
@@ -287,14 +302,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated() || (req.user as any)?.role !== "admin") {
         return res.status(403).json({ message: "Acesso não autorizado" });
       }
-      
+
       const commentId = parseInt(req.params.id);
       const updatedComment = await storage.approveComment(commentId);
-      
+
       if (!updatedComment) {
         return res.status(404).json({ message: "Comentário não encontrado" });
       }
-      
+
       res.json(updatedComment);
     } catch (error) {
       console.error("Erro ao aprovar comentário:", error);
@@ -309,14 +324,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated() || (req.user as any)?.role !== "admin") {
         return res.status(403).json({ message: "Acesso não autorizado" });
       }
-      
+
       const commentId = parseInt(req.params.id);
       const success = await storage.deleteComment(commentId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Comentário não encontrado" });
       }
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Erro ao excluir comentário:", error);
@@ -325,7 +340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ===== API de Categorias =====
-  
+
   // Listar todas as categorias
   app.get("/api/categories", async (req, res) => {
     try {
@@ -342,11 +357,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const categoryId = parseInt(req.params.id);
       const category = await storage.getCategory(categoryId);
-      
+
       if (!category) {
         return res.status(404).json({ message: "Categoria não encontrada" });
       }
-      
+
       res.json(category);
     } catch (error) {
       console.error("Erro ao buscar categoria:", error);
@@ -361,27 +376,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated() || (req.user as any)?.role !== "admin") {
         return res.status(403).json({ message: "Acesso não autorizado" });
       }
-      
+
       const { name, slug, iconName } = req.body;
-      
+
       // Validações básicas
       if (!name || !slug) {
         return res.status(400).json({ message: "Nome e slug são obrigatórios" });
       }
-      
+
       // Verificar se já existe categoria com o mesmo slug
       const existingCategory = await storage.getCategoryBySlug(slug);
       if (existingCategory) {
         return res.status(400).json({ message: "Já existe uma categoria com este slug" });
       }
-      
+
       const newCategory = await storage.createCategory({
         name,
         slug,
         iconName: iconName || "BookIcon",
         bookCount: 0
       });
-      
+
       res.status(201).json(newCategory);
     } catch (error) {
       console.error("Erro ao criar categoria:", error);
@@ -396,21 +411,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated() || (req.user as any)?.role !== "admin") {
         return res.status(403).json({ message: "Acesso não autorizado" });
       }
-      
+
       const categoryId = parseInt(req.params.id);
       const { name, slug, iconName } = req.body;
-      
+
       // Validações básicas
       if (!name || !slug) {
         return res.status(400).json({ message: "Nome e slug são obrigatórios" });
       }
-      
+
       // Verificar se existe a categoria
       const category = await storage.getCategory(categoryId);
       if (!category) {
         return res.status(404).json({ message: "Categoria não encontrada" });
       }
-      
+
       // Verificar se o novo slug já está em uso (exceto pela própria categoria)
       if (slug !== category.slug) {
         const existingCategory = await storage.getCategoryBySlug(slug);
@@ -418,13 +433,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Já existe uma categoria com este slug" });
         }
       }
-      
+
       const updatedCategory = await storage.updateCategory(categoryId, {
         name,
         slug,
         iconName: iconName || category.iconName
       });
-      
+
       res.json(updatedCategory);
     } catch (error) {
       console.error("Erro ao atualizar categoria:", error);
@@ -439,21 +454,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated() || (req.user as any)?.role !== "admin") {
         return res.status(403).json({ message: "Acesso não autorizado" });
       }
-      
+
       const categoryId = parseInt(req.params.id);
-      
+
       // Verificar se existe a categoria
       const category = await storage.getCategory(categoryId);
       if (!category) {
         return res.status(404).json({ message: "Categoria não encontrada" });
       }
-      
+
       const success = await storage.deleteCategory(categoryId);
-      
+
       if (!success) {
         return res.status(500).json({ message: "Não foi possível excluir a categoria" });
       }
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Erro ao excluir categoria:", error);
@@ -462,7 +477,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ===== API de Autores =====
-  
+
   // Listar todos os autores
   app.get("/api/authors", async (req, res) => {
     try {
@@ -479,11 +494,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const authorId = parseInt(req.params.id);
       const author = await storage.getAuthor(authorId);
-      
+
       if (!author) {
         return res.status(404).json({ message: "Autor não encontrado" });
       }
-      
+
       res.json(author);
     } catch (error) {
       console.error("Erro ao buscar autor:", error);
@@ -498,27 +513,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated() || (req.user as any)?.role !== "admin") {
         return res.status(403).json({ message: "Acesso não autorizado" });
       }
-      
+
       const { name, slug, bio, imageUrl } = req.body;
-      
+
       // Validações básicas
       if (!name || !slug) {
         return res.status(400).json({ message: "Nome e slug são obrigatórios" });
       }
-      
+
       // Verificar se já existe autor com o mesmo slug
       const existingAuthor = await storage.getAuthorBySlug(slug);
       if (existingAuthor) {
         return res.status(400).json({ message: "Já existe um autor com este slug" });
       }
-      
+
       const newAuthor = await storage.createAuthor({
         name,
         slug,
         bio: bio || "",
         imageUrl: imageUrl || ""
       });
-      
+
       res.status(201).json(newAuthor);
     } catch (error) {
       console.error("Erro ao criar autor:", error);
@@ -533,21 +548,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated() || (req.user as any)?.role !== "admin") {
         return res.status(403).json({ message: "Acesso não autorizado" });
       }
-      
+
       const authorId = parseInt(req.params.id);
       const { name, slug, bio, imageUrl } = req.body;
-      
+
       // Validações básicas
       if (!name || !slug) {
         return res.status(400).json({ message: "Nome e slug são obrigatórios" });
       }
-      
+
       // Verificar se existe o autor
       const author = await storage.getAuthor(authorId);
       if (!author) {
         return res.status(404).json({ message: "Autor não encontrado" });
       }
-      
+
       // Verificar se o novo slug já está em uso (exceto pelo próprio autor)
       if (slug !== author.slug) {
         const existingAuthor = await storage.getAuthorBySlug(slug);
@@ -555,14 +570,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Já existe um autor com este slug" });
         }
       }
-      
+
       const updatedAuthor = await storage.updateAuthor(authorId, {
         name,
         slug,
         bio: bio || author.bio,
         imageUrl: imageUrl || author.imageUrl
       });
-      
+
       res.json(updatedAuthor);
     } catch (error) {
       console.error("Erro ao atualizar autor:", error);
@@ -577,21 +592,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated() || (req.user as any)?.role !== "admin") {
         return res.status(403).json({ message: "Acesso não autorizado" });
       }
-      
+
       const authorId = parseInt(req.params.id);
-      
+
       // Verificar se existe o autor
       const author = await storage.getAuthor(authorId);
       if (!author) {
         return res.status(404).json({ message: "Autor não encontrado" });
       }
-      
+
       const success = await storage.deleteAuthor(authorId);
-      
+
       if (!success) {
         return res.status(500).json({ message: "Não foi possível excluir o autor" });
       }
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Erro ao excluir autor:", error);
@@ -600,7 +615,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ===== API de Séries =====
-  
+
   // Listar todas as séries
   app.get("/api/series", async (req, res) => {
     try {
@@ -631,11 +646,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const seriesId = parseInt(req.params.id);
       const series = await storage.getSeries(seriesId);
-      
+
       if (!series) {
         return res.status(404).json({ message: "Série não encontrada" });
       }
-      
+
       res.json(series);
     } catch (error) {
       console.error("Erro ao buscar série:", error);
@@ -646,15 +661,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/series/:id", isAdmin, async (req, res) => {
     try {
       const seriesId = parseInt(req.params.id);
-      
+
       // Verificar se a série existe
       const existingSeries = await storage.getSeries(seriesId);
       if (!existingSeries) {
         return res.status(404).json({ message: "Série não encontrada" });
       }
-      
+
       const seriesData = insertSeriesSchema.parse(req.body);
-      
+
       // Verificar se o novo slug já está em uso por outra série
       if (seriesData.slug !== existingSeries.slug) {
         const seriesBySlug = await storage.getSeriesBySlug(seriesData.slug);
@@ -662,7 +677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Já existe uma série com este slug" });
         }
       }
-      
+
       const updatedSeries = await storage.updateSeries(seriesId, seriesData);
       res.json(updatedSeries);
     } catch (error) {
@@ -678,28 +693,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/series/:id", isAdmin, async (req, res) => {
     try {
       const seriesId = parseInt(req.params.id);
-      
+
       // Verificar se a série existe
       const existingSeries = await storage.getSeries(seriesId);
       if (!existingSeries) {
         return res.status(404).json({ message: "Série não encontrada" });
       }
-      
+
       // Verificar se existem livros associados a esta série
       const books = await storage.getBooksBySeries(seriesId);
       if (books.length > 0) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: "Não é possível excluir esta série pois existem livros associados a ela",
           bookCount: books.length
         });
       }
-      
+
       const success = await storage.deleteSeries(seriesId);
-      
+
       if (!success) {
         return res.status(500).json({ message: "Não foi possível excluir a série" });
       }
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Erro ao excluir série:", error);
@@ -714,7 +729,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated() || (req.user as any)?.role !== "admin") {
         return res.status(403).json({ message: "Acesso não autorizado" });
       }
-      
+
       const users = await storage.getAllUsers();
       res.json(users);
     } catch (error) {
@@ -724,24 +739,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ===== API de Livros =====
-  
+
   // Listar todos os livros
   app.get("/api/books", async (req, res) => {
     try {
       // Verifique se há parâmetros de consulta
       const { featured, isNew, isFree } = req.query;
-      
+
       if (featured === 'true') {
         const books = await storage.getFeaturedBooks();
         return res.json(books);
       } else if (isNew === 'true') {
         const books = await storage.getNewBooks();
-        return res.json(books);  
+        return res.json(books);
       } else if (isFree === 'true') {
         const books = await storage.getFreeBooks();
         return res.json(books);
       }
-      
+
       // Se não houver parâmetros, retorna todos os livros
       const books = await storage.getAllBooks();
       res.json(books);
@@ -780,11 +795,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const slug = req.params.slug;
       const book = await storage.getBookBySlug(slug);
-      
+
       if (!book) {
         return res.status(404).json({ message: "Livro não encontrado" });
       }
-      
+
       res.json(book);
     } catch (error) {
       console.error("Erro ao buscar livro:", error);
@@ -797,11 +812,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const bookId = parseInt(req.params.id);
       const book = await storage.getBook(bookId);
-      
+
       if (!book) {
         return res.status(404).json({ message: "Livro não encontrado" });
       }
-      
+
       res.json(book);
     } catch (error) {
       console.error("Erro ao buscar livro:", error);
@@ -810,18 +825,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
-
   // Criar livro (apenas admin)
   app.post("/api/books", isAdmin, async (req, res) => {
     try {
       const bookData = insertBookSchema.parse(req.body);
-      
+
       // Verificar se já existe livro com o mesmo slug
       const existingBook = await storage.getBookBySlug(bookData.slug);
       if (existingBook) {
         return res.status(400).json({ message: "Já existe um livro com este slug" });
       }
-      
+
       const newBook = await storage.createBook(bookData);
       res.status(201).json(newBook);
     } catch (error) {
@@ -838,15 +852,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/books/:id", isAdmin, async (req, res) => {
     try {
       const bookId = parseInt(req.params.id);
-      
+
       // Verificar se o livro existe
       const existingBook = await storage.getBook(bookId);
       if (!existingBook) {
         return res.status(404).json({ message: "Livro não encontrado" });
       }
-      
+
       const bookData = insertBookSchema.parse(req.body);
-      
+
       // Verificar se o novo slug já está em uso por outro livro
       if (bookData.slug !== existingBook.slug) {
         const bookBySlug = await storage.getBookBySlug(bookData.slug);
@@ -854,7 +868,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Já existe um livro com este slug" });
         }
       }
-      
+
       const updatedBook = await storage.updateBook(bookId, bookData);
       res.json(updatedBook);
     } catch (error) {
@@ -871,19 +885,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/books/:id", isAdmin, async (req, res) => {
     try {
       const bookId = parseInt(req.params.id);
-      
+
       // Verificar se o livro existe
       const existingBook = await storage.getBook(bookId);
       if (!existingBook) {
         return res.status(404).json({ message: "Livro não encontrado" });
       }
-      
+
       const success = await storage.deleteBook(bookId);
-      
+
       if (!success) {
         return res.status(500).json({ message: "Não foi possível excluir o livro" });
       }
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Erro ao excluir livro:", error);
@@ -895,13 +909,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/books/:id/download", async (req, res) => {
     try {
       const bookId = parseInt(req.params.id);
-      
+
       // Verificar se o livro existe
       const existingBook = await storage.getBook(bookId);
       if (!existingBook) {
         return res.status(404).json({ message: "Livro não encontrado" });
       }
-      
+
       const updatedBook = await storage.incrementDownloadCount(bookId);
       res.json(updatedBook);
     } catch (error) {
@@ -911,7 +925,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ===== API de Favoritos =====
-  
+
   // Listar favoritos do usuário
   app.get("/api/favorites", async (req, res) => {
     try {
@@ -919,17 +933,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Usuário não autenticado" });
       }
-      
+
       const userId = (req.user as any).id;
       const favorites = await storage.getFavoriteBooks(userId);
-      
+
       res.json(favorites);
     } catch (error) {
       console.error("Erro ao buscar favoritos:", error);
       res.status(500).json({ message: "Erro ao buscar favoritos" });
     }
   });
-  
+
   // Adicionar livro aos favoritos
   app.post("/api/favorites/:bookId", async (req, res) => {
     try {
@@ -937,34 +951,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Usuário não autenticado" });
       }
-      
+
       const userId = (req.user as any).id;
       const bookId = parseInt(req.params.bookId);
-      
+
       // Verificar se o livro existe
       const book = await storage.getBook(bookId);
       if (!book) {
         return res.status(404).json({ message: "Livro não encontrado" });
       }
-      
+
       // Verificar se já é favorito
       const isFavorite = await storage.isFavorite(userId, bookId);
       if (isFavorite) {
         return res.status(400).json({ message: "Livro já está nos favoritos" });
       }
-      
+
       const favorite = await storage.createFavorite({
         userId,
         bookId
       });
-      
+
       res.status(201).json(favorite);
     } catch (error) {
       console.error("Erro ao adicionar aos favoritos:", error);
       res.status(500).json({ message: "Erro ao adicionar aos favoritos" });
     }
   });
-  
+
   // Remover livro dos favoritos
   app.delete("/api/favorites/:bookId", async (req, res) => {
     try {
@@ -972,35 +986,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Usuário não autenticado" });
       }
-      
+
       const userId = (req.user as any).id;
       const bookId = parseInt(req.params.bookId);
-      
+
       // Verificar se o livro existe
       const book = await storage.getBook(bookId);
       if (!book) {
         return res.status(404).json({ message: "Livro não encontrado" });
       }
-      
+
       // Verificar se está nos favoritos
       const isFavorite = await storage.isFavorite(userId, bookId);
       if (!isFavorite) {
         return res.status(400).json({ message: "Livro não está nos favoritos" });
       }
-      
+
       const success = await storage.deleteFavorite(userId, bookId);
-      
+
       if (!success) {
         return res.status(500).json({ message: "Não foi possível remover dos favoritos" });
       }
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Erro ao remover dos favoritos:", error);
       res.status(500).json({ message: "Erro ao remover dos favoritos" });
     }
   });
-  
+
   // Verificar se livro está nos favoritos
   app.get("/api/favorites/check/:bookId", async (req, res) => {
     try {
@@ -1008,12 +1022,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated()) {
         return res.json({ isFavorite: false });
       }
-      
+
       const userId = (req.user as any).id;
       const bookId = parseInt(req.params.bookId);
-      
+
       const isFavorite = await storage.isFavorite(userId, bookId);
-      
+
       res.json({ isFavorite });
     } catch (error) {
       console.error("Erro ao verificar favorito:", error);
@@ -1022,7 +1036,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ===== API de Histórico de Leitura =====
-  
+
   // Obter histórico de leitura do usuário
   app.get("/api/reading-history", async (req, res) => {
     try {
@@ -1030,17 +1044,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Usuário não autenticado" });
       }
-      
+
       const userId = (req.user as any).id;
       const history = await storage.getReadingHistoryBooks(userId);
-      
+
       res.json(history);
     } catch (error) {
       console.error("Erro ao buscar histórico de leitura:", error);
       res.status(500).json({ message: "Erro ao buscar histórico de leitura" });
     }
   });
-  
+
   // Atualizar progresso de leitura (com ID do livro no corpo da requisição)
   app.post("/api/reading-history", async (req, res) => {
     try {
@@ -1048,40 +1062,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Usuário não autenticado" });
       }
-      
+
       const userId = (req.user as any).id;
       const { bookId, currentPage, totalPages, progress, lastLocation } = req.body;
-      
+
       if (!bookId) {
         return res.status(400).json({ message: "ID do livro é obrigatório" });
       }
-      
+
       // Verificar se o livro existe
       const book = await storage.getBook(bookId);
       if (!book) {
         return res.status(404).json({ message: "Livro não encontrado" });
       }
-      
+
       // Calcular progresso em porcentagem (0-100)
       let calculatedProgress = progress;
       if (currentPage && totalPages && totalPages > 0) {
         calculatedProgress = Math.round((currentPage / totalPages) * 100);
       }
-      
+
       const historyEntry = await storage.createOrUpdateReadingHistory({
         userId,
         bookId,
         progress: calculatedProgress || 0,
         isCompleted: calculatedProgress === 100
       });
-      
+
       res.status(200).json(historyEntry);
     } catch (error) {
       console.error("Erro ao atualizar progresso de leitura:", error);
       res.status(500).json({ message: "Erro ao atualizar progresso de leitura" });
     }
   });
-  
+
   // Atualizar progresso de leitura (com ID do livro na URL)
   app.post("/api/reading-history/:bookId", async (req, res) => {
     try {
@@ -1089,30 +1103,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Usuário não autenticado" });
       }
-      
+
       const userId = (req.user as any).id;
       const bookId = parseInt(req.params.bookId);
       const { currentPage, totalPages, progress, lastLocation } = req.body;
-      
+
       // Verificar se o livro existe
       const book = await storage.getBook(bookId);
       if (!book) {
         return res.status(404).json({ message: "Livro não encontrado" });
       }
-      
+
       // Calcular progresso em porcentagem (0-100)
       let calculatedProgress = progress;
       if (currentPage && totalPages && totalPages > 0) {
         calculatedProgress = Math.round((currentPage / totalPages) * 100);
       }
-      
+
       const historyEntry = await storage.createOrUpdateReadingHistory({
         userId,
         bookId,
         progress: calculatedProgress || 0,
         isCompleted: calculatedProgress === 100
       });
-      
+
       res.status(200).json(historyEntry);
     } catch (error) {
       console.error("Erro ao atualizar progresso de leitura:", error);
@@ -1121,31 +1135,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ===== API de Comentários =====
-  
+
   // Listar comentários de um livro
   app.get("/api/books/:bookId/comments", async (req, res) => {
     try {
       const bookId = parseInt(req.params.bookId);
-      
+
       // Verificar se o livro existe
       const book = await storage.getBook(bookId);
       if (!book) {
         return res.status(404).json({ message: "Livro não encontrado" });
       }
-      
+
       const comments = await storage.getCommentsByBook(bookId);
-      
+
       // Filtrar apenas comentários aprovados, exceto para admin
       const isAdmin = req.isAuthenticated() && (req.user as any)?.role === "admin";
-      const filteredComments = isAdmin 
-        ? comments 
+      const filteredComments = isAdmin
+        ? comments
         : comments.filter(comment => comment.isApproved);
-      
+
       // Enriquecer os dados dos comentários com informações do usuário
       const enrichedComments = await Promise.all(
         filteredComments.map(async (comment) => {
           const user = await storage.getUser(comment.userId);
-          
+
           return {
             ...comment,
             user: user ? {
@@ -1157,14 +1171,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         })
       );
-      
+
       res.json(enrichedComments);
     } catch (error) {
       console.error("Erro ao buscar comentários:", error);
       res.status(500).json({ message: "Erro ao buscar comentários" });
     }
   });
-  
+
   // Criar comentário
   app.post("/api/books/:bookId/comments", async (req, res) => {
     try {
@@ -1172,29 +1186,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Usuário não autenticado" });
       }
-      
+
       const userId = (req.user as any).id;
       const bookId = parseInt(req.params.bookId);
       const { text, rating } = req.body;
-      
+
       // Validações básicas
       if (!text) {
         return res.status(400).json({ message: "Texto do comentário é obrigatório" });
       }
-      
+
       if (rating !== undefined && (isNaN(rating) || rating < 1 || rating > 5)) {
         return res.status(400).json({ message: "Avaliação deve ser um número entre 1 e 5" });
       }
-      
+
       // Verificar se o livro existe
       const book = await storage.getBook(bookId);
       if (!book) {
         return res.status(404).json({ message: "Livro não encontrado" });
       }
-      
+
       // Auto-aprovação para admin
       const isAdmin = (req.user as any).role === "admin";
-      
+
       const comment = await storage.createComment({
         userId,
         bookId,
@@ -1202,25 +1216,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rating: rating || 0,
         isApproved: isAdmin
       });
-      
+
       res.status(201).json(comment);
     } catch (error) {
       console.error("Erro ao criar comentário:", error);
       res.status(500).json({ message: "Erro ao criar comentário" });
     }
   });
-  
+
   // Marcar comentário como útil
   app.post("/api/comments/:id/helpful", async (req, res) => {
     try {
       const commentId = parseInt(req.params.id);
-      
+
       const updatedComment = await storage.incrementHelpfulCount(commentId);
-      
+
       if (!updatedComment) {
         return res.status(404).json({ message: "Comentário não encontrado" });
       }
-      
+
       res.json(updatedComment);
     } catch (error) {
       console.error("Erro ao marcar comentário como útil:", error);
@@ -1229,19 +1243,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ===== API de Upload de Arquivos =====
-  
+
   // Configuração de diretórios para upload
   const uploadDir = './uploads';
   const coverDir = path.join(uploadDir, 'covers');
   const booksDir = path.join(uploadDir, 'books');
-  
+
   // Garantir que os diretórios existam
   [uploadDir, coverDir, booksDir].forEach(dir => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
   });
-  
+
   // Configuração do Multer para upload de capas
   const coverStorage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -1253,7 +1267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       cb(null, 'cover-' + uniqueSuffix + ext);
     }
   });
-  
+
   const coverUpload = multer({
     storage: coverStorage,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
@@ -1266,7 +1280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   });
-  
+
   // Configuração do Multer para upload de e-books (EPUB, PDF)
   const bookStorage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -1278,7 +1292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       cb(null, file.fieldname + '-' + uniqueSuffix + ext);
     }
   });
-  
+
   const bookUpload = multer({
     storage: bookStorage,
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
@@ -1292,54 +1306,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   });
-  
+
   // Rota para upload de capa
   app.post("/api/upload/cover", isAdmin, coverUpload.single('file'), (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Nenhum arquivo foi enviado" });
       }
-      
+
       // Retornar URL relativa para o frontend
       const fileUrl = `/uploads/covers/${req.file.filename}`;
       console.log("Upload de capa realizado com sucesso:", fileUrl);
-      
+
       res.json({ coverUrl: fileUrl });
     } catch (error) {
       console.error("Erro no upload de capa:", error);
       res.status(500).json({ message: "Erro no upload de capa" });
     }
   });
-  
+
   // Rota para upload de EPUB
   app.post("/api/upload/epub", isAdmin, bookUpload.single('file'), (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Nenhum arquivo foi enviado" });
       }
-      
+
       // Retornar URL relativa para o frontend
       const fileUrl = `/uploads/books/${req.file.filename}`;
       console.log("Upload de EPUB realizado com sucesso:", fileUrl);
-      
+
       res.json({ epubUrl: fileUrl });
     } catch (error) {
       console.error("Erro no upload de EPUB:", error);
       res.status(500).json({ message: "Erro no upload de EPUB" });
     }
   });
-  
+
   // Rota para upload de PDF
   app.post("/api/upload/pdf", isAdmin, bookUpload.single('file'), (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Nenhum arquivo foi enviado" });
       }
-      
+
       // Retornar URL relativa para o frontend
       const fileUrl = `/uploads/books/${req.file.filename}`;
       console.log("Upload de PDF realizado com sucesso:", fileUrl);
-      
+
       res.json({ pdfUrl: fileUrl });
     } catch (error) {
       console.error("Erro no upload de PDF:", error);
