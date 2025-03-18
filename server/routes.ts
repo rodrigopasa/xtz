@@ -15,7 +15,7 @@ import {
   insertCommentSchema,
   insertFavoriteSchema,
   insertReadingHistorySchema,
-  insertSettingsSchema // Add import for settings schema
+  insertSettingsSchema
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -24,13 +24,11 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import MemoryStore from "memorystore";
 import cors from "cors";
-import { compare } from 'bcryptjs'; // Import bcrypt's compare function
-import { eq } from 'drizzle-orm'; // Import eq from drizzle-orm
+import { compare } from 'bcryptjs';
+import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { siteSettings } from '@shared/schema';
 
-
-// ESM module compatibility - definir __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -165,24 +163,15 @@ declare module "express-session" {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Configuração do CORS
+  // Configuração do CORS mais permissiva para desenvolvimento
   app.use(cors({
-    origin: 'https://' + process.env.REPLIT_SLUG + '.' + process.env.REPLIT_SLUG_DOMAIN,
-    credentials: true, // Permite cookies nas requisições de CORS
+    origin: true, // Permite todas as origens em desenvolvimento
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
   }));
 
-  // Endpoint para health check (usado para monitoramento em Coolify/Docker)
-  app.get('/api/health', (req, res) => {
-    res.status(200).json({
-      status: 'ok',
-      uptime: process.uptime(),
-      timestamp: Date.now()
-    });
-  });
-
-  // Ajustes na configuração da sessão e Passport
+  // Configuração da sessão
   const MemoryStoreSession = MemoryStore(session);
   const isProduction = process.env.NODE_ENV === 'production';
 
@@ -193,16 +182,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 24 horas
       httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax'
+      secure: false, // Desativado em desenvolvimento
+      sameSite: 'lax',
+      path: '/'
     },
-    name: 'bibliotech.sid'
+    name: 'bibliotech.sid',
+    store: new MemoryStoreSession({
+      checkPeriod: 86400000 // 24 horas
+    })
   }));
 
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Configuração do Passport com logs detalhados
+  // Serialização e deserialização de usuário com logs detalhados
   passport.serializeUser((user: any, done) => {
     console.log("Serializando usuário:", user.id);
     done(null, user.id);
@@ -224,6 +217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Estratégia de autenticação local
   passport.use(new LocalStrategy(async (username, password, done) => {
     try {
       console.log("Tentativa de login para usuário:", username);
@@ -250,7 +244,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Rota de login com logs detalhados
   app.post("/api/auth/login", (req, res, next) => {
-    console.log("Requisição de login recebida:", req.body.username);
+    console.log("Requisição de login recebida para:", req.body.username);
+    console.log("Headers:", req.headers);
 
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
@@ -285,6 +280,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     })(req, res, next);
   });
+
+  // Rota para verificação de autenticação
+  app.get("/api/auth/me", (req, res) => {
+    console.log("Verificando autenticação:");
+    console.log("- Session ID:", req.sessionID);
+    console.log("- Cookies:", req.headers.cookie);
+    console.log("- User:", req.user);
+    console.log("- isAuthenticated:", req.isAuthenticated());
+
+    if (req.isAuthenticated()) {
+      const user = req.user as any;
+      return res.json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        avatarUrl: user.avatarUrl
+      });
+    }
+
+    res.status(401).json({ message: "Não autenticado" });
+  });
+
+  // Endpoint para health check (usado para monitoramento em Coolify/Docker)
+  app.get('/api/health', (req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      uptime: process.uptime(),
+      timestamp: Date.now()
+    });
+  });
+
 
   // Configuração de arquivos estáticos
   app.use('/covers', express.static(coversDirectory));
