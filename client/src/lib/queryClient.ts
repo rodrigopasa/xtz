@@ -61,7 +61,33 @@ export async function apiRequest<T = any>(
     console.log('Dados da resposta:', responseData);
     return responseData;
   } catch (jsonError) {
-    console.error(`Erro ao analisar JSON para ${endpoint}:`, jsonError, "Texto da resposta:", text);
+    console.error(`Erro ao analisar JSON para ${endpoint}:`, jsonError, "Texto da resposta:", text.substring(0, 200) + (text.length > 200 ? '...' : ''));
+    
+    // Se a resposta parece ser HTML (começa com <!DOCTYPE html> ou <html>), algo está errado com a API
+    if (text.trim().startsWith('<!DOCTYPE html>') || text.trim().startsWith('<html>')) {
+      console.error('A resposta é HTML em vez de JSON. Possível erro de servidor.');
+      
+      // Em ambiente de desenvolvimento, tentamos exibir mais informações sobre o erro
+      if (import.meta.env.DEV) {
+        const errorMatch = text.match(/<pre[^>]*>([\s\S]*?)<\/pre>/);
+        if (errorMatch && errorMatch[1]) {
+          console.error('Erro do servidor:', errorMatch[1].trim());
+        }
+      }
+    }
+    
+    // Retorna um array vazio para queries que esperam arrays
+    if (endpoint.includes('?') && (
+        endpoint.includes('featured=true') || 
+        endpoint.includes('isNew=true') || 
+        endpoint.includes('isFree=true') ||
+        endpoint.includes('/api/books') ||
+        endpoint.includes('/api/categories')
+      )) {
+      console.log(`Retornando array vazio para ${endpoint}`);
+      return [] as any;
+    }
+    
     return {} as any;
   }
 }
@@ -108,7 +134,33 @@ export const getQueryFn = <T = any>(options: {
         console.log(`Query Data para ${endpoint}:`, data);
         return data;
       } catch (jsonError) {
-        console.error(`Erro ao analisar JSON para ${endpoint}:`, jsonError, "Texto da resposta:", text);
+        console.error(`Erro ao analisar JSON para ${endpoint}:`, jsonError, "Texto da resposta:", text.substring(0, 200) + (text.length > 200 ? '...' : ''));
+        
+        // Se a resposta parece ser HTML (começa com <!DOCTYPE html> ou <html>), algo está errado com a API
+        if (text.trim().startsWith('<!DOCTYPE html>') || text.trim().startsWith('<html>')) {
+          console.error('A resposta é HTML em vez de JSON. Possível erro de servidor.');
+          
+          // Em ambiente de desenvolvimento, tentamos exibir mais informações sobre o erro
+          if (import.meta.env.DEV) {
+            const errorMatch = text.match(/<pre[^>]*>([\s\S]*?)<\/pre>/);
+            if (errorMatch && errorMatch[1]) {
+              console.error('Erro do servidor:', errorMatch[1].trim());
+            }
+          }
+        }
+        
+        // Retorna um array vazio para queries que esperam arrays
+        if (endpoint.includes('?') && (
+            endpoint.includes('featured=true') || 
+            endpoint.includes('isNew=true') || 
+            endpoint.includes('isFree=true') ||
+            endpoint.includes('/api/books') ||
+            endpoint.includes('/api/categories')
+          )) {
+          console.log(`Retornando array vazio para ${endpoint}`);
+          return [] as any;
+        }
+        
         return {} as any;
       }
     } catch (error) {
