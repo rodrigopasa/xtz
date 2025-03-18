@@ -178,102 +178,118 @@ function Router() {
       {/* User dashboard routes with sidebar */}
       <Route path="/perfil">
         {() => (
-          <>
-            <Header />
-            <div className="flex-grow flex">
-              <Sidebar />
-              <UserDashboard />
-            </div>
-            <Footer />
-          </>
+          <Protected>
+            <>
+              <Header />
+              <div className="flex-grow flex">
+                <Sidebar />
+                <UserDashboard />
+              </div>
+              <Footer />
+            </>
+          </Protected>
         )}
       </Route>
 
       <Route path="/favoritos">
         {() => (
-          <>
-            <Header />
-            <div className="flex-grow flex">
-              <Sidebar />
-              <UserFavorites />
-            </div>
-            <Footer />
-          </>
+          <Protected>
+            <>
+              <Header />
+              <div className="flex-grow flex">
+                <Sidebar />
+                <UserFavorites />
+              </div>
+              <Footer />
+            </>
+          </Protected>
         )}
       </Route>
 
       <Route path="/historico">
         {() => (
-          <>
-            <Header />
-            <div className="flex-grow flex">
-              <Sidebar />
-              <UserHistory />
-            </div>
-            <Footer />
-          </>
+          <Protected>
+            <>
+              <Header />
+              <div className="flex-grow flex">
+                <Sidebar />
+                <UserHistory />
+              </div>
+              <Footer />
+            </>
+          </Protected>
         )}
       </Route>
 
       <Route path="/configuracoes">
         {() => (
-          <>
-            <Header />
-            <div className="flex-grow flex">
-              <Sidebar />
-              <UserSettings />
-            </div>
-            <Footer />
-          </>
+          <Protected>
+            <>
+              <Header />
+              <div className="flex-grow flex">
+                <Sidebar />
+                <UserSettings />
+              </div>
+              <Footer />
+            </>
+          </Protected>
         )}
       </Route>
 
       {/* Admin routes with admin header and sidebar */}
       <Route path="/admin">
         {() => (
-          <>
-            <AdminHeader />
-            <div className="flex-grow flex">
-              <AdminSidebar />
-              <AdminDashboard />
-            </div>
-          </>
+          <Protected role="admin">
+            <>
+              <AdminHeader />
+              <div className="flex-grow flex">
+                <AdminSidebar />
+                <AdminDashboard />
+              </div>
+            </>
+          </Protected>
         )}
       </Route>
 
       <Route path="/admin/livros">
         {() => (
-          <>
-            <AdminHeader />
-            <div className="flex-grow flex">
-              <AdminSidebar />
-              <AdminBooks />
-            </div>
-          </>
+          <Protected role="admin">
+            <>
+              <AdminHeader />
+              <div className="flex-grow flex">
+                <AdminSidebar />
+                <AdminBooks />
+              </div>
+            </>
+          </Protected>
         )}
       </Route>
 
       <Route path="/admin/livros/novo">
         {() => (
-          <>
-            <AdminHeader />
-            <div className="flex-grow flex">
-              <AdminSidebar />
-              <AdminBookForm />
-            </div>
-          </>
+          <Protected role="admin">
+            <>
+              <AdminHeader />
+              <div className="flex-grow flex">
+                <AdminSidebar />
+                <AdminBookForm />
+              </div>
+            </>
+          </Protected>
         )}
       </Route>
 
       <Route path="/admin/livros/editar/:id">
         {(params) => (
-          <>
-            <AdminHeader />
-            <div className="flex-grow flex">
-              <AdminSidebar />
-              <AdminBookForm id={parseInt(params.id)} />
-            </div>
-          </>
+          <Protected role="admin">
+            <>
+              <AdminHeader />
+              <div className="flex-grow flex">
+                <AdminSidebar />
+                <AdminBookForm id={parseInt(params.id)} />
+              </div>
+            </>
+          </Protected>
         )}
       </Route>
 
@@ -293,61 +309,71 @@ function Router() {
 
       <Route path="/admin/categorias">
         {() => (
-          <>
-            <AdminHeader />
-            <div className="flex-grow flex">
-              <AdminSidebar />
-              <AdminCategories />
-            </div>
-          </>
+          <Protected role="admin">
+            <>
+              <AdminHeader />
+              <div className="flex-grow flex">
+                <AdminSidebar />
+                <AdminCategories />
+              </div>
+            </>
+          </Protected>
         )}
       </Route>
 
       <Route path="/admin/autores">
         {() => (
-          <>
-            <AdminHeader />
-            <div className="flex-grow flex">
-              <AdminSidebar />
-              <AdminAuthors />
-            </div>
-          </>
+          <Protected role="admin">
+            <>
+              <AdminHeader />
+              <div className="flex-grow flex">
+                <AdminSidebar />
+                <AdminAuthors />
+              </div>
+            </>
+          </Protected>
         )}
       </Route>
 
       <Route path="/admin/usuarios">
         {() => (
-          <>
-            <AdminHeader />
-            <div className="flex-grow flex">
-              <AdminSidebar />
-              <AdminUsers />
-            </div>
-          </>
+          <Protected role="admin">
+            <>
+              <AdminHeader />
+              <div className="flex-grow flex">
+                <AdminSidebar />
+                <AdminUsers />
+              </div>
+            </>
+          </Protected>
         )}
       </Route>
 
       <Route path="/admin/comentarios">
         {() => (
-          <>
-            <AdminHeader />
-            <div className="flex-grow flex">
-              <AdminSidebar />
-              <AdminComments />
-            </div>
-          </>
+          <Protected role="admin">
+            <>
+              <AdminHeader />
+              <div className="flex-grow flex">
+                <AdminSidebar />
+                <AdminComments />
+              </div>
+            </>
+          </Protected>
         )}
       </Route>
 
       <Route path="/admin/relatorios">
         {() => (
-          <>
-            <AdminHeader />
-            <div className="flex-grow flex">
-              <AdminSidebar />
-              <AdminReports />
-            </div>
-          </>
+          <Protected role="admin">
+            <>
+              <AdminHeader />
+              <div className="flex-grow flex">
+                <AdminSidebar />
+                <AdminReports />
+              </div>
+            </>
+          </Protected>
         )}
       </Route>
 
