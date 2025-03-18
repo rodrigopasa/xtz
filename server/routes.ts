@@ -7,11 +7,20 @@ import { Strategy as LocalStrategy } from "passport-local";
 import MemoryStore from "memorystore";
 import cors from "cors";
 import { compare } from 'bcryptjs';
+import * as z from "zod";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
-import { insertSettingsSchema, siteSettings } from "@shared/schema";
+import { insertSettingsSchema, insertSeriesSchema, insertBookSchema, siteSettings } from "@shared/schema";
+
+// Middleware para verificar se o usuário é administrador
+const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.isAuthenticated() || (req.user as any)?.role !== "admin") {
+    return res.status(403).json({ message: "Acesso não autorizado" });
+  }
+  next();
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configuração para aceitar JSON no corpo das requisições
@@ -597,6 +606,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/series", isAdmin, async (req, res) => {
+    try {
+      const seriesData = insertSeriesSchema.parse(req.body);
+      const series = await storage.createSeries(seriesData);
+      res.status(201).json(series);
+    } catch (error) {
+      console.error("Erro ao criar série:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Erro ao criar série" });
+      }
+    }
+  });
+
+  app.get("/api/series/:id", async (req, res) => {
+    try {
+      const seriesId = parseInt(req.params.id);
+      const series = await storage.getSeries(seriesId);
+      
+      if (!series) {
+        return res.status(404).json({ message: "Série não encontrada" });
+      }
+      
+      res.json(series);
+    } catch (error) {
+      console.error("Erro ao buscar série:", error);
+      res.status(500).json({ message: "Erro ao buscar série" });
+    }
+  });
+
+  app.put("/api/series/:id", isAdmin, async (req, res) => {
+    try {
+      const seriesId = parseInt(req.params.id);
+      
+      // Verificar se a série existe
+      const existingSeries = await storage.getSeries(seriesId);
+      if (!existingSeries) {
+        return res.status(404).json({ message: "Série não encontrada" });
+      }
+      
+      const seriesData = insertSeriesSchema.parse(req.body);
+      
+      // Verificar se o novo slug já está em uso por outra série
+      if (seriesData.slug !== existingSeries.slug) {
+        const seriesBySlug = await storage.getSeriesBySlug(seriesData.slug);
+        if (seriesBySlug && seriesBySlug.id !== seriesId) {
+          return res.status(400).json({ message: "Já existe uma série com este slug" });
+        }
+      }
+      
+      const updatedSeries = await storage.updateSeries(seriesId, seriesData);
+      res.json(updatedSeries);
+    } catch (error) {
+      console.error("Erro ao atualizar série:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Erro ao atualizar série" });
+      }
+    }
+  });
+
+  app.delete("/api/series/:id", isAdmin, async (req, res) => {
+    try {
+      const seriesId = parseInt(req.params.id);
+      
+      // Verificar se a série existe
+      const existingSeries = await storage.getSeries(seriesId);
+      if (!existingSeries) {
+        return res.status(404).json({ message: "Série não encontrada" });
+      }
+      
+      // Verificar se existem livros associados a esta série
+      const books = await storage.getBooksBySeries(seriesId);
+      if (books.length > 0) {
+        return res.status(400).json({ 
+          message: "Não é possível excluir esta série pois existem livros associados a ela",
+          bookCount: books.length
+        });
+      }
+      
+      const success = await storage.deleteSeries(seriesId);
+      
+      if (!success) {
+        return res.status(500).json({ message: "Não foi possível excluir a série" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Erro ao excluir série:", error);
+      res.status(500).json({ message: "Erro ao excluir série" });
+    }
+  });
+
   // API para usuários administradores
   app.get("/api/admin/users", async (req, res) => {
     try {
@@ -613,7 +717,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // API para livros
+  // ===== API de Livros =====
+  
+  // Listar todos os livros
   app.get("/api/books", async (req, res) => {
     try {
       const books = await storage.getAllBooks();
@@ -621,6 +727,470 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao buscar livros:", error);
       res.status(500).json({ message: "Erro ao buscar livros" });
+    }
+  });
+
+  // Obter livro por ID
+  app.get("/api/books/:id", async (req, res) => {
+    try {
+      const bookId = parseInt(req.params.id);
+      const book = await storage.getBook(bookId);
+      
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      res.json(book);
+    } catch (error) {
+      console.error("Erro ao buscar livro:", error);
+      res.status(500).json({ message: "Erro ao buscar livro" });
+    }
+  });
+
+  // Obter livro por slug
+  app.get("/api/books/slug/:slug", async (req, res) => {
+    try {
+      const slug = req.params.slug;
+      const book = await storage.getBookBySlug(slug);
+      
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      res.json(book);
+    } catch (error) {
+      console.error("Erro ao buscar livro:", error);
+      res.status(500).json({ message: "Erro ao buscar livro" });
+    }
+  });
+
+  // Obter livros por categoria
+  app.get("/api/books/category/:categoryId", async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.categoryId);
+      const books = await storage.getBooksByCategory(categoryId);
+      res.json(books);
+    } catch (error) {
+      console.error("Erro ao buscar livros por categoria:", error);
+      res.status(500).json({ message: "Erro ao buscar livros por categoria" });
+    }
+  });
+
+  // Obter livros por autor
+  app.get("/api/books/author/:authorId", async (req, res) => {
+    try {
+      const authorId = parseInt(req.params.authorId);
+      const books = await storage.getBooksByAuthor(authorId);
+      res.json(books);
+    } catch (error) {
+      console.error("Erro ao buscar livros por autor:", error);
+      res.status(500).json({ message: "Erro ao buscar livros por autor" });
+    }
+  });
+
+  // Obter livros em destaque
+  app.get("/api/books/featured", async (req, res) => {
+    try {
+      const books = await storage.getFeaturedBooks();
+      res.json(books);
+    } catch (error) {
+      console.error("Erro ao buscar livros em destaque:", error);
+      res.status(500).json({ message: "Erro ao buscar livros em destaque" });
+    }
+  });
+
+  // Obter livros novos
+  app.get("/api/books/new", async (req, res) => {
+    try {
+      const books = await storage.getNewBooks();
+      res.json(books);
+    } catch (error) {
+      console.error("Erro ao buscar livros novos:", error);
+      res.status(500).json({ message: "Erro ao buscar livros novos" });
+    }
+  });
+
+  // Obter livros gratuitos
+  app.get("/api/books/free", async (req, res) => {
+    try {
+      const books = await storage.getFreeBooks();
+      res.json(books);
+    } catch (error) {
+      console.error("Erro ao buscar livros gratuitos:", error);
+      res.status(500).json({ message: "Erro ao buscar livros gratuitos" });
+    }
+  });
+
+  // Criar livro (apenas admin)
+  app.post("/api/books", isAdmin, async (req, res) => {
+    try {
+      const bookData = insertBookSchema.parse(req.body);
+      
+      // Verificar se já existe livro com o mesmo slug
+      const existingBook = await storage.getBookBySlug(bookData.slug);
+      if (existingBook) {
+        return res.status(400).json({ message: "Já existe um livro com este slug" });
+      }
+      
+      const newBook = await storage.createBook(bookData);
+      res.status(201).json(newBook);
+    } catch (error) {
+      console.error("Erro ao criar livro:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Erro ao criar livro" });
+      }
+    }
+  });
+
+  // Atualizar livro (apenas admin)
+  app.put("/api/books/:id", isAdmin, async (req, res) => {
+    try {
+      const bookId = parseInt(req.params.id);
+      
+      // Verificar se o livro existe
+      const existingBook = await storage.getBook(bookId);
+      if (!existingBook) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      const bookData = insertBookSchema.parse(req.body);
+      
+      // Verificar se o novo slug já está em uso por outro livro
+      if (bookData.slug !== existingBook.slug) {
+        const bookBySlug = await storage.getBookBySlug(bookData.slug);
+        if (bookBySlug && bookBySlug.id !== bookId) {
+          return res.status(400).json({ message: "Já existe um livro com este slug" });
+        }
+      }
+      
+      const updatedBook = await storage.updateBook(bookId, bookData);
+      res.json(updatedBook);
+    } catch (error) {
+      console.error("Erro ao atualizar livro:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Erro ao atualizar livro" });
+      }
+    }
+  });
+
+  // Excluir livro (apenas admin)
+  app.delete("/api/books/:id", isAdmin, async (req, res) => {
+    try {
+      const bookId = parseInt(req.params.id);
+      
+      // Verificar se o livro existe
+      const existingBook = await storage.getBook(bookId);
+      if (!existingBook) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      const success = await storage.deleteBook(bookId);
+      
+      if (!success) {
+        return res.status(500).json({ message: "Não foi possível excluir o livro" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Erro ao excluir livro:", error);
+      res.status(500).json({ message: "Erro ao excluir livro" });
+    }
+  });
+
+  // Incrementar contagem de downloads
+  app.post("/api/books/:id/download", async (req, res) => {
+    try {
+      const bookId = parseInt(req.params.id);
+      
+      // Verificar se o livro existe
+      const existingBook = await storage.getBook(bookId);
+      if (!existingBook) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      const updatedBook = await storage.incrementDownloadCount(bookId);
+      res.json(updatedBook);
+    } catch (error) {
+      console.error("Erro ao incrementar download:", error);
+      res.status(500).json({ message: "Erro ao registrar download" });
+    }
+  });
+
+  // ===== API de Favoritos =====
+  
+  // Listar favoritos do usuário
+  app.get("/api/favorites", async (req, res) => {
+    try {
+      // Verificar autenticação
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const userId = (req.user as any).id;
+      const favorites = await storage.getFavoriteBooks(userId);
+      
+      res.json(favorites);
+    } catch (error) {
+      console.error("Erro ao buscar favoritos:", error);
+      res.status(500).json({ message: "Erro ao buscar favoritos" });
+    }
+  });
+  
+  // Adicionar livro aos favoritos
+  app.post("/api/favorites/:bookId", async (req, res) => {
+    try {
+      // Verificar autenticação
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const userId = (req.user as any).id;
+      const bookId = parseInt(req.params.bookId);
+      
+      // Verificar se o livro existe
+      const book = await storage.getBook(bookId);
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      // Verificar se já é favorito
+      const isFavorite = await storage.isFavorite(userId, bookId);
+      if (isFavorite) {
+        return res.status(400).json({ message: "Livro já está nos favoritos" });
+      }
+      
+      const favorite = await storage.createFavorite({
+        userId,
+        bookId
+      });
+      
+      res.status(201).json(favorite);
+    } catch (error) {
+      console.error("Erro ao adicionar aos favoritos:", error);
+      res.status(500).json({ message: "Erro ao adicionar aos favoritos" });
+    }
+  });
+  
+  // Remover livro dos favoritos
+  app.delete("/api/favorites/:bookId", async (req, res) => {
+    try {
+      // Verificar autenticação
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const userId = (req.user as any).id;
+      const bookId = parseInt(req.params.bookId);
+      
+      // Verificar se o livro existe
+      const book = await storage.getBook(bookId);
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      // Verificar se está nos favoritos
+      const isFavorite = await storage.isFavorite(userId, bookId);
+      if (!isFavorite) {
+        return res.status(400).json({ message: "Livro não está nos favoritos" });
+      }
+      
+      const success = await storage.deleteFavorite(userId, bookId);
+      
+      if (!success) {
+        return res.status(500).json({ message: "Não foi possível remover dos favoritos" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Erro ao remover dos favoritos:", error);
+      res.status(500).json({ message: "Erro ao remover dos favoritos" });
+    }
+  });
+  
+  // Verificar se livro está nos favoritos
+  app.get("/api/favorites/check/:bookId", async (req, res) => {
+    try {
+      // Verificar autenticação
+      if (!req.isAuthenticated()) {
+        return res.json({ isFavorite: false });
+      }
+      
+      const userId = (req.user as any).id;
+      const bookId = parseInt(req.params.bookId);
+      
+      const isFavorite = await storage.isFavorite(userId, bookId);
+      
+      res.json({ isFavorite });
+    } catch (error) {
+      console.error("Erro ao verificar favorito:", error);
+      res.status(500).json({ message: "Erro ao verificar favorito" });
+    }
+  });
+
+  // ===== API de Histórico de Leitura =====
+  
+  // Obter histórico de leitura do usuário
+  app.get("/api/reading-history", async (req, res) => {
+    try {
+      // Verificar autenticação
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const userId = (req.user as any).id;
+      const history = await storage.getReadingHistoryBooks(userId);
+      
+      res.json(history);
+    } catch (error) {
+      console.error("Erro ao buscar histórico de leitura:", error);
+      res.status(500).json({ message: "Erro ao buscar histórico de leitura" });
+    }
+  });
+  
+  // Atualizar progresso de leitura
+  app.post("/api/reading-history/:bookId", async (req, res) => {
+    try {
+      // Verificar autenticação
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const userId = (req.user as any).id;
+      const bookId = parseInt(req.params.bookId);
+      const { currentPage, totalPages, progress, lastLocation } = req.body;
+      
+      // Verificar se o livro existe
+      const book = await storage.getBook(bookId);
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      const historyEntry = await storage.createOrUpdateReadingHistory({
+        userId,
+        bookId,
+        currentPage: currentPage || 1,
+        totalPages: totalPages || 0,
+        progress: progress || 0,
+        lastLocation: lastLocation || ""
+      });
+      
+      res.status(200).json(historyEntry);
+    } catch (error) {
+      console.error("Erro ao atualizar progresso de leitura:", error);
+      res.status(500).json({ message: "Erro ao atualizar progresso de leitura" });
+    }
+  });
+
+  // ===== API de Comentários =====
+  
+  // Listar comentários de um livro
+  app.get("/api/books/:bookId/comments", async (req, res) => {
+    try {
+      const bookId = parseInt(req.params.bookId);
+      
+      // Verificar se o livro existe
+      const book = await storage.getBook(bookId);
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      const comments = await storage.getCommentsByBook(bookId);
+      
+      // Filtrar apenas comentários aprovados, exceto para admin
+      const isAdmin = req.isAuthenticated() && (req.user as any)?.role === "admin";
+      const filteredComments = isAdmin 
+        ? comments 
+        : comments.filter(comment => comment.isApproved);
+      
+      // Enriquecer os dados dos comentários com informações do usuário
+      const enrichedComments = await Promise.all(
+        filteredComments.map(async (comment) => {
+          const user = await storage.getUser(comment.userId);
+          
+          return {
+            ...comment,
+            user: user ? {
+              id: user.id,
+              name: user.name,
+              username: user.username,
+              avatarUrl: user.avatarUrl
+            } : null
+          };
+        })
+      );
+      
+      res.json(enrichedComments);
+    } catch (error) {
+      console.error("Erro ao buscar comentários:", error);
+      res.status(500).json({ message: "Erro ao buscar comentários" });
+    }
+  });
+  
+  // Criar comentário
+  app.post("/api/books/:bookId/comments", async (req, res) => {
+    try {
+      // Verificar autenticação
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const userId = (req.user as any).id;
+      const bookId = parseInt(req.params.bookId);
+      const { text, rating } = req.body;
+      
+      // Validações básicas
+      if (!text) {
+        return res.status(400).json({ message: "Texto do comentário é obrigatório" });
+      }
+      
+      if (rating !== undefined && (isNaN(rating) || rating < 1 || rating > 5)) {
+        return res.status(400).json({ message: "Avaliação deve ser um número entre 1 e 5" });
+      }
+      
+      // Verificar se o livro existe
+      const book = await storage.getBook(bookId);
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      // Auto-aprovação para admin
+      const isAdmin = (req.user as any).role === "admin";
+      
+      const comment = await storage.createComment({
+        userId,
+        bookId,
+        text,
+        rating: rating || null,
+        isApproved: isAdmin,
+        helpfulCount: 0
+      });
+      
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error("Erro ao criar comentário:", error);
+      res.status(500).json({ message: "Erro ao criar comentário" });
+    }
+  });
+  
+  // Marcar comentário como útil
+  app.post("/api/comments/:id/helpful", async (req, res) => {
+    try {
+      const commentId = parseInt(req.params.id);
+      
+      const updatedComment = await storage.incrementHelpfulCount(commentId);
+      
+      if (!updatedComment) {
+        return res.status(404).json({ message: "Comentário não encontrado" });
+      }
+      
+      res.json(updatedComment);
+    } catch (error) {
+      console.error("Erro ao marcar comentário como útil:", error);
+      res.status(500).json({ message: "Erro ao marcar comentário como útil" });
     }
   });
 
