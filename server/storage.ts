@@ -188,38 +188,175 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Implementação dos métodos para Livros
-  async getAllBooks(): Promise<Book[]> {
-    return db.select().from(booksTable);
+  async getAllBooks(): Promise<(Book & { author?: { name: string; slug: string } })[]> {
+    const result = await db
+      .select({
+        ...booksTable,
+        authorName: authorsTable.name,
+        authorSlug: authorsTable.slug,
+      })
+      .from(booksTable)
+      .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id));
+      
+    // Formatar o resultado para incluir objeto aninhado para autor
+    return result.map(book => ({
+      ...book,
+      author: book.authorName ? {
+        name: book.authorName,
+        slug: book.authorSlug
+      } : undefined
+    }));
   }
 
-  async getBook(id: number): Promise<Book | undefined> {
-    const [book] = await db.select().from(booksTable).where(eq(booksTable.id, id));
-    return book;
+  async getBook(id: number): Promise<(Book & { author?: { name: string; slug: string } }) | undefined> {
+    const [result] = await db
+      .select({
+        ...booksTable,
+        authorName: authorsTable.name,
+        authorSlug: authorsTable.slug,
+      })
+      .from(booksTable)
+      .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
+      .where(eq(booksTable.id, id));
+      
+    if (!result) return undefined;
+    
+    // Formatar o resultado para incluir objeto aninhado para autor
+    return {
+      ...result,
+      author: result.authorName ? {
+        name: result.authorName,
+        slug: result.authorSlug
+      } : undefined
+    };
   }
 
-  async getBookBySlug(slug: string): Promise<Book | undefined> {
-    const [book] = await db.select().from(booksTable).where(eq(booksTable.slug, slug));
-    return book;
+  async getBookBySlug(slug: string): Promise<(Book & { author?: { name: string; slug: string } }) | undefined> {
+    const [result] = await db
+      .select({
+        ...booksTable,
+        authorName: authorsTable.name,
+        authorSlug: authorsTable.slug,
+      })
+      .from(booksTable)
+      .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
+      .where(eq(booksTable.slug, slug));
+      
+    if (!result) return undefined;
+    
+    // Formatar o resultado para incluir objeto aninhado para autor
+    return {
+      ...result,
+      author: result.authorName ? {
+        name: result.authorName,
+        slug: result.authorSlug
+      } : undefined
+    };
   }
 
-  async getBooksByCategory(categoryId: number): Promise<Book[]> {
-    return db.select().from(booksTable).where(eq(booksTable.categoryId, categoryId));
+  async getBooksByCategory(categoryId: number): Promise<(Book & { author?: { name: string; slug: string } })[]> {
+    const result = await db
+      .select({
+        ...booksTable,
+        authorName: authorsTable.name,
+        authorSlug: authorsTable.slug,
+      })
+      .from(booksTable)
+      .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
+      .where(eq(booksTable.categoryId, categoryId));
+      
+    // Formatar o resultado para incluir objeto aninhado para autor
+    return result.map(book => ({
+      ...book,
+      author: book.authorName ? {
+        name: book.authorName,
+        slug: book.authorSlug
+      } : undefined
+    }));
   }
 
-  async getBooksByAuthor(authorId: number): Promise<Book[]> {
-    return db.select().from(booksTable).where(eq(booksTable.authorId, authorId));
+  async getBooksByAuthor(authorId: number): Promise<(Book & { author?: { name: string; slug: string } })[]> {
+    const result = await db
+      .select({
+        ...booksTable,
+        authorName: authorsTable.name,
+        authorSlug: authorsTable.slug,
+      })
+      .from(booksTable)
+      .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
+      .where(eq(booksTable.authorId, authorId));
+      
+    // Formatar o resultado para incluir objeto aninhado para autor
+    return result.map(book => ({
+      ...book,
+      author: book.authorName ? {
+        name: book.authorName,
+        slug: book.authorSlug
+      } : undefined
+    }));
   }
 
-  async getFeaturedBooks(): Promise<Book[]> {
-    return db.select().from(booksTable).where(eq(booksTable.isFeatured, true));
+  async getFeaturedBooks(): Promise<(Book & { author?: { name: string; slug: string } })[]> {
+    const result = await db
+      .select({
+        ...booksTable,
+        authorName: authorsTable.name,
+        authorSlug: authorsTable.slug,
+      })
+      .from(booksTable)
+      .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
+      .where(eq(booksTable.isFeatured, true));
+      
+    // Formatar o resultado para incluir objeto aninhado para autor
+    return result.map(book => ({
+      ...book,
+      author: book.authorName ? {
+        name: book.authorName,
+        slug: book.authorSlug
+      } : undefined
+    }));
   }
 
-  async getNewBooks(): Promise<Book[]> {
-    return db.select().from(booksTable).where(eq(booksTable.isNew, true));
+  async getNewBooks(): Promise<(Book & { author?: { name: string; slug: string } })[]> {
+    const result = await db
+      .select({
+        ...booksTable,
+        authorName: authorsTable.name,
+        authorSlug: authorsTable.slug,
+      })
+      .from(booksTable)
+      .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
+      .where(eq(booksTable.isNew, true));
+      
+    // Formatar o resultado para incluir objeto aninhado para autor
+    return result.map(book => ({
+      ...book,
+      author: book.authorName ? {
+        name: book.authorName,
+        slug: book.authorSlug
+      } : undefined
+    }));
   }
 
-  async getFreeBooks(): Promise<Book[]> {
-    return db.select().from(booksTable).where(eq(booksTable.isFree, true));
+  async getFreeBooks(): Promise<(Book & { author?: { name: string; slug: string } })[]> {
+    const result = await db
+      .select({
+        ...booksTable,
+        authorName: authorsTable.name,
+        authorSlug: authorsTable.slug,
+      })
+      .from(booksTable)
+      .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
+      .where(eq(booksTable.isFree, true));
+      
+    // Formatar o resultado para incluir objeto aninhado para autor
+    return result.map(book => ({
+      ...book,
+      author: book.authorName ? {
+        name: book.authorName,
+        slug: book.authorSlug
+      } : undefined
+    }));
   }
 
   async createBook(book: InsertBook): Promise<Book> {
