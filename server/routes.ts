@@ -221,6 +221,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API de Admin - Comentários
+  app.get("/api/admin/comments", async (req, res) => {
+    try {
+      // Verificar se o usuário é administrador
+      if (!req.isAuthenticated() || (req.user as any)?.role !== "admin") {
+        return res.status(403).json({ message: "Acesso não autorizado" });
+      }
+      
+      const comments = await storage.getAllComments();
+      
+      // Enriquecer os dados dos comentários com informações do usuário e livro
+      const enrichedComments = await Promise.all(
+        comments.map(async (comment) => {
+          const user = await storage.getUser(comment.userId);
+          const book = await storage.getBook(comment.bookId);
+          
+          return {
+            ...comment,
+            user: user ? {
+              id: user.id,
+              name: user.name,
+              username: user.username,
+              avatarUrl: user.avatarUrl
+            } : null,
+            book: book ? {
+              id: book.id,
+              title: book.title,
+              slug: book.slug,
+              coverUrl: book.coverUrl
+            } : null
+          };
+        })
+      );
+      
+      res.json(enrichedComments);
+    } catch (error) {
+      console.error("Erro ao buscar comentários:", error);
+      res.status(500).json({ message: "Erro ao buscar comentários" });
+    }
+  });
+
+  // Aprovar comentário
+  app.post("/api/admin/comments/:id/approve", async (req, res) => {
+    try {
+      // Verificar se o usuário é administrador
+      if (!req.isAuthenticated() || (req.user as any)?.role !== "admin") {
+        return res.status(403).json({ message: "Acesso não autorizado" });
+      }
+      
+      const commentId = parseInt(req.params.id);
+      const updatedComment = await storage.approveComment(commentId);
+      
+      if (!updatedComment) {
+        return res.status(404).json({ message: "Comentário não encontrado" });
+      }
+      
+      res.json(updatedComment);
+    } catch (error) {
+      console.error("Erro ao aprovar comentário:", error);
+      res.status(500).json({ message: "Erro ao aprovar comentário" });
+    }
+  });
+
+  // Excluir comentário
+  app.delete("/api/admin/comments/:id", async (req, res) => {
+    try {
+      // Verificar se o usuário é administrador
+      if (!req.isAuthenticated() || (req.user as any)?.role !== "admin") {
+        return res.status(403).json({ message: "Acesso não autorizado" });
+      }
+      
+      const commentId = parseInt(req.params.id);
+      const success = await storage.deleteComment(commentId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Comentário não encontrado" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Erro ao excluir comentário:", error);
+      res.status(500).json({ message: "Erro ao excluir comentário" });
+    }
+  });
+
   const server = createServer(app);
   return server;
 }
