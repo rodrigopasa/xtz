@@ -111,33 +111,41 @@ export default function FileUpload({
         });
       }, 100);
 
-      // Usar apiRequest para lidar melhor com erros e tratamento de sessão
-      const result = await apiRequest<{coverUrl?: string, epubUrl?: string, pdfUrl?: string}>('POST', endpoint, formData);
+      // Usar apiRequest para lidar com erros e autenticação
+      const response = await apiRequest<{coverUrl?: string, epubUrl?: string, pdfUrl?: string}>(
+        'POST', 
+        endpoint, 
+        formData, 
+        {
+          // Necessário para upload de arquivo - não definir Content-Type
+          // pois o boundary do FormData será definido automaticamente
+          headers: {}
+        }
+      );
       
       clearInterval(progressInterval);
       setProgress(100);
       setSuccess(true);
 
       // Chamar o callback de sucesso com a URL retornada
-      if (onSuccess && result) {
+      if (onSuccess && response) {
         let url = "";
-        if (fileType === "cover" && result.coverUrl) url = result.coverUrl;
-        if (fileType === "epub" && result.epubUrl) url = result.epubUrl;
-        if (fileType === "pdf" && result.pdfUrl) url = result.pdfUrl;
+        if (fileType === "cover" && response.coverUrl) url = response.coverUrl;
+        if (fileType === "epub" && response.epubUrl) url = response.epubUrl;
+        if (fileType === "pdf" && response.pdfUrl) url = response.pdfUrl;
         
         if (url) {
           onSuccess(url);
+          toast({
+            title: "Upload realizado com sucesso",
+            description: `Arquivo ${file.name} enviado com sucesso`,
+          });
         } else {
           throw new Error(`URL de ${fileType} não encontrada na resposta`);
         }
       }
 
-      toast({
-        title: "Upload realizado com sucesso",
-        description: `Arquivo ${file.name} enviado com sucesso`,
-      });
-
-      // Resetar após 2 segundos para permitir vizualizar o sucesso
+      // Resetar após 2 segundos para permitir visualizar o sucesso
       setTimeout(() => {
         setFile(null);
         setProgress(0);
@@ -146,16 +154,24 @@ export default function FileUpload({
     } catch (error) {
       setProgress(0);
       setUploading(false);
+      
+      console.error("Erro no upload:", error);
+      
       if (error instanceof Error) {
         setError(`Erro no upload: ${error.message}`);
+        toast({
+          title: "Erro no upload",
+          description: error.message || "Não foi possível completar o upload do arquivo",
+          variant: "destructive",
+        });
       } else {
         setError("Erro desconhecido no upload");
+        toast({
+          title: "Erro no upload",
+          description: "Erro desconhecido ao tentar enviar o arquivo",
+          variant: "destructive",
+        });
       }
-      toast({
-        title: "Erro no upload",
-        description: "Não foi possível completar o upload do arquivo",
-        variant: "destructive",
-      });
     }
   };
 
