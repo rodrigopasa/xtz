@@ -725,45 +725,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Listar todos os livros
   app.get("/api/books", async (req, res) => {
     try {
+      // Verifique se há parâmetros de consulta
+      const { featured, isNew, isFree } = req.query;
+      
+      if (featured === 'true') {
+        const books = await storage.getFeaturedBooks();
+        return res.json(books);
+      } else if (isNew === 'true') {
+        const books = await storage.getNewBooks();
+        return res.json(books);  
+      } else if (isFree === 'true') {
+        const books = await storage.getFreeBooks();
+        return res.json(books);
+      }
+      
+      // Se não houver parâmetros, retorna todos os livros
       const books = await storage.getAllBooks();
       res.json(books);
     } catch (error) {
       console.error("Erro ao buscar livros:", error);
       res.status(500).json({ message: "Erro ao buscar livros" });
-    }
-  });
-
-  // Obter livro por ID
-  app.get("/api/books/:id", async (req, res) => {
-    try {
-      const bookId = parseInt(req.params.id);
-      const book = await storage.getBook(bookId);
-      
-      if (!book) {
-        return res.status(404).json({ message: "Livro não encontrado" });
-      }
-      
-      res.json(book);
-    } catch (error) {
-      console.error("Erro ao buscar livro:", error);
-      res.status(500).json({ message: "Erro ao buscar livro" });
-    }
-  });
-
-  // Obter livro por slug
-  app.get("/api/books/slug/:slug", async (req, res) => {
-    try {
-      const slug = req.params.slug;
-      const book = await storage.getBookBySlug(slug);
-      
-      if (!book) {
-        return res.status(404).json({ message: "Livro não encontrado" });
-      }
-      
-      res.json(book);
-    } catch (error) {
-      console.error("Erro ao buscar livro:", error);
-      res.status(500).json({ message: "Erro ao buscar livro" });
     }
   });
 
@@ -791,38 +772,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Obter livros em destaque
-  app.get("/api/books/featured", async (req, res) => {
+  // Obter livro por slug - Esta rota precisa vir ANTES da rota com :id para evitar conflitos
+  app.get("/api/books/slug/:slug", async (req, res) => {
     try {
-      const books = await storage.getFeaturedBooks();
-      res.json(books);
+      const slug = req.params.slug;
+      const book = await storage.getBookBySlug(slug);
+      
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      res.json(book);
     } catch (error) {
-      console.error("Erro ao buscar livros em destaque:", error);
-      res.status(500).json({ message: "Erro ao buscar livros em destaque" });
+      console.error("Erro ao buscar livro:", error);
+      res.status(500).json({ message: "Erro ao buscar livro" });
     }
   });
 
-  // Obter livros novos
-  app.get("/api/books/new", async (req, res) => {
+  // Obter livro por ID - Esta rota deve vir por último entre as rotas /api/books/*
+  app.get("/api/books/:id", async (req, res) => {
     try {
-      const books = await storage.getNewBooks();
-      res.json(books);
+      const bookId = parseInt(req.params.id);
+      const book = await storage.getBook(bookId);
+      
+      if (!book) {
+        return res.status(404).json({ message: "Livro não encontrado" });
+      }
+      
+      res.json(book);
     } catch (error) {
-      console.error("Erro ao buscar livros novos:", error);
-      res.status(500).json({ message: "Erro ao buscar livros novos" });
+      console.error("Erro ao buscar livro:", error);
+      res.status(500).json({ message: "Erro ao buscar livro" });
     }
   });
 
-  // Obter livros gratuitos
-  app.get("/api/books/free", async (req, res) => {
-    try {
-      const books = await storage.getFreeBooks();
-      res.json(books);
-    } catch (error) {
-      console.error("Erro ao buscar livros gratuitos:", error);
-      res.status(500).json({ message: "Erro ao buscar livros gratuitos" });
-    }
-  });
+
 
   // Criar livro (apenas admin)
   app.post("/api/books", isAdmin, async (req, res) => {
