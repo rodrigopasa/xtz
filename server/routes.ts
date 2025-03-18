@@ -83,50 +83,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Estratégia de autenticação local
   passport.use(new LocalStrategy(async (username, password, done) => {
     try {
-      console.log("Tentativa de login para usuário:", username);
+      console.log("[Auth] Tentativa de login para usuário:", username);
 
       const user = await storage.getUserByUsername(username);
+      console.log("[Auth] Usuário encontrado:", !!user);
+
       if (!user) {
-        console.log("Usuário não encontrado:", username);
+        console.log("[Auth] Usuário não encontrado");
         return done(null, false, { message: "Credenciais inválidas" });
       }
 
-      const isValidPassword = await compare(password, user.password);
-      if (!isValidPassword) {
-        console.log("Senha inválida para usuário:", username);
+      console.log("[Auth] Comparando senhas...");
+      const isValid = await compare(password, user.password);
+      console.log("[Auth] Senha válida:", isValid);
+
+      if (!isValid) {
+        console.log("[Auth] Senha inválida");
         return done(null, false, { message: "Credenciais inválidas" });
       }
 
-      console.log("Login bem sucedido para usuário:", username);
+      console.log("[Auth] Login bem sucedido para:", username);
       return done(null, user);
     } catch (error) {
-      console.error("Erro na autenticação:", error);
+      console.error("[Auth] Erro na autenticação:", error);
       return done(error);
     }
   }));
 
   // Rota de login
   app.post("/api/auth/login", (req, res, next) => {
-    console.log("Requisição de login recebida:", req.body);
+    console.log("[Login] Requisição recebida:", {
+      username: req.body.username,
+      hasPassword: !!req.body.password
+    });
 
-    passport.authenticate("local", (err: any, user: any, info: any) => {
+    passport.authenticate("local", (err, user, info) => {
       if (err) {
-        console.error("Erro na autenticação:", err);
+        console.error("[Login] Erro na autenticação:", err);
         return next(err);
       }
 
       if (!user) {
-        console.log("Login falhou:", info?.message);
-        return res.status(401).json({ message: info?.message || "Credenciais inválidas" });
+        console.log("[Login] Falha na autenticação:", info?.message);
+        return res.status(401).json({ 
+          message: info?.message || "Credenciais inválidas",
+          error: "AUTH_FAILED"
+        });
       }
 
       req.login(user, (loginErr) => {
         if (loginErr) {
-          console.error("Erro no login:", loginErr);
+          console.error("[Login] Erro ao criar sessão:", loginErr);
           return next(loginErr);
         }
 
-        console.log("Login bem sucedido para:", user.username);
+        console.log("[Login] Login bem sucedido para:", user.username);
         return res.json({
           id: user.id,
           username: user.username,
