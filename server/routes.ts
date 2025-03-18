@@ -249,9 +249,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rota para atualizar configurações
   app.put("/api/settings", async (req, res) => {
     try {
-      const { data, error } = validateSchema(insertSettingsSchema, req.body);
-      if (error) {
-        return res.status(400).json({ message: error });
+      if (!req.isAuthenticated() || (req.user as any)?.role !== "admin") {
+        return res.status(403).json({ message: "Acesso não autorizado" });
       }
 
       const settings = await db.select().from(siteSettings).limit(1);
@@ -259,18 +258,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (settings.length > 0) {
         const [updatedSettings] = await db
           .update(siteSettings)
-          .set({ ...data, updatedAt: new Date() })
+          .set({ ...req.body, updatedAt: new Date() })
           .where(eq(siteSettings.id, settings[0].id))
           .returning();
         res.json(updatedSettings);
       } else {
         const [newSettings] = await db
           .insert(siteSettings)
-          .values({ ...data, updatedAt: new Date() })
+          .values({ ...req.body, updatedAt: new Date() })
           .returning();
         res.json(newSettings);
       }
     } catch (error) {
+      console.error("Erro ao atualizar configurações:", error);
       res.status(500).json({ message: "Erro ao atualizar configurações" });
     }
   });
@@ -886,8 +886,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (bookData.slug !== existingBook.slug) {
         const bookBySlug = await storage.getBookBySlug(bookData.slug);
         if (bookBySlug && bookBySlug.id !== bookId) {
-          return res.status(400).json({ message: "Já existe um livro com este slug" });
-        }
+          return res.status(400).json({ message: "Já existe um livro com este slug" });}
       }
 
       const updatedBook = await storage.updateBook(bookId, bookData);      res.json(updatedBook);
@@ -1292,16 +1291,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     storage: coverStorage,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
     fileFilter: (req, file, cb) => {
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
       if (allowedTypes.includes(file.mimetype)) {
         cb(null, true);
       } else {
-        cb(new Error('Tipo de arquivo não suportado. Use JPEG, PNG, WEBP ou GIF.'));
+        cb(new Error('Tipo de arquivo não suportado. Use JPEG, PNG ou WebP.'));
       }
     }
   });
 
-  // Configuração do Multer para upload de e-books (EPUB, PDF)
+  // Configuração do Multer para upload de e-books
   const bookStorage = multer.diskStorage({
     destination: (req, file, cb) => {
       cb(null, booksDir);
@@ -1315,14 +1314,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const bookUpload = multer({
     storage: bookStorage,
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
     fileFilter: (req, file, cb) => {
-      if (file.fieldname === 'epub' && file.mimetype === 'application/epub+zip') {
-        cb(null, true);
-      } else if (file.fieldname === 'pdf' && file.mimetype === 'application/pdf') {
-        cb(null, true);
+      if (file.fieldname === 'epub') {
+        if (file.mimetype === 'application/epub+zip' || 
+            file.originalname.toLowerCase().endsWith('.epub')) {
+          cb(null, true);
+        } else {
+          cb(new Error('Arquivo inválido. Use apenas arquivos EPUB.'));
+        }
+      } else if (file.fieldname === 'pdf') {
+        if (file.mimetype === 'application/pdf' || 
+            file.originalname.toLowerCase().endsWith('.pdf')) {
+          cb(null, true);
+        } else {
+          cb(new Error('Arquivo inválido. Use apenas arquivos PDF.'));
+        }
       } else {
-        cb(new Error(`Tipo de arquivo não suportado para ${file.fieldname}. Use formato apropriado.`));
+        cb(new Error('Tipo de arquivo não suportado'));
       }
     }
   });
@@ -1334,7 +1343,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Nenhum arquivo foi enviado" });
       }
 
-      // Retornar URL relativa para o frontend
       const fileUrl = `/uploads/covers/${req.file.filename}`;
       console.log("Upload de capa realizado com sucesso:", fileUrl);
 
@@ -1346,38 +1354,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rota para upload de EPUB
-  app.post("/api/upload/epub", isAdmin, bookUpload.single('file'), (req, res) => {
+  app.post("/api/upload/epub", isAdmin, bookUpload.single('epub'), (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Nenhum arquivo foi enviado" });
       }
 
-      // Retornar URL relativa para o frontend
       const fileUrl = `/uploads/books/${req.file.filename}`;
       console.log("Upload de EPUB realizado com sucesso:", fileUrl);
 
       res.json({ epubUrl: fileUrl });
     } catch (error) {
       console.error("Erro no upload de EPUB:", error);
-      res.status(500).json({ message: "Erro no upload de EPUB" });
+      res.status(500).json({ message: error.message || "Erro no upload de EPUB" });
     }
   });
 
   // Rota para upload de PDF
-  app.post("/api/upload/pdf", isAdmin, bookUpload.single('file'), (req, res) => {
+  app.post("/api/upload/pdf", isAdmin, bookUpload.single('pdf'), (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Nenhum arquivo foi enviado" });
       }
 
-      // Retornar URL relativa para o frontend
       const fileUrl = `/uploads/books/${req.file.filename}`;
       console.log("Upload de PDF realizado com sucesso:", fileUrl);
 
       res.json({ pdfUrl: fileUrl });
     } catch (error) {
       console.error("Erro no upload de PDF:", error);
-      res.status(500).json({ message: "Erro no upload de PDF" });
+      res.status(500).json({ message: error.message || "Erro no upload de PDF" });
     }
   });
 
