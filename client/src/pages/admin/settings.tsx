@@ -13,7 +13,7 @@ export default function AdminSettings() {
   // Carregar configurações atuais
   const { data: settings, isLoading } = useQuery({
     queryKey: ['/api/settings'],
-    queryFn: () => apiRequest('/api/settings')
+    queryFn: () => apiRequest('/api/settings', { method: 'GET' })
   });
 
   // Mutation para atualizar configurações
@@ -40,7 +40,7 @@ export default function AdminSettings() {
   });
 
   // Handler para salvar configurações
-  const handleSaveSettings = async (section: string, data: any) => {
+  const handleSaveSettings = (section: string, data: any) => {
     updateSettings.mutate(data);
   };
 

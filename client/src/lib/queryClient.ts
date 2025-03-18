@@ -7,44 +7,45 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest<T = any>(
-  method: string,
+export async function apiRequest(
   url: string,
-  data?: unknown | undefined,
-): Promise<T> {
-  console.log(`API Request: ${method} ${url}`, data ? 'Com dados' : 'Sem dados');
-  
+  options: {
+    method: string;
+    data?: unknown;
+  } = { method: 'GET' }
+): Promise<any> {
+  console.log(`API Request: ${options.method} ${url}`, options.data ? 'Com dados' : 'Sem dados');
+
   let headers: HeadersInit = {
     'Accept': 'application/json'
   };
-  
+
   let body: any = undefined;
-  
+
   // Verificar se é FormData para não adicionar Content-Type
-  // O navegador definirá automaticamente o Content-Type correto com o boundary
-  if (data instanceof FormData) {
-    body = data;
-  } else if (data) {
+  if (options.data instanceof FormData) {
+    body = options.data;
+  } else if (options.data) {
     headers['Content-Type'] = 'application/json';
-    body = JSON.stringify(data);
+    body = JSON.stringify(options.data);
   }
-  
-  const options: RequestInit = {
-    method,
+
+  const requestOptions: RequestInit = {
+    method: options.method,
     headers,
     body,
-    credentials: 'include', // Inclui cookies nas requisições cross-origin
-    mode: 'cors', // Habilita CORS
-    cache: 'no-cache', // Evita cache
+    credentials: 'include',
+    mode: 'cors',
+    cache: 'no-cache',
   };
-  
-  console.log('Opções da requisição:', options);
-  
-  const res = await fetch(url, options);
-  
+
+  console.log('Opções da requisição:', requestOptions);
+
+  const res = await fetch(url, requestOptions);
+
   console.log(`API Response: ${res.status} ${res.statusText}`, 
     res.headers.has('set-cookie') ? 'Cookie definido' : 'Sem cookie');
-  
+
   await throwIfResNotOk(res);
   const responseData = await res.json();
   console.log('Dados da resposta:', responseData);
@@ -60,7 +61,7 @@ export const getQueryFn: <T>(options: {
     const endpoint = queryKey[0] as string;
     console.log(`Query: ${endpoint}`);
     console.log(`QueryKey completo:`, queryKey);
-    
+
     const res = await fetch(endpoint, {
       method: 'GET',
       headers: {
@@ -70,7 +71,7 @@ export const getQueryFn: <T>(options: {
       mode: 'cors',
       cache: 'no-cache'
     });
-    
+
     console.log(`Query Response para ${endpoint}: ${res.status} ${res.statusText}`);
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
@@ -94,7 +95,7 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: true, // Permitir atualização ao focar a janela
+      refetchOnWindowFocus: true,
       staleTime: 1000 * 60 * 5, // 5 minutos
       retry: false,
     },
