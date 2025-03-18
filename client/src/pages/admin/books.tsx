@@ -116,16 +116,16 @@ export default function AdminBooks() {
   });
   
   // Filtrar e paginar livros
-  const filteredBooks = data
+  const filteredBooks = data && Array.isArray(data)
     ? data.filter((book: any) => {
         // Filtrar por termo de busca
-        const matchesSearch = searchTerm
+        const matchesSearch = searchTerm && book.title
           ? book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            book.author.name.toLowerCase().includes(searchTerm.toLowerCase())
+            (book.author?.name ? book.author.name.toLowerCase().includes(searchTerm.toLowerCase()) : false)
           : true;
           
         // Filtrar por categoria
-        const matchesCategory = categoryFilter && categoryFilter !== "all"
+        const matchesCategory = categoryFilter && categoryFilter !== "all" && book.category
           ? book.category.id === parseInt(categoryFilter)
           : true;
           
