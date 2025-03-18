@@ -25,6 +25,11 @@ const isAdmin = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
+// Helper para gerar hash de senha
+async function generateHash(password: string): Promise<string> {
+  return await hash(password, 12);
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configuração para aceitar JSON no corpo das requisições
   app.use(express.json());
@@ -41,7 +46,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const MemoryStoreSession = MemoryStore(session);
   const sessionSecret = process.env.SESSION_SECRET || "bibliotech-secret-key-2025";
 
-  console.log("Configurando sessão e autenticação...");
+  console.log("Configurando sessão com SECRET");
 
   app.use(session({
     secret: sessionSecret,
@@ -64,18 +69,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Serialização do usuário
   passport.serializeUser((user: any, done) => {
-    console.log("Serializando usuário:", user.id);
+    console.log("[Auth] Serializando usuário:", user.id);
     done(null, user.id);
   });
 
   // Deserialização do usuário
   passport.deserializeUser(async (id: number, done) => {
     try {
-      console.log("Deserializando usuário:", id);
+      console.log("[Auth] Deserializando usuário:", id);
       const user = await storage.getUser(id);
       done(null, user);
     } catch (error) {
-      console.error("Erro na deserialização:", error);
+      console.error("[Auth] Erro na deserialização:", error);
       done(error);
     }
   });
@@ -111,30 +116,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Rota de login
-  app.post("/api/auth/login", (req, res, next) => {
-    console.log("[Login] Requisição recebida:", {
-      username: req.body.username,
-      hasPassword: !!req.body.password
-    });
+  app.post("/api/auth/login", async (req, res, next) => {
+    try {
+      console.log("[Login] Requisição recebida para usuário:", req.body.username);
 
-    passport.authenticate("local", (err, user, info) => {
-      if (err) {
-        console.error("[Login] Erro na autenticação:", err);
-        return next(err);
-      }
+      const { username, password } = req.body;
+
+      // Buscar usuário
+      const user = await storage.getUserByUsername(username);
+      console.log("[Login] Usuário encontrado:", !!user);
 
       if (!user) {
-        console.log("[Login] Falha na autenticação:", info?.message);
-        return res.status(401).json({ 
-          message: info?.message || "Credenciais inválidas",
-          error: "AUTH_FAILED"
-        });
+        console.log("[Login] Usuário não encontrado");
+        return res.status(401).json({ message: "Credenciais inválidas" });
       }
 
-      req.login(user, (loginErr) => {
-        if (loginErr) {
-          console.error("[Login] Erro ao criar sessão:", loginErr);
-          return next(loginErr);
+      // Verificar senha
+      console.log("[Login] Verificando senha...");
+      const isValidPassword = await compare(password, user.password);
+      console.log("[Login] Senha válida:", isValidPassword);
+
+      if (!isValidPassword) {
+        console.log("[Login] Senha inválida");
+        return res.status(401).json({ message: "Credenciais inválidas" });
+      }
+
+      // Login bem sucedido
+      req.login(user, (err) => {
+        if (err) {
+          console.error("[Login] Erro ao criar sessão:", err);
+          return next(err);
         }
 
         console.log("[Login] Login bem sucedido para:", user.username);
@@ -146,7 +157,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role: user.role
         });
       });
-    })(req, res, next);
+    } catch (error) {
+      console.error("[Login] Erro inesperado:", error);
+      next(error);
+    }
   });
 
   // Rota para verificar autenticação
@@ -182,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Hash da senha
-      const hashedPassword = await hash(password, 10);
+      const hashedPassword = await generateHash(password);
 
       // Cria o usuário
       const newUser = await storage.createUser({
@@ -876,8 +890,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const updatedBook = await storage.updateBook(bookId, bookData);
-      res.json(updatedBook);
+      const updatedBook = await storage.updateBook(bookId, bookData);      res.json(updatedBook);
     } catch (error) {
       console.error("Erro ao atualizar livro:", error);
       if (error instanceof z.ZodError) {
