@@ -1,12 +1,14 @@
+import { db } from './db';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import {
-  users, type User, type InsertUser,
-  categories, type Category, type InsertCategory,
-  authors, type Author, type InsertAuthor,
-  series, type Series, type InsertSeries,
-  books, type Book, type InsertBook,
-  favorites, type Favorite, type InsertFavorite,
-  readingHistory, type ReadingHistory, type InsertReadingHistory,
-  comments, type Comment, type InsertComment
+  users as usersTable, type User, type InsertUser,
+  categories as categoriesTable, type Category, type InsertCategory,
+  authors as authorsTable, type Author, type InsertAuthor,
+  series as seriesTable, type Series, type InsertSeries,
+  books as booksTable, type Book, type InsertBook,
+  favorites as favoritesTable, type Favorite, type InsertFavorite,
+  readingHistory as readingHistoryTable, type ReadingHistory, type InsertReadingHistory,
+  comments as commentsTable, type Comment, type InsertComment
 } from "@shared/schema";
 
 export interface IStorage {
@@ -42,7 +44,7 @@ export interface IStorage {
   createSeries(series: InsertSeries): Promise<Series>;
   updateSeries(id: number, series: Partial<Series>): Promise<Series | undefined>;
   deleteSeries(id: number): Promise<boolean>;
-  getBooksBySeries(seriesId: number): Promise<(Book & { author?: { name: string, slug: string } })[]>;
+  getBooksBySeries(seriesId: number): Promise<(Book & { author?: { name: string; slug: string } })[]>;
 
   // Livros
   getAllBooks(): Promise<Book[]>;
@@ -80,836 +82,337 @@ export interface IStorage {
   incrementHelpfulCount(id: number): Promise<Comment | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private categories: Map<number, Category>;
-  private authors: Map<number, Author>;
-  private series: Map<number, Series>;
-  private books: Map<number, Book>;
-  private favorites: Map<number, Favorite>;
-  private readingHistory: Map<number, ReadingHistory>;
-  private comments: Map<number, Comment>;
-
-  private currentUserId: number;
-  private currentCategoryId: number;
-  private currentAuthorId: number;
-  private currentSeriesId: number;
-  private currentBookId: number;
-  private currentFavoriteId: number;
-  private currentReadingHistoryId: number;
-  private currentCommentId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.categories = new Map();
-    this.authors = new Map();
-    this.series = new Map();
-    this.books = new Map();
-    this.favorites = new Map();
-    this.readingHistory = new Map();
-    this.comments = new Map();
-
-    this.currentUserId = 1;
-    this.currentCategoryId = 1;
-    this.currentAuthorId = 1;
-    this.currentSeriesId = 1;
-    this.currentBookId = 1;
-    this.currentFavoriteId = 1;
-    this.currentReadingHistoryId = 1;
-    this.currentCommentId = 1;
-
-    // Inicializar com dados de exemplo
-    this.initializeData();
-  }
-
-  private initializeData() {
-    // Categorias iniciais
-    const categoriesData: InsertCategory[] = [
-      { name: 'Ficção Científica', slug: 'ficcao-cientifica', iconName: 'rocket', bookCount: 0 },
-      { name: 'Romance', slug: 'romance', iconName: 'heart', bookCount: 0 },
-      { name: 'Mistério', slug: 'misterio', iconName: 'search', bookCount: 0 },
-      { name: 'História', slug: 'historia', iconName: 'landmark', bookCount: 0 },
-      { name: 'Autoajuda', slug: 'autoajuda', iconName: 'seedling', bookCount: 0 },
-      { name: 'Infantil', slug: 'infantil', iconName: 'child', bookCount: 0 }
-    ];
-
-    categoriesData.forEach(category => {
-      this.createCategory(category);
-    });
-
-    // Autores iniciais
-    const authorsData: InsertAuthor[] = [
-      { name: 'J. R. R. Tolkien', slug: 'j-r-r-tolkien', bio: 'Autor de O Senhor dos Anéis', imageUrl: 'https://randomuser.me/api/portraits/men/1.jpg' },
-      { name: 'Frank Herbert', slug: 'frank-herbert', bio: 'Autor de Duna', imageUrl: 'https://randomuser.me/api/portraits/men/2.jpg' },
-      { name: 'Aldous Huxley', slug: 'aldous-huxley', bio: 'Autor de Admirável Mundo Novo', imageUrl: 'https://randomuser.me/api/portraits/men/3.jpg' },
-      { name: 'Jane Austen', slug: 'jane-austen', bio: 'Autora de Orgulho e Preconceito', imageUrl: 'https://randomuser.me/api/portraits/women/4.jpg' },
-      { name: 'Matt Haig', slug: 'matt-haig', bio: 'Autor de A Biblioteca da Meia-Noite', imageUrl: 'https://randomuser.me/api/portraits/men/5.jpg' }
-    ];
-
-    authorsData.forEach(author => {
-      this.createAuthor(author);
-    });
-
-    // Usuário Admin com role definido corretamente
-    const adminUser: InsertUser = {
-      username: 'admin',
-      password: 'admin123',
-      email: 'admin@bibliotech.com',
-      name: 'Administrador',
-      role: 'admin' as const,
-      avatarUrl: 'https://randomuser.me/api/portraits/men/35.jpg'
-    };
-
-    this.createUser(adminUser);
-
-    // Séries iniciais com campos obrigatórios definidos corretamente
-    const seriesData: InsertSeries[] = [
-      {
-        name: 'O Senhor dos Anéis',
-        slug: 'senhor-dos-aneis',
-        authorId: 1,
-        description: 'Série épica de fantasia que narra a jornada para destruir o Um Anel',
-        bookCount: 0,
-        coverUrl: 'https://m.media-amazon.com/images/I/71jLBXtWJWL._AC_UF1000,1000_QL80_.jpg'
-      },
-      {
-        name: 'Crônicas de Duna',
-        slug: 'cronicas-de-duna',
-        authorId: 2,
-        description: 'Série de ficção científica passada em um futuro distante',
-        bookCount: 0,
-        coverUrl: 'https://m.media-amazon.com/images/I/61niMn9ftuL._AC_UF894,1000_QL80_.jpg'
-      }
-    ];
-
-    // Corrigir a criação das séries para garantir valores não nulos
-    seriesData.forEach((seriesItem) => {
-      const id = this.currentSeriesId++;
-      const newSeries: Series = {
-        ...seriesItem,
-        id,
-        description: seriesItem.description || null,
-        coverUrl: seriesItem.coverUrl || null,
-        bookCount: seriesItem.bookCount || 0
-      };
-      this.series.set(id, newSeries);
-    });
-
-    // Livros iniciais
-    const booksData: InsertBook[] = [
-      {
-        title: 'O Silmarillion',
-        slug: 'o-silmarillion',
-        authorId: 1,
-        categoryId: 1,
-        description: 'O Silmarillion é uma coletânea de obras de J. R. R. Tolkien, editada e publicada postumamente por seu filho Christopher Tolkien, com a assistência de Guy Gavriel Kay.',
-        coverUrl: 'https://m.media-amazon.com/images/I/81TmHlRleJL._AC_UF894,1000_QL80_.jpg',
-        epubUrl: '/uploads/books/o-silmarillion.epub',
-        pdfUrl: '/uploads/books/o-silmarillion.pdf',
-        amazonUrl: 'https://www.amazon.com.br/Silmarillion-J-R-Tolkien/dp/8595084742',
-        format: 'both',
-        pageCount: 496,
-        isbn: '9788595084742',
-        publishYear: 1977,
-        publisher: 'HarperCollins',
-        language: 'pt-BR',
-        isFeatured: true,
-        isNew: true,
-        isFree: false
-      },
-      {
-        title: 'Duna',
-        slug: 'duna',
-        authorId: 2,
-        categoryId: 1,
-        description: 'Duna é um romance de ficção científica escrito por Frank Herbert e publicado em 1965. A história se passa em um futuro distante, em meio a um império interplanetário feudal no qual as Casas Nobres controlam territórios planetários.',
-        coverUrl: 'https://m.media-amazon.com/images/I/71uQShDujJL._AC_UF894,1000_QL80_.jpg',
-        epubUrl: '/uploads/books/duna.epub',
-        pdfUrl: '/uploads/books/duna.pdf',
-        amazonUrl: 'https://www.amazon.com.br/Duna-1-Frank-Herbert/dp/6558380519',
-        format: 'both',
-        pageCount: 680,
-        isbn: '9786558380511',
-        publishYear: 1965,
-        publisher: 'Aleph',
-        language: 'pt-BR',
-        isFeatured: true,
-        isNew: false,
-        isFree: false
-      },
-      {
-        title: 'Admirável Mundo Novo',
-        slug: 'admiravel-mundo-novo',
-        authorId: 3,
-        categoryId: 1,
-        description: 'Admirável Mundo Novo é um romance distópico escrito por Aldous Huxley e publicado em 1932. A história se passa em Londres no ano 2540, em um futuro onde as pessoas são pré-condicionadas biologicamente e condicionadas psicologicamente a viverem em harmonia com as leis e regras sociais.',
-        coverUrl: 'https://m.media-amazon.com/images/I/61hOp6UFvCL._AC_UF894,1000_QL80_.jpg',
-        epubUrl: '/uploads/books/admiravel-mundo-novo.epub',
-        pdfUrl: '/uploads/books/admiravel-mundo-novo.pdf',
-        amazonUrl: 'https://www.amazon.com.br/Admirável-mundo-novo-Aldous-Huxley/dp/8525056006',
-        format: 'both',
-        pageCount: 312,
-        isbn: '9788525056009',
-        publishYear: 1932,
-        publisher: 'Biblioteca Azul',
-        language: 'pt-BR',
-        isFeatured: true,
-        isNew: false,
-        isFree: false
-      },
-      {
-        title: 'Orgulho e Preconceito',
-        slug: 'orgulho-e-preconceito',
-        authorId: 4,
-        categoryId: 2,
-        description: 'Orgulho e Preconceito é um romance da escritora britânica Jane Austen publicado pela primeira vez em 1813. A história acompanha as aventuras de Elizabeth Bennet, uma das cinco filhas de um cavalheiro rural da Inglaterra do século XIX.',
-        coverUrl: 'https://m.media-amazon.com/images/I/71tT8HA+n0L._AC_UF894,1000_QL80_.jpg',
-        epubUrl: '/uploads/books/orgulho-e-preconceito.epub',
-        pdfUrl: '/uploads/books/orgulho-e-preconceito.pdf',
-        amazonUrl: 'https://www.amazon.com.br/Orgulho-preconceito-Jane-Austen/dp/8544001823',
-        format: 'both',
-        pageCount: 448,
-        isbn: '9788544001821',
-        publishYear: 1813,
-        publisher: 'Martin Claret',
-        language: 'pt-BR',
-        isFeatured: true,
-        isNew: false,
-        isFree: false
-      },
-      {
-        title: 'A Biblioteca da Meia-Noite',
-        slug: 'a-biblioteca-da-meia-noite',
-        authorId: 5,
-        categoryId: 1,
-        description: 'A Biblioteca da Meia-Noite é um romance do escritor britânico Matt Haig publicado em 2020. A história segue Nora Seed, que vive uma vida de arrependimentos até encontrar a Biblioteca da Meia-Noite, onde cada livro oferece a chance de experimentar outra vida que ela poderia ter vivido.',
-        coverUrl: 'https://m.media-amazon.com/images/I/81iqH8dpjuL._AC_UF894,1000_QL80_.jpg',
-        epubUrl: '/uploads/books/a-biblioteca-da-meia-noite.epub',
-        pdfUrl: '/uploads/books/a-biblioteca-da-meia-noite.pdf',
-        amazonUrl: 'https://www.amazon.com.br/biblioteca-meia-noite-Matt-Haig/dp/6558380063',
-        format: 'both',
-        pageCount: 308,
-        isbn: '9786558380061',
-        publishYear: 2020,
-        publisher: 'Bertrand Brasil',
-        language: 'pt-BR',
-        isFeatured: false,
-        isNew: true,
-        isFree: false
-      }
-    ];
-
-    // Criar livros e armazenar corretamente com seus IDs
-    for (let i = 0; i < booksData.length; i++) {
-      const newBook = {
-        ...booksData[i],
-        id: i + 1,
-        rating: 0,
-        ratingCount: 0,
-        downloadCount: 0
-      };
-
-      // Associar livros às séries para testes
-      if (i === 0) { // O Silmarillion
-        newBook.seriesId = null; // Este não pertence a nenhuma série
-        newBook.volumeNumber = null;
-      } else if (i === 1) { // Duna
-        newBook.seriesId = 2; // Associar à série Crônicas de Duna
-        newBook.volumeNumber = 1; // Primeiro volume
-
-        // Atualizar contagem de livros na série
-        const series = this.series.get(2);
-        if (series) {
-          this.series.set(2, { ...series, bookCount: series.bookCount + 1 });
-        }
-      } else if (i === 2) { // Admirável Mundo Novo - Para testes, vamos associar à série de Duna como volume 3
-        newBook.seriesId = 2; // Associar à série Crônicas de Duna (só para teste)
-        newBook.volumeNumber = 3; // Terceiro volume
-
-        // Atualizar contagem de livros na série
-        const series = this.series.get(2);
-        if (series) {
-          this.series.set(2, { ...series, bookCount: series.bookCount + 1 });
-        }
-      } else if (i === 4) { // Biblioteca da Meia-Noite - Para testes, vamos associar à série de Duna como volume 2
-        newBook.seriesId = 2; // Associar à série Crônicas de Duna (só para teste)
-        newBook.volumeNumber = 2; // Segundo volume
-
-        // Atualizar contagem de livros na série
-        const series = this.series.get(2);
-        if (series) {
-          this.series.set(2, { ...series, bookCount: series.bookCount + 1 });
-        }
-      }
-
-      // Armazenar diretamente no Map com o ID como chave
-      this.books.set(i + 1, newBook);
-
-      // Atualizar contagem de livros na categoria
-      const category = this.categories.get(newBook.categoryId);
-      if (category) {
-        this.categories.set(category.id, {
-          ...category,
-          bookCount: category.bookCount + 1
-        });
-      }
-
-      // Garantir que o próximo ID seja maior que o último usado
-      this.currentBookId = Math.max(this.currentBookId, i + 2);
-    }
-
-    console.log(`Livros inicializados: ${this.books.size}`);
-    console.log(`IDs de livros: ${Array.from(this.books.keys()).join(', ')}`);
-    console.log(`Próximo ID de livro: ${this.currentBookId}`);
-  }
-
+export class DatabaseStorage implements IStorage {
   // Implementação dos métodos para Usuários
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.username, username));
+    return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.email === email);
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+    return user;
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const newUser = { ...user, id };
-    this.users.set(id, newUser);
+    const [newUser] = await db.insert(usersTable).values(user).returning();
     return newUser;
   }
 
   async updateUser(id: number, user: Partial<User>): Promise<User | undefined> {
-    const existingUser = await this.getUser(id);
-    if (!existingUser) return undefined;
-
-    const updatedUser = { ...existingUser, ...user };
-    this.users.set(id, updatedUser);
+    const [updatedUser] = await db
+      .update(usersTable)
+      .set(user)
+      .where(eq(usersTable.id, id))
+      .returning();
     return updatedUser;
   }
 
   async getAllUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
-  }
-
-  // Implementação dos métodos para Categorias
-  async getAllCategories(): Promise<Category[]> {
-    return Array.from(this.categories.values());
-  }
-
-  async getCategory(id: number): Promise<Category | undefined> {
-    return this.categories.get(id);
-  }
-
-  async getCategoryBySlug(slug: string): Promise<Category | undefined> {
-    return Array.from(this.categories.values()).find(category => category.slug === slug);
-  }
-
-  async createCategory(category: InsertCategory): Promise<Category> {
-    const id = this.currentCategoryId++;
-    const newCategory = { ...category, id };
-    this.categories.set(id, newCategory);
-    return newCategory;
-  }
-
-  async updateCategory(id: number, category: Partial<Category>): Promise<Category | undefined> {
-    const existingCategory = await this.getCategory(id);
-    if (!existingCategory) return undefined;
-
-    const updatedCategory = { ...existingCategory, ...category };
-    this.categories.set(id, updatedCategory);
-    return updatedCategory;
-  }
-
-  async deleteCategory(id: number): Promise<boolean> {
-    return this.categories.delete(id);
-  }
-
-  // Implementação dos métodos para Autores
-  async getAllAuthors(): Promise<Author[]> {
-    return Array.from(this.authors.values());
-  }
-
-  async getAuthor(id: number): Promise<Author | undefined> {
-    return this.authors.get(id);
-  }
-
-  async getAuthorBySlug(slug: string): Promise<Author | undefined> {
-    return Array.from(this.authors.values()).find(author => author.slug === slug);
-  }
-
-  async createAuthor(author: InsertAuthor): Promise<Author> {
-    const id = this.currentAuthorId++;
-    const newAuthor = { ...author, id };
-    this.authors.set(id, newAuthor);
-    return newAuthor;
-  }
-
-  async updateAuthor(id: number, author: Partial<Author>): Promise<Author | undefined> {
-    const existingAuthor = await this.getAuthor(id);
-    if (!existingAuthor) return undefined;
-
-    const updatedAuthor = { ...existingAuthor, ...author };
-    this.authors.set(id, updatedAuthor);
-    return updatedAuthor;
-  }
-
-  async deleteAuthor(id: number): Promise<boolean> {
-    return this.authors.delete(id);
+    return db.select().from(usersTable);
   }
 
   // Implementação dos métodos para Séries
   async getAllSeries(): Promise<Series[]> {
-    return Array.from(this.series.values());
+    return db.select().from(seriesTable);
   }
 
   async getSeries(id: number): Promise<Series | undefined> {
-    return this.series.get(id);
+    const [series] = await db.select().from(seriesTable).where(eq(seriesTable.id, id));
+    return series;
   }
 
   async getSeriesBySlug(slug: string): Promise<Series | undefined> {
-    return Array.from(this.series.values()).find(series => series.slug === slug);
+    const [series] = await db.select().from(seriesTable).where(eq(seriesTable.slug, slug));
+    return series;
   }
 
   async getSeriesByAuthor(authorId: number): Promise<Series[]> {
-    return Array.from(this.series.values()).filter(series => series.authorId === authorId);
+    return db.select().from(seriesTable).where(eq(seriesTable.authorId, authorId));
   }
 
-  async createSeries(series: InsertSeries): Promise<Series> {
-    const id = this.currentSeriesId++;
-    const newSeries: Series = {
-      ...series,
-      id,
-      description: series.description || null,
-      coverUrl: series.coverUrl || null,
-      bookCount: series.bookCount || 0
-    };
-    this.series.set(id, newSeries);
+  async createSeries(seriesData: InsertSeries): Promise<Series> {
+    const [newSeries] = await db.insert(seriesTable).values(seriesData).returning();
     return newSeries;
   }
 
-  async updateSeries(id: number, series: Partial<Series>): Promise<Series | undefined> {
-    const existingSeries = await this.getSeries(id);
-    if (!existingSeries) return undefined;
-
-    const updatedSeries: Series = {
-      ...existingSeries,
-      ...series,
-      description: series.description ?? existingSeries.description,
-      coverUrl: series.coverUrl ?? existingSeries.coverUrl,
-      bookCount: series.bookCount ?? existingSeries.bookCount
-    };
-    this.series.set(id, updatedSeries);
+  async updateSeries(id: number, seriesData: Partial<Series>): Promise<Series | undefined> {
+    const [updatedSeries] = await db
+      .update(seriesTable)
+      .set(seriesData)
+      .where(eq(seriesTable.id, id))
+      .returning();
     return updatedSeries;
   }
 
   async deleteSeries(id: number): Promise<boolean> {
-    // Verificar se existem livros associados a esta série
-    const books = await this.getBooksBySeries(id);
-    if (books.length > 0) {
-      // Opcional: atualizar os livros para remover a associação à série
-      for (const book of books) {
-        await this.updateBook(book.id, { seriesId: null, volumeNumber: null });
-      }
-    }
+    // Primeiro atualizar os livros para remover a associação com a série
+    await db
+      .update(booksTable)
+      .set({ seriesId: null, volumeNumber: null })
+      .where(eq(booksTable.seriesId, id));
 
-    return this.series.delete(id);
+    // Então deletar a série
+    const [deletedSeries] = await db
+      .delete(seriesTable)
+      .where(eq(seriesTable.id, id))
+      .returning();
+
+    return !!deletedSeries;
   }
 
-  async getBooksBySeries(seriesId: number): Promise<(Book & { author?: { name: string, slug: string } })[]> {
-    const seriesBooks = Array.from(this.books.values())
-      .filter(book => book.seriesId === seriesId)
-      // Ordenar por número do volume, se disponível
-      .sort((a, b) => {
-        if (a.volumeNumber === null) return 1;
-        if (b.volumeNumber === null) return -1;
-        return (a.volumeNumber || 0) - (b.volumeNumber || 0);
-      });
+  async getBooksBySeries(seriesId: number): Promise<(Book & { author?: { name: string; slug: string } })[]> {
+    const result = await db
+      .select({
+        ...booksTable,
+        authorName: authorsTable.name,
+        authorSlug: authorsTable.slug
+      })
+      .from(booksTable)
+      .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
+      .where(eq(booksTable.seriesId, seriesId))
+      .orderBy(booksTable.volumeNumber);
 
-    // Enriquecer livros com informações de autor
-    const enrichedBooks = await Promise.all(seriesBooks.map(async (book) => {
-      const author = await this.getAuthor(book.authorId);
-      return {
-        ...book,
-        author: author ? { name: author.name, slug: author.slug } : undefined
-      };
+    return result.map(book => ({
+      ...book,
+      author: book.authorName ? {
+        name: book.authorName,
+        slug: book.authorSlug
+      } : undefined
     }));
-
-    return enrichedBooks;
   }
 
   // Implementação dos métodos para Livros
   async getAllBooks(): Promise<Book[]> {
-    return Array.from(this.books.values());
+    return db.select().from(booksTable);
   }
 
   async getBook(id: number): Promise<Book | undefined> {
-    console.log(`MemStorage.getBook - ID: ${id}, Tipo: ${typeof id}`);
-    console.log(`Chaves disponíveis no Map: ${Array.from(this.books.keys()).join(', ')}`);
-
-    // Garantir que o ID seja um número
-    const numericId = Number(id);
-    if (isNaN(numericId)) {
-      console.log(`ID inválido: ${id}`);
-      return undefined;
-    }
-
-    // Tentar buscar diretamente
-    const book = this.books.get(numericId);
-    console.log(`Livro encontrado direto: ${book ? 'Sim' : 'Não'}`);
-
-    // Se não encontrou, vamos tentar verificar iterando por todos
-    if (!book) {
-      console.log('Buscando por iteração...');
-      const allBooks = Array.from(this.books.values());
-      const foundBook = allBooks.find(book => book.id === numericId);
-
-      if (foundBook) {
-        console.log(`Encontrado por iteração: ${foundBook.title}`);
-        return foundBook;
-      }
-
-      console.log('Livro não encontrado por ID em nenhum método');
-    }
-
+    const [book] = await db.select().from(booksTable).where(eq(booksTable.id, id));
     return book;
   }
 
   async getBookBySlug(slug: string): Promise<Book | undefined> {
-    return Array.from(this.books.values()).find(book => book.slug === slug);
+    const [book] = await db.select().from(booksTable).where(eq(booksTable.slug, slug));
+    return book;
   }
 
   async getBooksByCategory(categoryId: number): Promise<Book[]> {
-    return Array.from(this.books.values()).filter(book => book.categoryId === categoryId);
+    return db.select().from(booksTable).where(eq(booksTable.categoryId, categoryId));
   }
 
   async getBooksByAuthor(authorId: number): Promise<Book[]> {
-    return Array.from(this.books.values()).filter(book => book.authorId === authorId);
+    return db.select().from(booksTable).where(eq(booksTable.authorId, authorId));
   }
 
   async getFeaturedBooks(): Promise<Book[]> {
-    return Array.from(this.books.values()).filter(book => book.isFeatured);
+    return db.select().from(booksTable).where(eq(booksTable.isFeatured, true));
   }
 
   async getNewBooks(): Promise<Book[]> {
-    return Array.from(this.books.values()).filter(book => book.isNew);
+    return db.select().from(booksTable).where(eq(booksTable.isNew, true));
   }
 
   async getFreeBooks(): Promise<Book[]> {
-    return Array.from(this.books.values()).filter(book => book.isFree);
+    return db.select().from(booksTable).where(eq(booksTable.isFree, true));
   }
 
   async createBook(book: InsertBook): Promise<Book> {
-    const id = this.currentBookId++;
-    const newBook = {
-      ...book,
-      id,
-      rating: 0,
-      ratingCount: 0,
-      downloadCount: 0
-    };
-    this.books.set(id, newBook);
-
-    // Atualizar contagem de livros na categoria
-    const category = await this.getCategory(book.categoryId);
-    if (category) {
-      await this.updateCategory(category.id, {
-        bookCount: category.bookCount + 1
-      });
-    }
-
-    // Atualizar contagem de livros na série, se aplicável
-    if (book.seriesId) {
-      const series = await this.getSeries(book.seriesId);
-      if (series) {
-        await this.updateSeries(series.id, {
-          bookCount: series.bookCount + 1
-        });
-      }
-    }
-
+    const [newBook] = await db.insert(booksTable).values(book).returning();
     return newBook;
   }
 
   async updateBook(id: number, book: Partial<Book>): Promise<Book | undefined> {
-    const existingBook = await this.getBook(id);
-    if (!existingBook) return undefined;
-
-    const updatedBook = { ...existingBook, ...book };
-    this.books.set(id, updatedBook);
-
-    // Se houver uma alteração na série, atualizar as contagens
-    if (book.seriesId !== undefined && existingBook.seriesId !== book.seriesId) {
-      // Se o livro estava em uma série antes, decrementar a contagem da série antiga
-      if (existingBook.seriesId) {
-        const oldSeries = await this.getSeries(existingBook.seriesId);
-        if (oldSeries && oldSeries.bookCount > 0) {
-          await this.updateSeries(oldSeries.id, {
-            bookCount: oldSeries.bookCount - 1
-          });
-        }
-      }
-
-      // Se o livro está sendo adicionado a uma nova série, incrementar a contagem da nova série
-      if (book.seriesId) {
-        const newSeries = await this.getSeries(book.seriesId);
-        if (newSeries) {
-          await this.updateSeries(newSeries.id, {
-            bookCount: newSeries.bookCount + 1
-          });
-        }
-      }
+    try {
+      const [updatedBook] = await db
+        .update(booksTable)
+        .set(book)
+        .where(eq(booksTable.id, id))
+        .returning();
+      return updatedBook;
+    } catch (error) {
+      console.error('Error updating book:', error);
+      throw error;
     }
-
-    return updatedBook;
   }
 
   async deleteBook(id: number): Promise<boolean> {
-    const book = await this.getBook(id);
-    if (!book) return false;
-
-    // Atualizar contagem de livros na categoria
-    const category = await this.getCategory(book.categoryId);
-    if (category && category.bookCount > 0) {
-      await this.updateCategory(category.id, {
-        bookCount: category.bookCount - 1
-      });
-    }
-
-    // Atualizar contagem de livros na série, se aplicável
-    if (book.seriesId) {
-      const series = await this.getSeries(book.seriesId);
-      if (series && series.bookCount > 0) {
-        await this.updateSeries(series.id, {
-          bookCount: series.bookCount - 1
-        });
-      }
-    }
-
-    return this.books.delete(id);
+    const [deletedBook] = await db
+      .delete(booksTable)
+      .where(eq(booksTable.id, id))
+      .returning();
+    return !!deletedBook;
   }
 
   async incrementDownloadCount(id: number): Promise<Book | undefined> {
-    const book = await this.getBook(id);
-    if (!book) return undefined;
-
-    const updatedBook = { ...book, downloadCount: book.downloadCount + 1 };
-    this.books.set(id, updatedBook);
+    const [updatedBook] = await db
+      .update(booksTable)
+      .set({ downloadCount: sql`${booksTable.downloadCount} + 1` })
+      .where(eq(booksTable.id, id))
+      .returning();
     return updatedBook;
+  }
+
+  //Implementação dos métodos para Categorias
+  async getAllCategories(): Promise<Category[]> {
+    return db.select().from(categoriesTable);
+  }
+
+  async getCategory(id: number): Promise<Category | undefined> {
+    const [category] = await db.select().from(categoriesTable).where(eq(categoriesTable.id, id));
+    return category;
+  }
+
+  async getCategoryBySlug(slug: string): Promise<Category | undefined> {
+    const [category] = await db.select().from(categoriesTable).where(eq(categoriesTable.slug, slug));
+    return category;
+  }
+
+  async createCategory(category: InsertCategory): Promise<Category> {
+    const [newCategory] = await db.insert(categoriesTable).values(category).returning();
+    return newCategory;
+  }
+
+  async updateCategory(id: number, category: Partial<Category>): Promise<Category | undefined> {
+    const [updatedCategory] = await db
+      .update(categoriesTable)
+      .set(category)
+      .where(eq(categoriesTable.id, id))
+      .returning();
+    return updatedCategory;
+  }
+
+  async deleteCategory(id: number): Promise<boolean> {
+    const [deletedCategory] = await db
+      .delete(categoriesTable)
+      .where(eq(categoriesTable.id, id))
+      .returning();
+    return !!deletedCategory;
+  }
+
+  // Implementação dos métodos para Autores
+  async getAllAuthors(): Promise<Author[]> {
+    return db.select().from(authorsTable);
+  }
+
+  async getAuthor(id: number): Promise<Author | undefined> {
+    const [author] = await db.select().from(authorsTable).where(eq(authorsTable.id, id));
+    return author;
+  }
+
+  async getAuthorBySlug(slug: string): Promise<Author | undefined> {
+    const [author] = await db.select().from(authorsTable).where(eq(authorsTable.slug, slug));
+    return author;
+  }
+
+  async createAuthor(author: InsertAuthor): Promise<Author> {
+    const [newAuthor] = await db.insert(authorsTable).values(author).returning();
+    return newAuthor;
+  }
+
+  async updateAuthor(id: number, author: Partial<Author>): Promise<Author | undefined> {
+    const [updatedAuthor] = await db
+      .update(authorsTable)
+      .set(author)
+      .where(eq(authorsTable.id, id))
+      .returning();
+    return updatedAuthor;
+  }
+
+  async deleteAuthor(id: number): Promise<boolean> {
+    const [deletedAuthor] = await db
+      .delete(authorsTable)
+      .where(eq(authorsTable.id, id))
+      .returning();
+    return !!deletedAuthor;
   }
 
   // Implementação dos métodos para Favoritos
   async getFavoritesByUser(userId: number): Promise<Favorite[]> {
-    return Array.from(this.favorites.values()).filter(favorite => favorite.userId === userId);
+    return db.select().from(favoritesTable).where(eq(favoritesTable.userId, userId));
   }
 
   async getFavoriteBooks(userId: number): Promise<Book[]> {
     const favorites = await this.getFavoritesByUser(userId);
-    const books: Book[] = [];
-
-    for (const favorite of favorites) {
-      const book = await this.getBook(favorite.bookId);
-      if (book) books.push(book);
-    }
-
-    return books;
+    return db.select().from(booksTable).where(and(eq(booksTable.id, favorites.map(fav => fav.bookId))));
   }
 
   async createFavorite(favorite: InsertFavorite): Promise<Favorite> {
-    // Verificar se já existe
-    const existing = await this.isFavorite(favorite.userId, favorite.bookId);
-    if (existing) {
-      const existingFavorite = Array.from(this.favorites.values()).find(
-        f => f.userId === favorite.userId && f.bookId === favorite.bookId
-      );
-      if (existingFavorite) return existingFavorite;
-    }
-
-    const id = this.currentFavoriteId++;
-    const newFavorite = {
-      ...favorite,
-      id,
-      createdAt: new Date()
-    };
-    this.favorites.set(id, newFavorite);
+    const [newFavorite] = await db.insert(favoritesTable).values(favorite).returning();
     return newFavorite;
   }
 
   async deleteFavorite(userId: number, bookId: number): Promise<boolean> {
-    const favorite = Array.from(this.favorites.values()).find(
-      f => f.userId === userId && f.bookId === bookId
-    );
-
-    if (!favorite) return false;
-    return this.favorites.delete(favorite.id);
+    const deleteCount = await db.delete(favoritesTable).where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.bookId, bookId)));
+    return deleteCount > 0;
   }
 
   async isFavorite(userId: number, bookId: number): Promise<boolean> {
-    return Array.from(this.favorites.values()).some(
-      favorite => favorite.userId === userId && favorite.bookId === bookId
-    );
+    const [favorite] = await db.select().from(favoritesTable).where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.bookId, bookId)));
+    return !!favorite;
   }
+
 
   // Implementação dos métodos para Histórico de Leitura
   async getReadingHistoryByUser(userId: number): Promise<ReadingHistory[]> {
-    return Array.from(this.readingHistory.values())
-      .filter(history => history.userId === userId)
-      .sort((a, b) => b.lastReadAt.getTime() - a.lastReadAt.getTime());
+    return db.select().from(readingHistoryTable).where(eq(readingHistoryTable.userId, userId)).orderBy(readingHistoryTable.lastReadAt, { direction: 'desc' });
   }
 
-  async getReadingHistoryBooks(userId: number): Promise<(ReadingHistory & { book: Book & { author?: { name: string, slug: string }, series?: { id: number, name: string, slug: string, volume: number | null } } })[]> {
+  async getReadingHistoryBooks(userId: number): Promise<(ReadingHistory & { book: Book })[]> {
     const histories = await this.getReadingHistoryByUser(userId);
-    const result: (ReadingHistory & { book: Book & { author?: { name: string, slug: string }, series?: { id: number, name: string, slug: string, volume: number | null } } })[] = [];
-
-    for (const history of histories) {
-      const book = await this.getBook(history.bookId);
-      if (book) {
-        // Obter autor
-        const author = await this.getAuthor(book.authorId);
-
-        // Obter série se existir
-        let seriesInfo = undefined;
-        if (book.seriesId) {
-          const series = await this.getSeries(book.seriesId);
-          if (series) {
-            seriesInfo = {
-              id: series.id,
-              name: series.name,
-              slug: series.slug,
-              volume: book.volumeNumber
-            };
-          }
-        }
-
-        const enrichedBook = {
-          ...book,
-          author: author ? { name: author.name, slug: author.slug } : undefined,
-          series: seriesInfo
-        };
-
-        result.push({ ...history, book: enrichedBook });
-      }
-    }
-
-    return result;
+    const bookIds = histories.map(h => h.bookId);
+    const books = await db.select().from(booksTable).where(eq(booksTable.id, bookIds));
+    return histories.map(history => ({ ...history, book: books.find(book => book.id === history.bookId)! }));
   }
 
   async createOrUpdateReadingHistory(history: InsertReadingHistory): Promise<ReadingHistory> {
-    // Verificar se já existe
-    const existing = Array.from(this.readingHistory.values()).find(
-      h => h.userId === history.userId && h.bookId === history.bookId
-    );
-
-    if (existing) {
-      const updatedHistory = {
-        ...existing,
-        progress: history.progress,
-        isCompleted: history.isCompleted,
-        lastReadAt: new Date()
-      };
-      this.readingHistory.set(existing.id, updatedHistory);
+    const existing = await db.select().from(readingHistoryTable).where(and(eq(readingHistoryTable.userId, history.userId), eq(readingHistoryTable.bookId, history.bookId)));
+    if(existing.length > 0){
+      const [updatedHistory] = await db.update(readingHistoryTable).set({ progress: history.progress, isCompleted: history.isCompleted, lastReadAt: new Date() }).where(and(eq(readingHistoryTable.userId, history.userId), eq(readingHistoryTable.bookId, history.bookId))).returning();
       return updatedHistory;
+    } else {
+      const [newHistory] = await db.insert(readingHistoryTable).values({...history, lastReadAt: new Date()}).returning();
+      return newHistory;
     }
-
-    const id = this.currentReadingHistoryId++;
-    const newHistory = {
-      ...history,
-      id,
-      lastReadAt: new Date()
-    };
-    this.readingHistory.set(id, newHistory);
-    return newHistory;
   }
 
   // Implementação dos métodos para Comentários
   async getCommentsByBook(bookId: number): Promise<Comment[]> {
-    return Array.from(this.comments.values())
-      .filter(comment => comment.bookId === bookId && comment.isApproved)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return db.select().from(commentsTable).where(and(eq(commentsTable.bookId, bookId), eq(commentsTable.isApproved, true))).orderBy(commentsTable.createdAt, {direction: 'desc'});
   }
 
   async getCommentsByUser(userId: number): Promise<Comment[]> {
-    return Array.from(this.comments.values())
-      .filter(comment => comment.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return db.select().from(commentsTable).where(eq(commentsTable.userId, userId)).orderBy(commentsTable.createdAt, {direction: 'desc'});
   }
 
   async getAllComments(): Promise<Comment[]> {
-    return Array.from(this.comments.values())
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return db.select().from(commentsTable).orderBy(commentsTable.createdAt, {direction: 'desc'});
   }
 
   async createComment(comment: InsertComment): Promise<Comment> {
-    const id = this.currentCommentId++;
-    const newComment = {
-      ...comment,
-      id,
-      createdAt: new Date(),
-      helpfulCount: 0
-    };
-    this.comments.set(id, newComment);
-
-    // Atualizar a avaliação média do livro
-    const book = await this.getBook(comment.bookId);
-    if (book) {
-      const bookComments = await this.getCommentsByBook(book.id);
-      const totalRating = bookComments.reduce((sum, c) => sum + c.rating, comment.rating);
-      const newRatingCount = book.ratingCount + 1;
-      const newRating = Math.round(totalRating / newRatingCount);
-
-      await this.updateBook(book.id, {
-        rating: newRating,
-        ratingCount: newRatingCount
-      });
-    }
-
+    const [newComment] = await db.insert(commentsTable).values({...comment, createdAt: new Date(), helpfulCount: 0}).returning();
     return newComment;
   }
 
   async deleteComment(id: number): Promise<boolean> {
-    const comment = await this.comments.get(id);
-    if (!comment) return false;
-
-    // Atualizar a avaliação média do livro
-    const book = await this.getBook(comment.bookId);
-    if (book && book.ratingCount > 0) {
-      const bookComments = (await this.getCommentsByBook(book.id))
-        .filter(c => c.id !== id);
-
-      const totalRating = bookComments.reduce((sum, c) => sum + c.rating, 0);
-      const newRatingCount = book.ratingCount - 1;
-      const newRating = newRatingCount > 0 ? Math.round(totalRating / newRatingCount) : 0;
-
-      await this.updateBook(book.id, {
-        rating: newRating,
-        ratingCount: newRatingCount
-      });
-    }
-
-    return this.comments.delete(id);
+    const deleteCount = await db.delete(commentsTable).where(eq(commentsTable.id, id));
+    return deleteCount > 0;
   }
 
   async approveComment(id: number): Promise<Comment | undefined> {
-    const comment = await this.comments.get(id);
-    if (!comment) return undefined;
-
-    const updatedComment = { ...comment, isApproved: true };
-    this.comments.set(id, updatedComment);
+    const [updatedComment] = await db.update(commentsTable).set({isApproved: true}).where(eq(commentsTable.id, id)).returning();
     return updatedComment;
   }
 
   async incrementHelpfulCount(id: number): Promise<Comment | undefined> {
-    const comment = await this.comments.get(id);
-    if (!comment) return undefined;
-
-    const updatedComment = { ...comment, helpfulCount: comment.helpfulCount + 1 };
-    this.comments.set(id, updatedComment);
+    const [updatedComment] = await db.update(commentsTable).set({helpfulCount: sql`${commentsTable.helpfulCount} + 1`}).where(eq(commentsTable.id, id)).returning();
     return updatedComment;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
