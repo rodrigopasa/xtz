@@ -34,6 +34,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configuração para aceitar JSON no corpo das requisições
   app.use(express.json());
 
+  // Health check para monitoramento no Coolify
+  app.get('/api/health', (_req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
   // Configuração do CORS
   app.use(cors({
     origin: true,

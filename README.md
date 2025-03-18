@@ -22,13 +22,22 @@ npm run dev
 
 ## Variáveis de ambiente para produção
 
-As seguintes variáveis de ambiente podem ser configuradas:
+As seguintes variáveis de ambiente devem ser configuradas:
 
 ```
+# Configuração da aplicação
 NODE_ENV=production    # Define o ambiente de produção
 PORT=5000              # Porta do servidor
 HOST=0.0.0.0           # Binding do servidor
 SESSION_SECRET=xxxxxx  # Segredo para cookies de sessão
+
+# Configuração do banco de dados PostgreSQL
+DATABASE_URL=postgresql://usuario:senha@host:porta/nome_banco  # URL completa do banco de dados
+PGHOST=host            # Host do PostgreSQL
+PGPORT=5432            # Porta do PostgreSQL
+PGUSER=usuario         # Usuário do PostgreSQL
+PGPASSWORD=senha       # Senha do PostgreSQL
+PGDATABASE=nome_banco  # Nome do banco de dados
 ```
 
 ## Implantação com Docker/Coolify
@@ -38,9 +47,30 @@ Este projeto inclui um Dockerfile e um docker-compose.yml para fácil implantaç
 Para implantar com Coolify:
 
 1. Configure o projeto no Coolify apontando para este repositório
-2. Defina as variáveis de ambiente necessárias
+2. Defina as variáveis de ambiente necessárias (veja a seção acima)
 3. Use o Dockerfile incluído para o build
-4. Configure um volume para persistência: `/app/public`
+4. Configure um volume para persistência: `/app/public` para garantir que os uploads sejam preservados entre deploys
+5. Configure um banco de dados PostgreSQL e atualize as variáveis de ambiente
+
+### Preparação do banco de dados
+
+Após a primeira implantação, você precisará inicializar o banco de dados:
+
+```bash
+# Dentro do container da aplicação
+npm run db:push
+```
+
+Este comando criará todas as tabelas necessárias no banco de dados com base no esquema definido em `shared/schema.ts`.
+
+### Credenciais padrão do administrador
+
+Após a inicialização do banco de dados, as seguintes credenciais de administrador serão criadas automaticamente:
+
+- Usuário: `admin`
+- Senha: `admin123`
+
+**Importante**: É altamente recomendável alterar essa senha imediatamente após o primeiro login.
 
 ## Estrutura do projeto
 

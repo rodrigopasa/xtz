@@ -1,36 +1,40 @@
-FROM node:20-slim
+FROM node:20-slim AS builder
 
+# Create app directory
 WORKDIR /app
 
-# Instalar dependências necessárias
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    curl \
-    dumb-init \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copiar arquivos do projeto
+# Copy package files and install dependencies
 COPY package*.json ./
-COPY tsconfig.json ./
-
-# Instalar dependências
 RUN npm ci
 
-# Copiar o restante do código
+# Copy source code
 COPY . .
 
-# Criar diretórios necessários
-RUN mkdir -p public/covers public/books public/uploads && \
-    chmod -R 755 public
-
-# Build do projeto
+# Build the application
 RUN npm run build
 
-# Expor porta
+# Production image
+FROM node:20-slim
+
+# Create app directory
+WORKDIR /app
+
+# Copy built assets from builder stage
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.env ./.env
+
+# Install only production dependencies
+RUN npm ci --omit=dev
+
+# Expose the port the app runs on
 EXPOSE 5000
 
-# Usar dumb-init para gerenciar sinais corretamente
-ENTRYPOINT ["dumb-init", "--"]
+# Set environment variables
+ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=5000
 
-# Comando para rodar o servidor
+# Start the application
 CMD ["npm", "run", "start"]
