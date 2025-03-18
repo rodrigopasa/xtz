@@ -68,9 +68,10 @@ const authorSchema = z.object({
     message: "O slug deve ter pelo menos 3 caracteres",
   }),
   bio: z.string().optional(),
-  imageUrl: z.string().url({
-    message: "Insira uma URL válida para a imagem",
-  }).optional().or(z.literal("")),
+  imageUrl: z.union([
+    z.string().url({ message: "Insira uma URL válida para a imagem" }),
+    z.string().max(0) // String vazia
+  ]).optional(),
 });
 
 export default function AdminAuthors() {
@@ -226,7 +227,7 @@ export default function AdminAuthors() {
   };
 
   // Filtrar autores pelo termo de busca
-  const filteredAuthors = authors
+  const filteredAuthors = Array.isArray(authors)
     ? authors.filter((author: any) => 
         author.name.toLowerCase().includes(searchTerm.toLowerCase()))
     : [];
@@ -452,7 +453,7 @@ export default function AdminAuthors() {
             )}
           </CardContent>
           <CardFooter className="flex justify-between border-t p-4 text-sm text-neutral-500">
-            <span>Total: {filteredAuthors.length} / {authors?.length || 0} autores</span>
+            <span>Total: {filteredAuthors.length} / {Array.isArray(authors) ? authors.length : 0} autores</span>
             <span>Obs: Autores com livros associados não podem ser excluídos</span>
           </CardFooter>
         </Card>

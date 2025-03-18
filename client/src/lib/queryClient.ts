@@ -48,17 +48,30 @@ export async function apiRequest<T = any>(
     res.headers.has('set-cookie') ? 'Cookie definido' : 'Sem cookie');
 
   await throwIfResNotOk(res);
-  const responseData = await res.json();
-  console.log('Dados da resposta:', responseData);
-  return responseData;
+  
+  // Se o corpo da resposta estiver vazio, retorna um objeto vazio em vez de tentar analisar JSON
+  const text = await res.text();
+  if (!text) {
+    console.log(`Resposta vazia para ${endpoint}, retornando objeto vazio`);
+    return {} as any;
+  }
+  
+  try {
+    const responseData = JSON.parse(text);
+    console.log('Dados da resposta:', responseData);
+    return responseData;
+  } catch (jsonError) {
+    console.error(`Erro ao analisar JSON para ${endpoint}:`, jsonError, "Texto da resposta:", text);
+    return {} as any;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
+export const getQueryFn = <T = any>(options: {
   on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
+}): QueryFunction<T> =>
   async ({ queryKey }) => {
+    const { on401: unauthorizedBehavior } = options;
     const endpoint = queryKey[0] as string;
     console.log(`Query: ${endpoint}`);
     console.log(`QueryKey completo:`, queryKey);
@@ -82,9 +95,22 @@ export const getQueryFn: <T>(options: {
 
     try {
       await throwIfResNotOk(res);
-      const data = await res.json();
-      console.log(`Query Data para ${endpoint}:`, data);
-      return data;
+      
+      // Se o corpo da resposta estiver vazio, retorna um objeto vazio em vez de tentar analisar JSON
+      const text = await res.text();
+      if (!text) {
+        console.log(`Resposta vazia para ${endpoint}, retornando objeto vazio`);
+        return {} as any;
+      }
+      
+      try {
+        const data = JSON.parse(text);
+        console.log(`Query Data para ${endpoint}:`, data);
+        return data;
+      } catch (jsonError) {
+        console.error(`Erro ao analisar JSON para ${endpoint}:`, jsonError, "Texto da resposta:", text);
+        return {} as any;
+      }
     } catch (error) {
       console.error(`Erro ao processar resposta para ${endpoint}:`, error);
       throw error;

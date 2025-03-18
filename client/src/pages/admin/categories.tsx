@@ -142,9 +142,10 @@ export default function AdminCategories() {
       createForm.reset();
     },
     onError: (error: any) => {
+      console.error("Erro ao criar categoria:", error);
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível criar a categoria",
+        description: "Não foi possível criar a categoria. Verifique o console para mais detalhes.",
         variant: "destructive",
       });
     },
@@ -409,7 +410,7 @@ export default function AdminCategories() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {categories?.length > 0 ? (
+                    {Array.isArray(categories) && categories.length > 0 ? (
                       categories.map((category: any) => (
                         <TableRow key={category.id}>
                           <TableCell>
@@ -458,7 +459,7 @@ export default function AdminCategories() {
             )}
           </CardContent>
           <CardFooter className="flex justify-between border-t p-4 text-sm text-neutral-500">
-            <span>Total: {categories?.length || 0} categorias</span>
+            <span>Total: {Array.isArray(categories) ? categories.length : 0} categorias</span>
             <span>Obs: Categorias com livros associados não podem ser excluídas</span>
           </CardFooter>
         </Card>
