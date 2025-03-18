@@ -353,8 +353,8 @@ export default function AdminDashboard() {
                           <span className="font-medium">{book.title}</span>
                         </div>
                       </td>
-                      <td className="py-4 px-6">{book.author.name}</td>
-                      <td className="py-4 px-6">{book.category.name}</td>
+                      <td className="py-4 px-6">{book.author?.name || '—'}</td>
+                      <td className="py-4 px-6">{book.category?.name || '—'}</td>
                       <td className="py-4 px-6">{book.isNew ? 'Recente' : '—'}</td>
                       <td className="py-4 px-6">{book.downloadCount}</td>
                       <td className="py-4 px-6">
