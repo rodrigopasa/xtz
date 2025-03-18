@@ -114,15 +114,15 @@ export default function AdminComments() {
   });
 
   // Filtrar comentários pelos termos de busca e filtro de status
-  const filteredComments = comments
+  const filteredComments = comments && Array.isArray(comments)
     ? comments.filter((comment: any) => {
-        const matchesSearch = searchTerm
-          ? comment.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            comment.user?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            comment.book?.title.toLowerCase().includes(searchTerm.toLowerCase())
+        const matchesSearch = searchTerm && comment
+          ? (comment.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             comment.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             comment.book?.title?.toLowerCase().includes(searchTerm.toLowerCase()))
           : true;
         
-        const matchesStatus = statusFilter && statusFilter !== "all"
+        const matchesStatus = statusFilter && statusFilter !== "all" && comment
           ? (statusFilter === "approved" && comment.isApproved) ||
             (statusFilter === "pending" && !comment.isApproved)
           : true;
@@ -339,7 +339,7 @@ export default function AdminComments() {
             )}
           </CardContent>
           <CardFooter className="flex justify-between border-t p-4 text-sm text-neutral-500">
-            <span>Total: {filteredComments.length} / {comments?.length || 0} comentários</span>
+            <span>Total: {filteredComments.length} / {comments && Array.isArray(comments) ? comments.length : 0} comentários</span>
             <div className="flex items-center gap-4">
               <div className="flex items-center">
                 <Badge
@@ -348,7 +348,7 @@ export default function AdminComments() {
                 >
                   Aprovados
                 </Badge>
-                <span>{comments?.filter((c: any) => c.isApproved).length || 0}</span>
+                <span>{comments && Array.isArray(comments) ? comments.filter((c: any) => c.isApproved).length : 0}</span>
               </div>
               <div className="flex items-center">
                 <Badge
@@ -357,7 +357,7 @@ export default function AdminComments() {
                 >
                   Pendentes
                 </Badge>
-                <span>{comments?.filter((c: any) => !c.isApproved).length || 0}</span>
+                <span>{comments && Array.isArray(comments) ? comments.filter((c: any) => !c.isApproved).length : 0}</span>
               </div>
             </div>
           </CardFooter>

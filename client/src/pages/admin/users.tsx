@@ -92,15 +92,15 @@ export default function AdminUsers() {
   });
 
   // Filtrar usuários pelos termos de busca e filtro de papel
-  const filteredUsers = users
+  const filteredUsers = users && Array.isArray(users)
     ? users.filter((user: any) => {
-        const matchesSearch = searchTerm
-          ? user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        const matchesSearch = searchTerm && user
+          ? (user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             user.email?.toLowerCase().includes(searchTerm.toLowerCase()))
           : true;
         
-        const matchesRole = roleFilter && roleFilter !== "all"
+        const matchesRole = roleFilter && roleFilter !== "all" && user
           ? user.role === roleFilter
           : true;
         
@@ -284,7 +284,7 @@ export default function AdminUsers() {
           </CardContent>
           <CardFooter className="flex justify-between border-t p-4 text-sm text-neutral-500">
             <span>
-              Total: {filteredUsers.length} / {users?.length || 0} usuários
+              Total: {filteredUsers.length} / {users && Array.isArray(users) ? users.length : 0} usuários
             </span>
             <div className="flex items-center gap-4">
               <div className="flex items-center">
@@ -294,7 +294,7 @@ export default function AdminUsers() {
                 >
                   <ShieldCheck className="mr-1" size={14} /> Admin
                 </Badge>
-                <span>{users?.filter((u: any) => u.role === "admin").length || 0}</span>
+                <span>{users && Array.isArray(users) ? users.filter((u: any) => u.role === "admin").length : 0}</span>
               </div>
               <div className="flex items-center">
                 <Badge
@@ -303,7 +303,7 @@ export default function AdminUsers() {
                 >
                   <User className="mr-1" size={14} /> Usuário
                 </Badge>
-                <span>{users?.filter((u: any) => u.role === "user").length || 0}</span>
+                <span>{users && Array.isArray(users) ? users.filter((u: any) => u.role === "user").length : 0}</span>
               </div>
             </div>
           </CardFooter>
