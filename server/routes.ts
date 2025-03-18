@@ -6,7 +6,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import MemoryStore from "memorystore";
 import cors from "cors";
-import { compare } from 'bcryptjs';
+import { compare, hash } from 'bcryptjs';
 import * as z from "zod";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
