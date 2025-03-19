@@ -6,25 +6,25 @@
 
 @layer base {
   :root {
-    --background: 225 27% 7%;
+    --background: 230 35% 7%;
     --foreground: 210 40% 98%;
 
-    --card: 228 9% 11%;
+    --card: 229 25% 12%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 228 9% 11%;
+    --popover: 229 25% 12%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 252 56% 57%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 263 70% 50%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 245 58% 51%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 217 76% 45%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 215 27.9% 16.9%;
-    --muted-foreground: 217.9 10.6% 64.9%;
+    --muted: 223 27% 16%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 215 27.9% 16.9%;
+    --accent: 263 50% 30%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
@@ -32,7 +32,7 @@
 
     --border: 215 27.9% 16.9%;
     --input: 215 27.9% 16.9%;
-    --ring: 252 56% 57%;
+    --ring: 263 70% 50%;
 
     --radius: 0.75rem;
   }
@@ -45,80 +45,158 @@
 
   body {
     @apply bg-background text-foreground;
+    background: linear-gradient(
+      to bottom,
+      hsl(230 35% 7%),
+      hsl(230 35% 4%)
+    );
+    background-attachment: fixed;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Efeito de estrelas no fundo */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background-image: 
+      radial-gradient(1px 1px at 20px 30px, white, rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 40px 70px, white, rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 50px 160px, white, rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 90px 40px, white, rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 130px 80px, white, rgba(0,0,0,0)),
+      radial-gradient(1px 1px at 160px 120px, white, rgba(0,0,0,0));
+    background-repeat: repeat;
+    background-size: 200px 200px;
+    opacity: 0.15;
+    z-index: 0;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-sans font-bold tracking-tight;
   }
 
-  /* Títulos com efeito de gradiente */
+  /* Títulos com efeito de gradiente espacial */
   .gradient-heading {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      135deg,
+      hsl(var(--primary)) 0%,
+      hsl(var(--secondary)) 50%,
+      hsl(var(--primary)) 100%
+    );
   }
 
-  /* Container de página com efeito de vinheta */
+  /* Container de página com efeito de vinheta espacial */
   .page-container {
     @apply min-h-screen relative;
     background: radial-gradient(
-      circle at 50% 50%,
-      hsl(var(--background)) 0%,
-      hsl(var(--background) / 0.9) 100%
+      circle at 50% 0%,
+      hsl(var(--background) / 0.8) 0%,
+      hsl(var(--background)) 100%
     );
   }
 
-  /* Cards com efeito de vidro */
+  /* Cards com efeito de vidro espacial */
   .glass-card {
-    @apply bg-card/80 backdrop-blur-lg border rounded-lg shadow-lg;
+    @apply bg-card/60 backdrop-blur-xl border rounded-lg;
     background: linear-gradient(
       135deg,
-      hsl(var(--card) / 0.8) 0%,
-      hsl(var(--card) / 0.4) 100%
+      hsl(var(--card) / 0.6) 0%,
+      hsl(var(--card) / 0.3) 100%
     );
+    border-color: hsl(var(--primary) / 0.2);
+    box-shadow: 
+      0 4px 12px hsl(var(--primary) / 0.1),
+      0 0 0 1px hsl(var(--primary) / 0.1);
   }
 }
 
 @layer components {
-  /* Botão primário com gradiente e efeitos */
+  /* Botão primário com gradiente espacial e efeitos */
   .btn-primary {
     @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium 
-           transition-all duration-200 hover:scale-105 active:scale-95 disabled:pointer-events-none
-           disabled:opacity-50 bg-gradient-to-r from-primary to-secondary text-white shadow-lg
-           hover:shadow-primary/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+           transition-all duration-300 hover:scale-105 active:scale-95 disabled:pointer-events-none
+           disabled:opacity-50 text-white shadow-lg relative overflow-hidden;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary)) 0%,
+      hsl(var(--secondary)) 100%
+    );
+    box-shadow: 
+      0 4px 12px hsl(var(--primary) / 0.3),
+      0 0 0 1px hsl(var(--primary) / 0.3);
   }
 
-  /* Links animados */
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--primary-foreground) / 0.2) 50%,
+      transparent 100%
+    );
+    transition: left 0.5s;
+  }
+
+  .btn-primary:hover::before {
+    left: 100%;
+  }
+
+  /* Links animados com efeito espacial */
   .animated-link {
     @apply relative inline-flex items-center text-primary hover:text-primary/80
-           after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 
-           after:bg-primary after:transition-all after:duration-300 hover:after:w-full;
+           transition-colors duration-300;
+    text-shadow: 0 0 8px hsl(var(--primary) / 0.5);
   }
 
-  /* Card de livro com hover animation */
+  /* Card de livro com efeitos espaciais */
   .book-card {
-    @apply glass-card p-4 transition-all duration-300 hover:translate-y-[-4px] 
-           hover:shadow-xl hover:shadow-primary/20;
+    @apply glass-card p-4 transition-all duration-300 hover:translate-y-[-4px];
+    box-shadow: 
+      0 4px 12px hsl(var(--primary) / 0.2),
+      0 0 0 1px hsl(var(--primary) / 0.2);
   }
 
-  /* Marca de destaque */
+  .book-card:hover {
+    box-shadow: 
+      0 8px 24px hsl(var(--primary) / 0.3),
+      0 0 0 1px hsl(var(--primary) / 0.3);
+  }
+
+  /* Marca de destaque espacial */
   .highlight {
     @apply relative inline-block;
     &::after {
       content: '';
-      @apply absolute bottom-0 left-0 w-full h-[30%] bg-primary/20 -z-10;
+      @apply absolute bottom-0 left-0 w-full h-[30%] -z-10;
+      background: linear-gradient(
+        90deg,
+        hsl(var(--primary) / 0.2) 0%,
+        hsl(var(--secondary) / 0.2) 100%
+      );
     }
   }
 }
 
-/* Animações customizadas */
+/* Animações espaciais */
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
 }
 
-@keyframes glow {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.2); }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 @keyframes slide-up {
@@ -130,25 +208,27 @@
   animation: float 6s ease-in-out infinite;
 }
 
-.animate-glow {
-  animation: glow 2s ease-in-out infinite;
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .animate-slide-up {
   animation: slide-up 0.5s ease-out forwards;
 }
 
-/* Efeito de destaque para texto */
+/* Efeito de brilho espacial para texto */
 .text-glow {
   text-shadow: 0 0 10px hsl(var(--primary) / 0.5);
 }
 
-/* Efeito de borda brilhante */
+/* Efeito de borda brilhante espacial */
 .border-glow {
-  box-shadow: 0 0 10px hsl(var(--primary) / 0.3);
+  box-shadow: 
+    0 0 10px hsl(var(--primary) / 0.3),
+    0 0 20px hsl(var(--primary) / 0.2);
 }
 
-/* Scrollbar customizada */
+/* Scrollbar customizada com tema espacial */
 ::-webkit-scrollbar {
   width: 10px;
 }
@@ -158,9 +238,18 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-primary/50 rounded-full;
+  @apply rounded-full;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--primary)) 0%,
+    hsl(var(--secondary)) 100%
+  );
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-primary;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--primary)) 20%,
+    hsl(var(--secondary)) 80%
+  );
 }
