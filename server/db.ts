@@ -7,7 +7,6 @@ import * as schema from "@shared/schema";
 neonConfig.webSocketConstructor = ws;
 neonConfig.useSecureWebSocket = true;
 neonConfig.pipelineTLS = true;
-neonConfig.pipelineConnect = true;
 neonConfig.fetchConnectionCache = true;
 
 // Configure SSL for production - unconditional setting from edited code
