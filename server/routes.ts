@@ -854,16 +854,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/books", async (req, res) => {
     try {
       // Verifique se há parâmetros de consulta
-      const { featured, isNew, isFree } = req.query;
+      const { featured } = req.query;
 
       if (featured === 'true') {
         const books = await storage.getFeaturedBooks();
-        return res.json(books);
-      } else if (isNew === 'true') {
-        const books = await storage.getNewBooks();
-        return res.json(books);
-      } else if (isFree === 'true') {
-        const books = await storage.getFreeBooks();
         return res.json(books);
       }
 
