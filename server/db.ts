@@ -6,6 +6,11 @@ import * as schema from "@shared/schema";
 // Configure WebSocket for Neon serverless driver
 neonConfig.webSocketConstructor = ws;
 
+// Configure SSL for production
+if (process.env.NODE_ENV === 'production') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
+
 // Validate DATABASE_URL
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -25,7 +30,12 @@ async function createPool() {
   while (retries < MAX_RETRIES) {
     try {
       console.log(`Attempt ${retries + 1}/${MAX_RETRIES} to connect to database...`);
-      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+      const pool = new Pool({ 
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+          rejectUnauthorized: false // Aceita certificados auto-assinados
+        }
+      });
 
       // Test the connection
       console.log("Testing database connection...");
