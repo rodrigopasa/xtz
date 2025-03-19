@@ -7,12 +7,12 @@ import * as schema from "@shared/schema";
 neonConfig.webSocketConstructor = ws;
 neonConfig.useSecureWebSocket = true;
 neonConfig.pipelineTLS = true;
-neonConfig.pipelineConnect = false;
+neonConfig.pipelineConnect = true;
+neonConfig.fetchConnectionCache = true;
 
-// Configure SSL for production
-if (process.env.NODE_ENV === 'production') {
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-}
+// Configure SSL for production - unconditional setting from edited code
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 
 // Validate DATABASE_URL
 if (!process.env.DATABASE_URL) {
@@ -23,6 +23,12 @@ if (!process.env.DATABASE_URL) {
 
 console.log("Initializing database connection...");
 console.log("Environment:", process.env.NODE_ENV);
+console.log("WebSocket Config:", {
+  useSecureWebSocket: neonConfig.useSecureWebSocket,
+  pipelineTLS: neonConfig.pipelineTLS,
+  pipelineConnect: neonConfig.pipelineConnect,
+  fetchConnectionCache: neonConfig.fetchConnectionCache
+});
 
 // Add connection retry logic
 const MAX_RETRIES = 5;
@@ -58,6 +64,13 @@ async function createPool() {
       lastError = error;
       retries++;
       console.error(`Failed to connect to database (attempt ${retries}/${MAX_RETRIES}):`, error);
+
+      // Log detailed error information
+      if (error instanceof Error) {
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
 
       if (retries === MAX_RETRIES) {
         console.error("Maximum retries reached. Unable to establish database connection.");

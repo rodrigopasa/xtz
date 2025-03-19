@@ -5,6 +5,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     make \
     g++ \
+    ca-certificates \
+    openssl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app directory
@@ -27,6 +29,8 @@ FROM node:18.20.5-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     wget \
+    ca-certificates \
+    openssl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app directory and public directory
@@ -50,6 +54,8 @@ EXPOSE 5000
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=5000
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
+ENV SSL_CERT_DIR=/etc/ssl/certs
 
 # Start the application
 CMD ["npm", "run", "start"]
