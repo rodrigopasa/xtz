@@ -1,5 +1,12 @@
 FROM node:18.20.5-slim AS builder
 
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 # Create app directory
 WORKDIR /app
 
@@ -15,6 +22,12 @@ RUN npm run build
 
 # Production image
 FROM node:18.20.5-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create app directory and public directory
 WORKDIR /app
