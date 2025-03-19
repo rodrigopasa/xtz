@@ -43,7 +43,45 @@ async function checkDatabaseHealth(): Promise<boolean> {
 }
 
 
+// Função de inicialização do sistema
+async function initializeSystem() {
+  try {
+    // Verificar se já existe um usuário admin
+    const adminUser = await storage.getUserByUsername('admin');
+    if (adminUser) {
+      console.log('Sistema já inicializado - usuário admin existe');
+      return true;
+    }
+
+    // Criar usuário admin inicial
+    const hashedPassword = await generateHash('admin123');
+    const newAdmin = await storage.createUser({
+      username: 'admin',
+      password: hashedPassword,
+      email: 'admin@bibliotech.com',
+      name: 'Administrador',
+      role: 'admin'
+    });
+
+    console.log('Usuário admin criado com sucesso:', {
+      id: newAdmin.id,
+      username: newAdmin.username,
+      role: newAdmin.role
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Erro ao inicializar sistema:', error);
+    return false;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Inicialização do sistema
+  console.log('Iniciando setup inicial do sistema...');
+  await initializeSystem();
+  console.log('Setup inicial concluído');
+
   // Configuração para aceitar JSON no corpo das requisições
   app.use(express.json());
 
