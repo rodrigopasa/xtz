@@ -1,0 +1,164 @@
+Versão do PDF.js: 4.10.38
+index-B06p7ZH8.js:528 Verificando autenticação...
+index-B06p7ZH8.js:48 API Request: GET /api/auth/me Sem dados
+index-B06p7ZH8.js:48 Opções da requisição: Object
+index-B06p7ZH8.js:715 App inicializado, verificando autenticação...
+index-B06p7ZH8.js:528 Verificando autenticação...
+index-B06p7ZH8.js:48 API Request: GET /api/auth/me Sem dados
+index-B06p7ZH8.js:48 Opções da requisição: Object
+/api/auth/me:1 
+            
+            
+           Failed to load resource: the server responded with a status of 401 (Unauthorized)Understand this errorAI
+index-B06p7ZH8.js:48 API Response: 401 Unauthorized Sem cookie
+index-B06p7ZH8.js:528 Erro ao verificar autenticação: Error: 401: {"message":"Não autenticado"}
+    at GH (index-B06p7ZH8.js:48:42762)
+    at async Dt (index-B06p7ZH8.js:48:43304)
+    at async index-B06p7ZH8.js:528:25009
+(anonymous) @ index-B06p7ZH8.js:528Understand this errorAI
+index-B06p7ZH8.js:48 API Request: GET /api/settings Sem dados
+index-B06p7ZH8.js:48 Opções da requisição: Object
+index-B06p7ZH8.js:528 Verificando autenticação...
+index-B06p7ZH8.js:48 API Request: GET /api/auth/me Sem dados
+index-B06p7ZH8.js:48 Opções da requisição: Object
+index-B06p7ZH8.js:528 Verificando autenticação...
+index-B06p7ZH8.js:48 API Request: GET /api/auth/me Sem dados
+index-B06p7ZH8.js:48 Opções da requisição: Object
+index-B06p7ZH8.js:572 Header: Estado de autenticação: Object
+index-B06p7ZH8.js:48 Query: /api/categories
+index-B06p7ZH8.js:48 QueryKey completo: Array(1)
+index-B06p7ZH8.js:48 Query: /api/books?featured=true
+index-B06p7ZH8.js:48 QueryKey completo: Array(1)
+index-B06p7ZH8.js:48 Query: /api/books?isNew=true
+index-B06p7ZH8.js:48 QueryKey completo: Array(1)
+index-B06p7ZH8.js:48 Query: /api/books?isFree=true
+index-B06p7ZH8.js:48 QueryKey completo: Array(1)
+/api/auth/me:1 
+            
+            
+           Failed to load resource: the server responded with a status of 401 (Unauthorized)Understand this errorAI
+index-B06p7ZH8.js:48 API Response: 401 Unauthorized Sem cookie
+index-B06p7ZH8.js:528 Erro ao verificar autenticação: Error: 401: {"message":"Não autenticado"}
+    at GH (index-B06p7ZH8.js:48:42762)
+    at async Dt (index-B06p7ZH8.js:48:43304)
+    at async index-B06p7ZH8.js:528:25009
+(anonymous) @ index-B06p7ZH8.js:528Understand this errorAI
+index-B06p7ZH8.js:715 Verificação de autenticação concluída: false
+/api/categories:1 
+            
+            
+           Failed to load resource: the server responded with a status of 500 (Internal Server Error)Understand this errorAI
+index-B06p7ZH8.js:48 Query Response para /api/categories: 500 Internal Server Error
+index-B06p7ZH8.js:48 Erro ao processar resposta para /api/categories: Error: 500: {"message":"Erro ao buscar categorias"}
+    at GH (index-B06p7ZH8.js:48:42762)
+    at async index-B06p7ZH8.js:48:44433
+(anonymous) @ index-B06p7ZH8.js:48Understand this errorAI
+/api/settings:1 
+            
+            
+           Failed to load resource: the server responded with a status of 500 (Internal Server Error)Understand this errorAI
+index-B06p7ZH8.js:48 API Response: 500 Internal Server Error Sem cookie
+/api/books?isFree=true:1 
+            
+            
+           Failed to load resource: the server responded with a status of 500 (Internal Server Error)Understand this errorAI
+index-B06p7ZH8.js:48 Query Response para /api/books?isFree=true: 500 Internal Server Error
+index-B06p7ZH8.js:48 Erro ao processar resposta para /api/books?isFree=true: Error: 500: {"message":"Erro ao buscar livros"}
+    at GH (index-B06p7ZH8.js:48:42762)
+    at async index-B06p7ZH8.js:48:44433
+(anonymous) @ index-B06p7ZH8.js:48Understand this errorAI
+/api/auth/me:1 
+            
+            
+           Failed to load resource: the server responded with a status of 401 (Unauthorized)Understand this errorAI
+index-B06p7ZH8.js:48 API Response: 401 Unauthorized Sem cookie
+index-B06p7ZH8.js:528 Erro ao verificar autenticação: Error: 401: {"message":"Não autenticado"}
+    at GH (index-B06p7ZH8.js:48:42762)
+    at async Dt (index-B06p7ZH8.js:48:43304)
+    at async index-B06p7ZH8.js:528:25009
+(anonymous) @ index-B06p7ZH8.js:528Understand this errorAI
+/api/books?featured=true:1 
+            
+            
+           Failed to load resource: the server responded with a status of 500 (Internal Server Error)Understand this errorAI
+index-B06p7ZH8.js:48 Query Response para /api/books?featured=true: 500 Internal Server Error
+index-B06p7ZH8.js:48 Erro ao processar resposta para /api/books?featured=true: Error: 500: {"message":"Erro ao buscar livros"}
+    at GH (index-B06p7ZH8.js:48:42762)
+    at async index-B06p7ZH8.js:48:44433
+(anonymous) @ index-B06p7ZH8.js:48Understand this errorAI
+/api/books?isNew=true:1 
+            
+            
+           Failed to load resource: the server responded with a status of 500 (Internal Server Error)Understand this errorAI
+index-B06p7ZH8.js:48 Query Response para /api/books?isNew=true: 500 Internal Server Error
+index-B06p7ZH8.js:48 Erro ao processar resposta para /api/books?isNew=true: Error: 500: {"message":"Erro ao buscar livros"}
+    at GH (index-B06p7ZH8.js:48:42762)
+    at async index-B06p7ZH8.js:48:44433
+(anonymous) @ index-B06p7ZH8.js:48Understand this errorAI
+/api/auth/me:1 
+            
+            
+           Failed to load resource: the server responded with a status of 401 (Unauthorized)Understand this errorAI
+index-B06p7ZH8.js:48 API Response: 401 Unauthorized Sem cookie
+index-B06p7ZH8.js:528 Erro ao verificar autenticação: Error: 401: {"message":"Não autenticado"}
+    at GH (index-B06p7ZH8.js:48:42762)
+    at async Dt (index-B06p7ZH8.js:48:43304)
+    at async index-B06p7ZH8.js:528:25009
+(anonymous) @ index-B06p7ZH8.js:528Understand this errorAI
+index-B06p7ZH8.js:48 API Request: GET /api/settings Sem dados
+index-B06p7ZH8.js:48 Opções da requisição: Object
+index-B06p7ZH8.js:48 Query: /api/categories
+index-B06p7ZH8.js:48 QueryKey completo: Array(1)
+index-B06p7ZH8.js:48 Query: /api/books?featured=true
+index-B06p7ZH8.js:48 QueryKey completo: Array(1)
+index-B06p7ZH8.js:48 Query: /api/books?isNew=true
+index-B06p7ZH8.js:48 QueryKey completo: Array(1)
+index-B06p7ZH8.js:48 Query: /api/books?isFree=true
+index-B06p7ZH8.js:48 QueryKey completo: Array(1)
+/api/settings:1 
+            
+            
+           Failed to load resource: the server responded with a status of 500 (Internal Server Error)Understand this errorAI
+index-B06p7ZH8.js:48 API Response: 500 Internal Server Error Sem cookie
+/api/categories:1 
+            
+            
+           Failed to load resource: the server responded with a status of 500 (Internal Server Error)Understand this errorAI
+index-B06p7ZH8.js:48 Query Response para /api/categories: 500 Internal Server Error
+index-B06p7ZH8.js:48 Erro ao processar resposta para /api/categories: Error: 500: {"message":"Erro ao buscar categorias"}
+    at GH (index-B06p7ZH8.js:48:42762)
+    at async index-B06p7ZH8.js:48:44433
+(anonymous) @ index-B06p7ZH8.js:48Understand this errorAI
+/api/books?isFree=true:1 
+            
+            
+           Failed to load resource: the server responded with a status of 500 (Internal Server Error)Understand this errorAI
+index-B06p7ZH8.js:48 Query Response para /api/books?isFree=true: 500 Internal Server Error
+index-B06p7ZH8.js:48 Erro ao processar resposta para /api/books?isFree=true: Error: 500: {"message":"Erro ao buscar livros"}
+    at GH (index-B06p7ZH8.js:48:42762)
+    at async index-B06p7ZH8.js:48:44433
+(anonymous) @ index-B06p7ZH8.js:48Understand this errorAI
+/api/books?isNew=true:1 
+            
+            
+           Failed to load resource: the server responded with a status of 500 (Internal Server Error)Understand this errorAI
+index-B06p7ZH8.js:48 Query Response para /api/books?isNew=true: 500 Internal Server Error
+index-B06p7ZH8.js:48 Erro ao processar resposta para /api/books?isNew=true: Error: 500: {"message":"Erro ao buscar livros"}
+    at GH (index-B06p7ZH8.js:48:42762)
+    at async index-B06p7ZH8.js:48:44433
+(anonymous) @ index-B06p7ZH8.js:48Understand this errorAI
+/api/books?featured=true:1 
+            
+            
+           Failed to load resource: the server responded with a status of 500 (Internal Server Error)Understand this errorAI
+index-B06p7ZH8.js:48 Query Response para /api/books?featured=true: 500 Internal Server Error
+index-B06p7ZH8.js:48 Erro ao processar resposta para /api/books?featured=true: Error: 500: {"message":"Erro ao buscar livros"}
+    at GH (index-B06p7ZH8.js:48:42762)
+    at async index-B06p7ZH8.js:48:44433
+(anonymous) @ index-B06p7ZH8.js:48Understand this errorAI
+
+                
+          
+          
+          
+         Chrome is moving towards a new experience that allows users to choose to browse without third-party cookies.
