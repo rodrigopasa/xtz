@@ -33,11 +33,6 @@ SESSION_SECRET=xxxxxx  # Segredo para cookies de sessão
 
 # Configuração do banco de dados PostgreSQL
 DATABASE_URL=postgresql://usuario:senha@host:porta/nome_banco  # URL completa do banco de dados
-PGHOST=host            # Host do PostgreSQL
-PGPORT=5432            # Porta do PostgreSQL
-PGUSER=usuario         # Usuário do PostgreSQL
-PGPASSWORD=senha       # Senha do PostgreSQL
-PGDATABASE=nome_banco  # Nome do banco de dados
 ```
 
 ## Implantação com Docker/Coolify
@@ -52,16 +47,19 @@ Para implantar com Coolify:
 4. Configure um volume para persistência: `/app/public` para garantir que os uploads sejam preservados entre deploys
 5. Configure um banco de dados PostgreSQL e atualize as variáveis de ambiente
 
-### Preparação do banco de dados
+### Comandos de build e start recomendados para Coolify:
 
-Após a primeira implantação, você precisará inicializar o banco de dados:
-
+Build Command:
 ```bash
-# Dentro do container da aplicação
-npm run db:push
+npm install && npm run build
 ```
 
-Este comando criará todas as tabelas necessárias no banco de dados com base no esquema definido em `shared/schema.ts`.
+Start Command:
+```bash
+node server/initDb.js && npm start
+```
+
+**Importante**: Certifique-se de que o banco de dados está completamente inicializado antes de executar a aplicação.
 
 ### Credenciais padrão do administrador
 

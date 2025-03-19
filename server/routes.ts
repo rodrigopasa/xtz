@@ -4,14 +4,15 @@ import { storage } from "./storage";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import MemoryStore from "memorystore";
+import { Pool } from "@neondatabase/serverless";
+import connectPgSimple from "connect-pg-simple";
 import cors from "cors";
 import { compare, hash } from 'bcryptjs';
 import * as z from "zod";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { eq } from 'drizzle-orm';
-import { db } from './db';
+import { db, pool } from './db';
 import { insertSettingsSchema, insertSeriesSchema, insertBookSchema, siteSettings } from "@shared/schema";
 import multer from "multer";
 import path from "path";
@@ -47,25 +48,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     allowedHeaders: ['Content-Type', 'Authorization']
   }));
 
-  // Configuração da sessão
-  const MemoryStoreSession = MemoryStore(session);
+  // Configure PostgreSQL session store
+  const PostgreSQLStore = connectPgSimple(session);
   const sessionSecret = process.env.SESSION_SECRET || "bibliotech-secret-key-2025";
 
-  console.log("Configurando sessão com SECRET");
+  console.log("Configurando sessão com PostgreSQL");
 
   app.use(session({
+    store: new PostgreSQLStore({
+      pool: pool as any, // Type assertion needed due to different Pool types
+      tableName: 'session',
+      createTableIfMissing: true
+    }),
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 24 horas
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax'
-    },
-    store: new MemoryStoreSession({
-      checkPeriod: 86400000
-    })
+    }
   }));
 
   // Inicialização do Passport
@@ -887,7 +890,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const bookData = insertBookSchema.parse(req.body);
 
-      // Verificar se o novo slug já está em uso por outro livro
+      // Verificar se o novo slug já está em usopor outro livro
       if (bookData.slug !== existingBook.slug) {
         const bookBySlug = await storage.getBookBySlug(bookData.slug);
         if (bookBySlug && bookBySlug.id !== bookId) {
