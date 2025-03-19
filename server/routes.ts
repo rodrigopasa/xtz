@@ -31,13 +31,56 @@ async function generateHash(password: string): Promise<string> {
   return await hash(password, 12);
 }
 
+// Function to check database health (needs to be implemented separately)
+async function checkDatabaseHealth(): Promise<boolean> {
+  try {
+    await pool.query('SELECT 1'); // Or any other suitable health check query
+    return true;
+  } catch (error) {
+    console.error('Database health check failed:', error);
+    return false;
+  }
+}
+
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configuração para aceitar JSON no corpo das requisições
   app.use(express.json());
 
   // Health check para monitoramento no Coolify
-  app.get('/api/health', (_req, res) => {
-    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  app.get('/api/health', async (_req, res) => {
+    try {
+      // Verificar conexão com o banco de dados
+      const dbHealthy = await checkDatabaseHealth();
+      const uptime = process.uptime();
+      const memoryUsage = process.memoryUsage();
+
+      const healthStatus = {
+        status: dbHealthy ? 'ok' : 'degraded',
+        timestamp: new Date().toISOString(),
+        uptime: Math.floor(uptime),
+        database: {
+          connected: dbHealthy,
+          lastCheck: new Date().toISOString()
+        },
+        memory: {
+          heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+          heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+          rss: Math.round(memoryUsage.rss / 1024 / 1024)
+        }
+      };
+
+      // Se o banco de dados não estiver saudável, retorna 503
+      const statusCode = dbHealthy ? 200 : 503;
+      res.status(statusCode).json(healthStatus);
+    } catch (error) {
+      console.error('Erro no health check:', error);
+      res.status(500).json({
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        error: error.message
+      });
+    }
   });
 
   // Configuração do CORS
@@ -854,6 +897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
+  //
   // Criar livro (apenas admin)
   app.post("/api/books", isAdmin, async (req, res) => {
     try {
