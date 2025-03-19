@@ -12,8 +12,8 @@ import * as z from "zod";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { eq } from 'drizzle-orm';
-import { db, pool } from './db';
-import { insertSettingsSchema, insertSeriesSchema, insertBookSchema, siteSettings } from "@shared/schema";
+import { db, getPool } from './db';
+import { insertSettingsSchema, insertBookSchema, siteSettings } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -31,17 +31,17 @@ async function generateHash(password: string): Promise<string> {
   return await hash(password, 12);
 }
 
-// Function to check database health (needs to be implemented separately)
+// Function to check database health
 async function checkDatabaseHealth(): Promise<boolean> {
   try {
-    await pool.query('SELECT 1'); // Or any other suitable health check query
+    const pool = await getPool();
+    await pool.query('SELECT 1');
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Database health check failed:', error);
     return false;
   }
 }
-
 
 // Função de inicialização do sistema
 async function initializeSystem() {
@@ -70,7 +70,7 @@ async function initializeSystem() {
     });
 
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao inicializar sistema:', error);
     return false;
   }
@@ -85,7 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configuração para aceitar JSON no corpo das requisições
   app.use(express.json());
 
-  // Health check para monitoramento no Coolify
+  // Health check para monitoramento
   app.get('/api/health', async (_req, res) => {
     try {
       // Verificar conexão com o banco de dados
@@ -108,10 +108,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
 
-      // Se o banco de dados não estiver saudável, retorna 503
       const statusCode = dbHealthy ? 200 : 503;
       res.status(statusCode).json(healthStatus);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro no health check:', error);
       res.status(500).json({
         status: 'error',
@@ -135,9 +134,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   console.log("Configurando sessão com PostgreSQL");
 
+  const pool = await getPool();
   app.use(session({
     store: new PostgreSQLStore({
-      pool: pool as any, // Type assertion needed due to different Pool types
+      pool: pool as any,
       tableName: 'session',
       createTableIfMissing: true
     }),
@@ -168,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("[Auth] Deserializando usuário:", id);
       const user = await storage.getUser(id);
       done(null, user);
-    } catch (error) {
+    } catch (error: any) {
       console.error("[Auth] Erro na deserialização:", error);
       done(error);
     }
@@ -198,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("[Auth] Login bem sucedido para:", username);
       return done(null, user);
-    } catch (error) {
+    } catch (error: any) {
       console.error("[Auth] Erro na autenticação:", error);
       return done(error);
     }
@@ -246,7 +246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role: user.role
         });
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("[Login] Erro inesperado:", error);
       next(error);
     }
@@ -308,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role: newUser.role
         });
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro no registro:", error);
       res.status(500).json({ message: "Erro ao registrar usuário" });
     }
@@ -330,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         siteDescription: "Sua biblioteca digital",
         primaryColor: "#3b82f6"
       });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Erro ao buscar configurações" });
     }
   });
@@ -358,7 +358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .returning();
         res.json(newSettings);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao atualizar configurações:", error);
       res.status(500).json({ message: "Erro ao atualizar configurações" });
     }
@@ -399,7 +399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       res.json(enrichedComments);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar comentários:", error);
       res.status(500).json({ message: "Erro ao buscar comentários" });
     }
@@ -421,7 +421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(updatedComment);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao aprovar comentário:", error);
       res.status(500).json({ message: "Erro ao aprovar comentário" });
     }
@@ -443,7 +443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao excluir comentário:", error);
       res.status(500).json({ message: "Erro ao excluir comentário" });
     }
@@ -456,7 +456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const categories = await storage.getAllCategories();
       res.json(categories);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar categorias:", error);
       res.status(500).json({ message: "Erro ao buscar categorias" });
     }
@@ -473,7 +473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(category);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar categoria:", error);
       res.status(500).json({ message: "Erro ao buscar categoria" });
     }
@@ -508,7 +508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.status(201).json(newCategory);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao criar categoria:", error);
       res.status(500).json({ message: "Erro ao criar categoria" });
     }
@@ -551,7 +551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json(updatedCategory);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao atualizar categoria:", error);
       res.status(500).json({ message: "Erro ao atualizar categoria" });
     }
@@ -580,7 +580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao excluir categoria:", error);
       res.status(500).json({ message: "Erro ao excluir categoria" });
     }
@@ -593,7 +593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const authors = await storage.getAllAuthors();
       res.json(authors);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar autores:", error);
       res.status(500).json({ message: "Erro ao buscar autores" });
     }
@@ -610,7 +610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(author);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar autor:", error);
       res.status(500).json({ message: "Erro ao buscar autor" });
     }
@@ -645,7 +645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.status(201).json(newAuthor);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao criar autor:", error);
       res.status(500).json({ message: "Erro ao criar autor" });
     }
@@ -689,7 +689,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json(updatedAuthor);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao atualizar autor:", error);
       res.status(500).json({ message: "Erro ao atualizar autor" });
     }
@@ -718,7 +718,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao excluir autor:", error);
       res.status(500).json({ message: "Erro ao excluir autor" });
     }
@@ -731,7 +731,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const series = await storage.getAllSeries();
       res.json(series);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar séries:", error);
       res.status(500).json({ message: "Erro ao buscar séries" });
     }
@@ -742,7 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const seriesData = insertSeriesSchema.parse(req.body);
       const series = await storage.createSeries(seriesData);
       res.status(201).json(series);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao criar série:", error);
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: "Dados inválidos", errors: error.errors });
@@ -762,7 +762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(series);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar série:", error);
       res.status(500).json({ message: "Erro ao buscar série" });
     }
@@ -790,7 +790,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedSeries = await storage.updateSeries(seriesId, seriesData);
       res.json(updatedSeries);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao atualizar série:", error);
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: "Dados inválidos", errors: error.errors });
@@ -826,7 +826,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao excluir série:", error);
       res.status(500).json({ message: "Erro ao excluir série" });
     }
@@ -842,7 +842,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const users = await storage.getAllUsers();
       res.json(users);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar usuários:", error);
       res.status(500).json({ message: "Erro ao buscar usuários" });
     }
@@ -870,7 +870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Se não houver parâmetros, retorna todos os livros
       const books = await storage.getAllBooks();
       res.json(books);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar livros:", error);
       res.status(500).json({ message: "Erro ao buscar livros" });
     }
@@ -882,7 +882,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const categoryId = parseInt(req.params.categoryId);
       const books = await storage.getBooksByCategory(categoryId);
       res.json(books);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar livros por categoria:", error);
       res.status(500).json({ message: "Erro ao buscar livros por categoria" });
     }
@@ -894,7 +894,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const authorId = parseInt(req.params.authorId);
       const books = await storage.getBooksByAuthor(authorId);
       res.json(books);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar livros por autor:", error);
       res.status(500).json({ message: "Erro ao buscar livros por autor" });
     }
@@ -911,7 +911,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(book);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar livro:", error);
       res.status(500).json({ message: "Erro ao buscar livro" });
     }
@@ -928,14 +928,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(book);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar livro:", error);
       res.status(500).json({ message: "Erro ao buscar livro" });
     }
   });
 
 
-  //
   // Criar livro (apenas admin)
   app.post("/api/books", isAdmin, async (req, res) => {
     try {
@@ -949,7 +948,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const newBook = await storage.createBook(bookData);
       res.status(201).json(newBook);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao criar livro:", error);
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: "Dados inválidos", errors: error.errors });
@@ -981,7 +980,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const updatedBook = await storage.updateBook(bookId, bookData);
-      res.json(updatedBook);    } catch (error) {
+      res.json(updatedBook);    } catch (error: any) {
       console.error("Erro ao atualizar livro:", error);
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: "Dados inválidos", errors: error.errors });
@@ -1009,7 +1008,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao excluir livro:", error);
       res.status(500).json({ message: "Erro ao excluir livro" });
     }
@@ -1063,7 +1062,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Enviar o arquivo
       const fileStream = fs.createReadStream(filePath);
       fileStream.pipe(res);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao processar download:", error);
       res.status(500).json({ message: "Erro ao processar o download" });
     }
@@ -1082,7 +1081,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedBook = await storage.incrementDownloadCount(bookId);
       res.json(updatedBook);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao incrementar download:", error);
       res.status(500).json({ message: "Erro ao registrar download" });
     }
@@ -1102,7 +1101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const favorites = await storage.getFavoriteBooks(userId);
 
       res.json(favorites);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar favoritos:", error);
       res.status(500).json({ message: "Erro ao buscar favoritos" });
     }
@@ -1137,7 +1136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.status(201).json(favorite);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao adicionar aos favoritos:", error);
       res.status(500).json({ message: "Erro ao adicionar aos favoritos" });
     }
@@ -1173,7 +1172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao remover dos favoritos:", error);
       res.status(500).json({ message: "Erro ao remover dos favoritos" });
     }
@@ -1193,7 +1192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isFavorite = await storage.isFavorite(userId, bookId);
 
       res.json({ isFavorite });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao verificar favorito:", error);
       res.status(500).json({ message: "Erro ao verificar favorito" });
     }
@@ -1213,7 +1212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const history = await storage.getReadingHistoryBooks(userId);
 
       res.json(history);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar histórico de leitura:", error);
       res.status(500).json({ message: "Erro ao buscar histórico de leitura" });
     }
@@ -1254,7 +1253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.status(200).json(historyEntry);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao atualizar progresso de leitura:", error);
       res.status(500).json({ message: "Erro ao atualizar progresso de leitura" });
     }
@@ -1292,7 +1291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.status(200).json(historyEntry);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao atualizar progresso de leitura:", error);
       res.status(500).json({ message: "Erro ao atualizar progresso de leitura" });
     }
@@ -1337,7 +1336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       res.json(enrichedComments);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao buscar comentários:", error);
       res.status(500).json({ message: "Erro ao buscar comentários" });
     }
@@ -1382,7 +1381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.status(201).json(comment);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao criar comentário:", error);
       res.status(500).json({ message: "Erro ao criar comentário" });
     }
@@ -1400,7 +1399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(updatedComment);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao marcar comentário como útil:", error);
       res.status(500).json({ message: "Erro ao marcar comentário como útil" });
     }
@@ -1487,7 +1486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Upload de capa realizado com sucesso:", fileUrl);
 
       res.json({ coverUrl: fileUrl });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro no upload de capa:", error);
       res.status(500).json({ message: "Erro no upload de capa" });
     }
@@ -1512,7 +1511,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Upload de EPUB realizado com sucesso:", fileUrl);
 
       res.json({ epubUrl: fileUrl });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro no upload de EPUB:", error);
       res.status(500).json({ message: error instanceof Error ? error.message : "Erro no upload de EPUB" });
     }
@@ -1537,7 +1536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Upload de PDF realizado com sucesso:", fileUrl);
 
       res.json({ pdfUrl: fileUrl });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro no upload de PDF:", error);
       res.status(500).json({ message: error instanceof Error ? error.message : "Erro no upload de PDF" });
     }

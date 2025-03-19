@@ -4,7 +4,6 @@ import {
   users as usersTable, type User, type InsertUser,
   categories as categoriesTable, type Category, type InsertCategory,
   authors as authorsTable, type Author, type InsertAuthor,
-  series as seriesTable, type Series, type InsertSeries,
   books as booksTable, type Book, type InsertBook,
   favorites as favoritesTable, type Favorite, type InsertFavorite,
   readingHistory as readingHistoryTable, type ReadingHistory, type InsertReadingHistory,
@@ -36,25 +35,13 @@ export interface IStorage {
   updateAuthor(id: number, author: Partial<Author>): Promise<Author | undefined>;
   deleteAuthor(id: number): Promise<boolean>;
 
-  // Séries
-  getAllSeries(): Promise<Series[]>;
-  getSeries(id: number): Promise<Series | undefined>;
-  getSeriesBySlug(slug: string): Promise<Series | undefined>;
-  getSeriesByAuthor(authorId: number): Promise<Series[]>;
-  createSeries(series: InsertSeries): Promise<Series>;
-  updateSeries(id: number, series: Partial<Series>): Promise<Series | undefined>;
-  deleteSeries(id: number): Promise<boolean>;
-  getBooksBySeries(seriesId: number): Promise<(Book & { author?: { name: string; slug: string } })[]>;
-
   // Livros
-  getAllBooks(): Promise<Book[]>;
-  getBook(id: number): Promise<Book | undefined>;
-  getBookBySlug(slug: string): Promise<Book | undefined>;
-  getBooksByCategory(categoryId: number): Promise<Book[]>;
-  getBooksByAuthor(authorId: number): Promise<Book[]>;
-  getFeaturedBooks(): Promise<Book[]>;
-  getNewBooks(): Promise<Book[]>;
-  getFreeBooks(): Promise<Book[]>;
+  getAllBooks(): Promise<(Book & { author?: { name: string; slug: string }, category?: { name: string; slug: string } })[]>;
+  getBook(id: number): Promise<(Book & { author?: { name: string; slug: string }, category?: { name: string; slug: string } }) | undefined>;
+  getBookBySlug(slug: string): Promise<(Book & { author?: { name: string; slug: string }, category?: { name: string; slug: string } }) | undefined>;
+  getBooksByCategory(categoryId: number): Promise<(Book & { author?: { name: string; slug: string }, category?: { name: string; slug: string } })[]>;
+  getBooksByAuthor(authorId: number): Promise<(Book & { author?: { name: string; slug: string }, category?: { name: string; slug: string } })[]>;
+  getFeaturedBooks(): Promise<(Book & { author?: { name: string; slug: string }, category?: { name: string; slug: string } })[]>;
   createBook(book: InsertBook): Promise<Book>;
   updateBook(id: number, book: Partial<Book>): Promise<Book | undefined>;
   deleteBook(id: number): Promise<boolean>;
@@ -62,14 +49,14 @@ export interface IStorage {
 
   // Favoritos
   getFavoritesByUser(userId: number): Promise<Favorite[]>;
-  getFavoriteBooks(userId: number): Promise<Book[]>;
+  getFavoriteBooks(userId: number): Promise<(Book & { author?: { name: string; slug: string }, category?: { name: string; slug: string } })[]>;
   createFavorite(favorite: InsertFavorite): Promise<Favorite>;
   deleteFavorite(userId: number, bookId: number): Promise<boolean>;
   isFavorite(userId: number, bookId: number): Promise<boolean>;
 
   // Histórico de leitura
   getReadingHistoryByUser(userId: number): Promise<ReadingHistory[]>;
-  getReadingHistoryBooks(userId: number): Promise<(ReadingHistory & { book: Book })[]>;
+  getReadingHistoryBooks(userId: number): Promise<(ReadingHistory & { book: Book & { author?: { name: string; slug: string }, category?: { name: string; slug: string } } })[]>;
   createOrUpdateReadingHistory(history: InsertReadingHistory): Promise<ReadingHistory>;
 
   // Comentários
@@ -117,76 +104,6 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(usersTable);
   }
 
-  // Implementação dos métodos para Séries
-  async getAllSeries(): Promise<Series[]> {
-    return db.select().from(seriesTable);
-  }
-
-  async getSeries(id: number): Promise<Series | undefined> {
-    const [series] = await db.select().from(seriesTable).where(eq(seriesTable.id, id));
-    return series;
-  }
-
-  async getSeriesBySlug(slug: string): Promise<Series | undefined> {
-    const [series] = await db.select().from(seriesTable).where(eq(seriesTable.slug, slug));
-    return series;
-  }
-
-  async getSeriesByAuthor(authorId: number): Promise<Series[]> {
-    return db.select().from(seriesTable).where(eq(seriesTable.authorId, authorId));
-  }
-
-  async createSeries(seriesData: InsertSeries): Promise<Series> {
-    const [newSeries] = await db.insert(seriesTable).values(seriesData).returning();
-    return newSeries;
-  }
-
-  async updateSeries(id: number, seriesData: Partial<Series>): Promise<Series | undefined> {
-    const [updatedSeries] = await db
-      .update(seriesTable)
-      .set(seriesData)
-      .where(eq(seriesTable.id, id))
-      .returning();
-    return updatedSeries;
-  }
-
-  async deleteSeries(id: number): Promise<boolean> {
-    // Primeiro atualizar os livros para remover a associação com a série
-    await db
-      .update(booksTable)
-      .set({ seriesId: null, volumeNumber: null })
-      .where(eq(booksTable.seriesId, id));
-
-    // Então deletar a série
-    const [deletedSeries] = await db
-      .delete(seriesTable)
-      .where(eq(seriesTable.id, id))
-      .returning();
-
-    return !!deletedSeries;
-  }
-
-  async getBooksBySeries(seriesId: number): Promise<(Book & { author?: { name: string; slug: string } })[]> {
-    const result = await db
-      .select({
-        ...booksTable,
-        authorName: authorsTable.name,
-        authorSlug: authorsTable.slug
-      })
-      .from(booksTable)
-      .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
-      .where(eq(booksTable.seriesId, seriesId))
-      .orderBy(booksTable.volumeNumber);
-
-    return result.map(book => ({
-      ...book,
-      author: book.authorName ? {
-        name: book.authorName,
-        slug: book.authorSlug
-      } : undefined
-    }));
-  }
-
   // Implementação dos métodos para Livros
   async getAllBooks(): Promise<(Book & { 
     author?: { name: string; slug: string },
@@ -203,7 +120,7 @@ export class DatabaseStorage implements IStorage {
       .from(booksTable)
       .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
       .leftJoin(categoriesTable, eq(booksTable.categoryId, categoriesTable.id));
-      
+
     // Formatar o resultado para incluir objetos aninhados para autor e categoria
     return result.map(book => ({
       ...book,
@@ -234,9 +151,9 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
       .leftJoin(categoriesTable, eq(booksTable.categoryId, categoriesTable.id))
       .where(eq(booksTable.id, id));
-      
+
     if (!result) return undefined;
-    
+
     // Formatar o resultado para incluir objetos aninhados para autor e categoria
     return {
       ...result,
@@ -267,9 +184,9 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
       .leftJoin(categoriesTable, eq(booksTable.categoryId, categoriesTable.id))
       .where(eq(booksTable.slug, slug));
-      
+
     if (!result) return undefined;
-    
+
     // Formatar o resultado para incluir objetos aninhados para autor e categoria
     return {
       ...result,
@@ -300,7 +217,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
       .leftJoin(categoriesTable, eq(booksTable.categoryId, categoriesTable.id))
       .where(eq(booksTable.categoryId, categoryId));
-      
+
     // Formatar o resultado para incluir objetos aninhados para autor e categoria
     return result.map(book => ({
       ...book,
@@ -331,7 +248,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
       .leftJoin(categoriesTable, eq(booksTable.categoryId, categoriesTable.id))
       .where(eq(booksTable.authorId, authorId));
-      
+
     // Formatar o resultado para incluir objetos aninhados para autor e categoria
     return result.map(book => ({
       ...book,
@@ -362,69 +279,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
       .leftJoin(categoriesTable, eq(booksTable.categoryId, categoriesTable.id))
       .where(eq(booksTable.isFeatured, true));
-      
-    // Formatar o resultado para incluir objetos aninhados para autor e categoria
-    return result.map(book => ({
-      ...book,
-      author: book.authorName ? {
-        name: book.authorName,
-        slug: book.authorSlug
-      } : undefined,
-      category: book.categoryName ? {
-        name: book.categoryName,
-        slug: book.categorySlug
-      } : undefined
-    }));
-  }
 
-  async getNewBooks(): Promise<(Book & { 
-    author?: { name: string; slug: string },
-    category?: { name: string; slug: string }
-  })[]> {
-    const result = await db
-      .select({
-        ...booksTable,
-        authorName: authorsTable.name,
-        authorSlug: authorsTable.slug,
-        categoryName: categoriesTable.name,
-        categorySlug: categoriesTable.slug,
-      })
-      .from(booksTable)
-      .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
-      .leftJoin(categoriesTable, eq(booksTable.categoryId, categoriesTable.id))
-      .where(eq(booksTable.isNew, true));
-      
-    // Formatar o resultado para incluir objetos aninhados para autor e categoria
-    return result.map(book => ({
-      ...book,
-      author: book.authorName ? {
-        name: book.authorName,
-        slug: book.authorSlug
-      } : undefined,
-      category: book.categoryName ? {
-        name: book.categoryName,
-        slug: book.categorySlug
-      } : undefined
-    }));
-  }
-
-  async getFreeBooks(): Promise<(Book & { 
-    author?: { name: string; slug: string },
-    category?: { name: string; slug: string }
-  })[]> {
-    const result = await db
-      .select({
-        ...booksTable,
-        authorName: authorsTable.name,
-        authorSlug: authorsTable.slug,
-        categoryName: categoriesTable.name,
-        categorySlug: categoriesTable.slug,
-      })
-      .from(booksTable)
-      .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
-      .leftJoin(categoriesTable, eq(booksTable.categoryId, categoriesTable.id))
-      .where(eq(booksTable.isFree, true));
-      
     // Formatar o resultado para incluir objetos aninhados para autor e categoria
     return result.map(book => ({
       ...book,
@@ -556,11 +411,11 @@ export class DatabaseStorage implements IStorage {
 
   async getFavoriteBooks(userId: number): Promise<(Book & { author?: { name: string; slug: string }, category?: { name: string; slug: string } })[]> {
     const favorites = await this.getFavoritesByUser(userId);
-    
+
     if (favorites.length === 0) {
       return [];
     }
-    
+
     // Buscar livros com informações de autor e categoria
     const result = await db
       .select({
@@ -574,7 +429,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
       .leftJoin(categoriesTable, eq(booksTable.categoryId, categoriesTable.id))
       .where(inArray(booksTable.id, favorites.map(fav => fav.bookId)));
-      
+
     // Formatar o resultado para incluir objetos aninhados para autor e categoria
     return result.map(book => ({
       ...book,
@@ -617,13 +472,13 @@ export class DatabaseStorage implements IStorage {
     } 
   })[]> {
     const histories = await this.getReadingHistoryByUser(userId);
-    
+
     if (histories.length === 0) {
       return [];
     }
-    
+
     const bookIds = histories.map(h => h.bookId);
-    
+
     // Buscar livros com informações de autor e categoria
     const result = await db
       .select({
@@ -637,7 +492,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(authorsTable, eq(booksTable.authorId, authorsTable.id))
       .leftJoin(categoriesTable, eq(booksTable.categoryId, categoriesTable.id))
       .where(inArray(booksTable.id, bookIds));
-      
+
     // Formatar o resultado para incluir objetos aninhados para autor e categoria
     const enrichedBooks = result.map(book => ({
       ...book,
@@ -650,7 +505,7 @@ export class DatabaseStorage implements IStorage {
         slug: book.categorySlug
       } : undefined
     }));
-    
+
     // Mapear o histórico com os livros enriquecidos
     return histories.map(history => {
       const book = enrichedBooks.find(b => b.id === history.bookId);

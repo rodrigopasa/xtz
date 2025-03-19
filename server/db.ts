@@ -19,16 +19,16 @@ neonConfig.wsProxy = (url) => {
 try {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
   console.log('SSL verification disabled for development');
-} catch (error) {
-  console.error('Error configuring SSL:', error);
+} catch (error: any) {
+  console.error('Error configuring SSL:', error.message);
 }
 
 // Environment-based configuration with production-optimized defaults
-const MAX_RETRIES = parseInt(process.env.DB_MAX_RETRIES || '5'); // Reduzido para 5
-const INITIAL_BACKOFF = parseInt(process.env.DB_INITIAL_BACKOFF || '500'); // Reduzido para 500ms
-const MAX_BACKOFF = parseInt(process.env.DB_MAX_BACKOFF || '5000'); // Reduzido para 5s
-const CONNECTION_TIMEOUT = parseInt(process.env.DB_CONNECTION_TIMEOUT || '10000'); // Reduzido para 10s
-const POOL_SIZE = parseInt(process.env.DB_POOL_SIZE || '5'); // Reduzido para 5
+const MAX_RETRIES = parseInt(process.env.DB_MAX_RETRIES || '5');
+const INITIAL_BACKOFF = parseInt(process.env.DB_INITIAL_BACKOFF || '500');
+const MAX_BACKOFF = parseInt(process.env.DB_MAX_BACKOFF || '5000');
+const CONNECTION_TIMEOUT = parseInt(process.env.DB_CONNECTION_TIMEOUT || '10000');
+const POOL_SIZE = parseInt(process.env.DB_POOL_SIZE || '5');
 
 console.log('Database configuration:', {
   MAX_RETRIES,
@@ -45,10 +45,10 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
-async function createPool() {
+// Pool initialization function
+async function initializePool(): Promise<Pool> {
   let retries = 0;
-  let lastError = null;
-  let pool = null;
+  let lastError: Error | null = null;
 
   const startTime = Date.now();
   console.log('Starting database connection process at:', new Date().toISOString());
@@ -61,19 +61,19 @@ async function createPool() {
         timestamp: new Date().toISOString()
       });
 
-      pool = new Pool({
+      const newPool = new Pool({
         connectionString: process.env.DATABASE_URL,
         ssl: { rejectUnauthorized: false },
         connectionTimeoutMillis: CONNECTION_TIMEOUT,
-        maxUses: 5000, // Reduzido para 5000
-        idleTimeoutMillis: 10000, // Reduzido para 10s
+        maxUses: 5000,
+        idleTimeoutMillis: 10000,
         max: POOL_SIZE
       });
 
       console.log('Pool created, testing connection...');
 
       // Test connection with timeout
-      const connectPromise = pool.query('SELECT 1');
+      const connectPromise = newPool.query('SELECT 1');
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Connection timeout')), CONNECTION_TIMEOUT);
       });
@@ -85,10 +85,10 @@ async function createPool() {
         duration: Date.now() - attemptStartTime
       });
 
-      return pool;
+      return newPool;
 
-    } catch (error) {
-      lastError = error;
+    } catch (error: any) {
+      lastError = new Error(error.message);
       retries++;
 
       const errorDetails = {
@@ -107,9 +107,8 @@ async function createPool() {
         throw new Error(`Database connection failed after ${MAX_RETRIES} attempts: ${error.message}`);
       }
 
-      // Calculate backoff with jitter
-      const baseDelay = Math.min(INITIAL_BACKOFF * Math.pow(1.5, retries - 1), MAX_BACKOFF); // Alterado para 1.5 para crescimento mais suave
-      const jitter = Math.random() * 0.1 * baseDelay; // 10% jitter
+      const baseDelay = Math.min(INITIAL_BACKOFF * Math.pow(1.5, retries - 1), MAX_BACKOFF);
+      const jitter = Math.random() * 0.1 * baseDelay;
       const delay = baseDelay + jitter;
 
       console.log(`Retrying in ${delay}ms`, {
@@ -118,44 +117,38 @@ async function createPool() {
         attempt: retries
       });
 
-      if (pool) {
-        try {
-          await pool.end();
-          console.log('Cleaned up failed connection pool');
-        } catch (endError) {
-          console.error('Error closing failed pool:', endError);
-        }
-      }
-
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
+
+  throw lastError || new Error('Failed to create pool after all retries');
 }
 
 // Initialize database connection
-console.log('Initializing database connection...');
-export const pool = await createPool();
+let pool: Pool;
+
+export async function getPool(): Promise<Pool> {
+  if (!pool) {
+    pool = await initializePool();
+  }
+  return pool;
+}
 
 // Health check function with shorter timeout
-export async function checkDatabaseHealth() {
-  const startTime = Date.now();
+export async function checkDatabaseHealth(): Promise<boolean> {
   try {
+    const currentPool = await getPool();
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Health check timeout')), 3000); // Reduzido para 3s
+      setTimeout(() => reject(new Error('Health check timeout')), 3000);
     });
-    const queryPromise = pool.query('SELECT 1');
+    const queryPromise = currentPool.query('SELECT 1');
 
     await Promise.race([queryPromise, timeoutPromise]);
-
-    console.log('Health check successful', {
-      duration: Date.now() - startTime
-    });
-
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Health check failed:', {
       error: error.message,
-      duration: Date.now() - startTime
+      timestamp: new Date().toISOString()
     });
     return false;
   }
@@ -163,22 +156,24 @@ export async function checkDatabaseHealth() {
 
 // Initialize Drizzle ORM
 console.log('Initializing Drizzle ORM...');
-export const db = drizzle({ client: pool, schema });
+export const db = drizzle((await getPool()) as any, { schema });
 console.log('Drizzle ORM initialized successfully');
 
 // Graceful shutdown handling
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, initiating graceful shutdown...');
   try {
-    await pool.end();
-    console.log('Database connections closed successfully');
-  } catch (error) {
-    console.error('Error during graceful shutdown:', error);
+    if (pool) {
+      await pool.end();
+      console.log('Database connections closed successfully');
+    }
+  } catch (error: any) {
+    console.error('Error during graceful shutdown:', error.message);
   }
   process.exit(0);
 });
 
-// Unexpected error handling
+// Error handling
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', {
     promise,
@@ -189,9 +184,9 @@ process.on('unhandledRejection', (reason, promise) => {
 
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', {
-    error,
+    error: error.message,
+    stack: error.stack,
     timestamp: new Date().toISOString()
   });
-  // Give time for logs to be written before exiting
   setTimeout(() => process.exit(1), 1000);
 });
