@@ -16,8 +16,9 @@ RUN npm run build
 # Production image
 FROM node:20-slim
 
-# Create app directory
+# Create app directory and public directory
 WORKDIR /app
+RUN mkdir -p /app/public && chmod 777 /app/public
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist ./dist
