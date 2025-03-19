@@ -57,5 +57,5 @@ ENV PORT=5000
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 ENV SSL_CERT_DIR=/etc/ssl/certs
 
-# Start the application
-CMD ["npm", "run", "start"]
+# Initialize database and start the application
+CMD npx tsx server/initDb.ts && npm run start

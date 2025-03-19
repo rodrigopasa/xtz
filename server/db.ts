@@ -6,12 +6,9 @@ import * as schema from "@shared/schema";
 // Configure WebSocket for Neon serverless driver
 neonConfig.webSocketConstructor = ws;
 neonConfig.useSecureWebSocket = true;
-neonConfig.pipelineTLS = true;
-neonConfig.fetchConnectionCache = true;
 
-// Configure SSL for production - unconditional setting from edited code
+// Configure SSL for production - unconditional setting
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-
 
 // Validate DATABASE_URL
 if (!process.env.DATABASE_URL) {
@@ -22,12 +19,6 @@ if (!process.env.DATABASE_URL) {
 
 console.log("Initializing database connection...");
 console.log("Environment:", process.env.NODE_ENV);
-console.log("WebSocket Config:", {
-  useSecureWebSocket: neonConfig.useSecureWebSocket,
-  pipelineTLS: neonConfig.pipelineTLS,
-  pipelineConnect: neonConfig.pipelineConnect,
-  fetchConnectionCache: neonConfig.fetchConnectionCache
-});
 
 // Add connection retry logic
 const MAX_RETRIES = 5;
@@ -46,12 +37,11 @@ async function createPool() {
       const pool = new Pool({ 
         connectionString: process.env.DATABASE_URL,
         ssl: {
-          rejectUnauthorized: false,
-          requestCert: true,
+          rejectUnauthorized: false // Simplify SSL config
         },
-        connectionTimeoutMillis: 10000,
+        connectionTimeoutMillis: 30000, // 30 seconds
         maxUses: 10000,
-        idleTimeoutMillis: 30000
+        idleTimeoutMillis: 60000 // 60 seconds
       });
 
       // Test the connection
