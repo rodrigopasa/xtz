@@ -45,6 +45,7 @@ COPY --from=builder /app/shared ./shared
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.env ./.env
 COPY --from=builder /app/uploads ./uploads
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 # Install production dependencies including tsx for TypeScript execution
 RUN npm ci
