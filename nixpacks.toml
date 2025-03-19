@@ -1,0 +1,16 @@
+[phases.setup]
+nixPkgs = ['nodejs_20', 'postgresql']
+
+[phases.install]
+cmds = ['npm install']
+
+[phases.build]
+cmds = ['npm run build']
+
+[start]
+cmd = 'node server/initDb.js && npm start'
+
+[variables]
+PORT = '5000'
+HOST = '0.0.0.0'
+NODE_ENV = 'production'
