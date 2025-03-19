@@ -40,11 +40,12 @@
 
 @layer base {
   * {
-    @apply border-border antialiased text-foreground;
+    @apply border-border antialiased text-foreground tracking-wide;
+    letter-spacing: 0.015em;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground leading-relaxed;
     background: linear-gradient(
       to bottom,
       hsl(230 35% 4%),
@@ -78,7 +79,18 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-sans font-bold tracking-tight text-foreground;
+    @apply font-sans font-bold tracking-tight text-foreground leading-tight mb-4;
+  }
+
+  h1 { @apply text-4xl md:text-5xl lg:text-6xl; }
+  h2 { @apply text-3xl md:text-4xl lg:text-5xl; }
+  h3 { @apply text-2xl md:text-3xl lg:text-4xl; }
+  h4 { @apply text-xl md:text-2xl lg:text-3xl; }
+  h5 { @apply text-lg md:text-xl lg:text-2xl; }
+  h6 { @apply text-base md:text-lg lg:text-xl; }
+
+  p {
+    @apply mb-4 leading-relaxed;
   }
 
   /* Títulos com efeito de gradiente espacial */
@@ -94,7 +106,7 @@
 
   /* Container de página com efeito de vinheta espacial */
   .page-container {
-    @apply min-h-screen relative;
+    @apply min-h-screen relative px-4 py-8 md:px-6 lg:px-8;
     background: radial-gradient(
       circle at 50% 0%,
       hsl(var(--background) / 0.8) 0%,
@@ -104,7 +116,7 @@
 
   /* Cards com efeito de vidro espacial */
   .glass-card {
-    @apply bg-card/60 backdrop-blur-xl border rounded-lg;
+    @apply bg-card/60 backdrop-blur-xl border rounded-lg p-6;
     background: linear-gradient(
       135deg,
       hsl(var(--card) / 0.6) 0%,
@@ -118,21 +130,22 @@
 
   /* Garantir que inputs e selects tenham fundo escuro */
   input, select, textarea {
-    @apply bg-card text-foreground;
+    @apply bg-card text-foreground px-4 py-2 rounded-md border border-border
+           focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
   }
 
   /* Garantir que dropdowns e menus tenham fundo escuro */
   [role="listbox"],
   [role="menu"],
   [role="dialog"] {
-    @apply bg-card text-foreground;
+    @apply bg-card text-foreground border border-border shadow-lg;
   }
 }
 
 @layer components {
   /* Botão primário com gradiente espacial e efeitos */
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium 
+    @apply inline-flex items-center justify-center rounded-md px-6 py-3 text-sm font-medium 
            transition-all duration-300 hover:scale-105 active:scale-95 disabled:pointer-events-none
            disabled:opacity-50 text-white shadow-lg relative overflow-hidden;
     background: linear-gradient(
@@ -174,7 +187,7 @@
 
   /* Card de livro com efeitos espaciais */
   .book-card {
-    @apply glass-card p-4 transition-all duration-300 hover:translate-y-[-4px];
+    @apply glass-card transition-all duration-300 hover:translate-y-[-4px] grid gap-4;
     box-shadow: 
       0 4px 12px hsl(var(--primary) / 0.2),
       0 0 0 1px hsl(var(--primary) / 0.2);
@@ -188,16 +201,22 @@
 
   /* Marca de destaque espacial */
   .highlight {
-    @apply relative inline-block text-foreground;
+    @apply relative inline-block text-foreground font-medium;
     &::after {
       content: '';
-      @apply absolute bottom-0 left-0 w-full h-[30%] -z-10;
+      @apply absolute bottom-0 left-0 w-full h-[30%] -z-10 rounded;
       background: linear-gradient(
         90deg,
         hsl(var(--primary) / 0.2) 0%,
         hsl(var(--secondary) / 0.2) 100%
       );
     }
+  }
+
+  /* Grid responsivo para cards */
+  .responsive-grid {
+    @apply grid gap-6;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   }
 }
 
@@ -284,4 +303,44 @@
 [class*="bg-neutral-50"],
 [class*="bg-neutral-100"] {
   @apply bg-card text-foreground;
+}
+
+/* Melhorias de legibilidade */
+.text-content {
+  @apply text-base leading-relaxed;
+}
+
+.text-content p {
+  @apply mb-6;
+}
+
+.text-content h2 {
+  @apply mt-8 mb-4;
+}
+
+.text-content ul,
+.text-content ol {
+  @apply mb-6 pl-6;
+}
+
+.text-content li {
+  @apply mb-2;
+}
+
+/* Layout helpers */
+.content-wrapper {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.section-spacing {
+  @apply py-12 md:py-16 lg:py-20;
+}
+
+/* Melhorias de acessibilidade */
+.sr-only {
+  @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+}
+
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background;
 }
