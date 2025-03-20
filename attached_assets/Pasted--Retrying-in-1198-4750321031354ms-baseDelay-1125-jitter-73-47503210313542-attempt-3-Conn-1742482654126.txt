@@ -1,0 +1,100 @@
+}
+Retrying in 1198.4750321031354ms { baseDelay: 1125, jitter: 73.47503210313542, attempt: 3 }
+Connection attempt 4/5 { elapsedTime: 2623, timestamp: '2025-03-20T14:57:08.499Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: '185.173.110.61',
+  timestamp: '2025-03-20T14:57:08.499Z',
+  secure: true
+}
+Retrying in 1726.8284391555303ms { baseDelay: 1687.5, jitter: 39.32843915553023, attempt: 4 }
+Connection attempt 5/5 { elapsedTime: 4359, timestamp: '2025-03-20T14:57:10.235Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: '185.173.110.61',
+  timestamp: '2025-03-20T14:57:10.236Z',
+  secure: true
+}
+Connection attempt failed: {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+  attempt: 4,
+  duration: 10,
+  totalElapsed: 2632
+}
+Connection attempt failed: {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+  attempt: 5,
+  duration: 8,
+  totalElapsed: 4367
+}
+Maximum retries reached {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+  attempt: 5,
+  duration: 8,
+  totalElapsed: 4367
+}
+/app/server/db.ts:107
+        throw new Error(`Database connection failed after ${MAX_RETRIES} attempts: ${error.message}`);
+              ^
+
+
+Error: Database connection failed after 5 attempts: Unexpected server response: 503
+    at initializePool (/app/server/db.ts:107:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async getPool (/app/server/db.ts:132:12)
+    at async <anonymous> (/app/server/db.ts:159:28)
+SSL verification disabled for development
+Database configuration: {
+  MAX_RETRIES: 5,
+  INITIAL_BACKOFF: 500,
+  MAX_BACKOFF: 5000,
+  CONNECTION_TIMEOUT: 10000,
+  POOL_SIZE: 5,
+  NODE_ENV: 'production',
+  DATABASE_URL_SET: true
+}
+Initializing Drizzle ORM...
+Starting database connection process at: 2025-03-20T14:57:15.356Z
+Connection attempt 1/5 { elapsedTime: 1, timestamp: '2025-03-20T14:57:15.357Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: '185.173.110.61',
+  timestamp: '2025-03-20T14:57:15.361Z',
+  secure: true
+}
+Retrying in 514.5783804017157ms { baseDelay: 500, jitter: 14.57838040171562, attempt: 1 }
+Connection attempt 2/5 { elapsedTime: 556, timestamp: '2025-03-20T14:57:15.912Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: '185.173.110.61',
+
+Node.js v20.18.0
+npm warn config production Use `--omit=dev` instead.
+(node:32) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Connection attempt failed: {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+  attempt: 1,
+  duration: 35,
+  totalElapsed: 36
+}
+  timestamp: '2025-03-20T14:57:15.916Z',
+  secure: true
+}
+Retrying in 799.0894461582436ms { baseDelay: 750, jitter: 49.08944615824364, attempt: 2 }
+Connection attempt failed: {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+  attempt: 2,
+  duration: 24,
+  totalElapsed: 580
+}
