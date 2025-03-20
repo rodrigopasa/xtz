@@ -31,6 +31,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     ca-certificates \
     openssl \
+    python3 \
+    make \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app directory and required directories
@@ -61,5 +64,9 @@ ENV PORT=5000
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 ENV SSL_CERT_DIR=/etc/ssl/certs
 
-# Initialize database and start the application
-CMD npx tsx server/initDb.ts && npm run start
+# Define script de inicialização baseado em ambiente
+CMD if [ "$USE_SQLITE" = "true" ]; then \
+    npx tsx server/initDb-sqlite.ts && npx tsx server/index-sqlite.ts; \
+  else \
+    npx tsx server/initDb.ts && npm run start; \
+  fi

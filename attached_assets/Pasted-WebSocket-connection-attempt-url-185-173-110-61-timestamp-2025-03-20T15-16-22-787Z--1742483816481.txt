@@ -1,0 +1,100 @@
+WebSocket connection attempt: {
+  url: '185.173.110.61',
+  timestamp: '2025-03-20T15:16:22.787Z',
+  secure: true
+}
+(node:32) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Connection attempt failed: {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+  attempt: 1,
+Retrying in 511.0457968291305ms { baseDelay: 500, jitter: 11.045796829130495, attempt: 1 }
+Connection attempt 2/5 { elapsedTime: 765, timestamp: '2025-03-20T15:16:23.526Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: '185.173.110.61',
+  timestamp: '2025-03-20T15:16:23.527Z',
+  secure: true
+}
+Retrying in 807.755127778734ms { baseDelay: 750, jitter: 57.75512777873409, attempt: 2 }
+Connection attempt 3/5 { elapsedTime: 1584, timestamp: '2025-03-20T15:16:24.345Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: '185.173.110.61',
+  timestamp: '2025-03-20T15:16:24.349Z',
+  secure: true
+}
+Retrying in 1144.418426408544ms { baseDelay: 1125, jitter: 19.418426408543986, attempt: 3 }
+Connection attempt 4/5 { elapsedTime: 2742, timestamp: '2025-03-20T15:16:25.503Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: '185.173.110.61',
+  timestamp: '2025-03-20T15:16:25.504Z',
+  secure: true
+}
+  duration: 241,
+  totalElapsed: 244
+}
+Connection attempt failed: {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+  attempt: 2,
+  duration: 11,
+  totalElapsed: 776
+}
+Connection attempt failed: {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+  attempt: 3,
+  duration: 11,
+  totalElapsed: 1595
+}
+Connection attempt failed: {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+Retrying in 1723.9043261342222ms { baseDelay: 1687.5, jitter: 36.40432613422227, attempt: 4 }
+Connection attempt 5/5 { elapsedTime: 4476, timestamp: '2025-03-20T15:16:27.237Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: '185.173.110.61',
+  timestamp: '2025-03-20T15:16:27.241Z',
+  secure: true
+}
+  attempt: 4,
+  duration: 8,
+  totalElapsed: 2750
+}
+Connection attempt failed: {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+  attempt: 5,
+  duration: 27,
+  totalElapsed: 4503
+}
+Maximum retries reached {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+  attempt: 5,
+  duration: 27,
+  totalElapsed: 4503
+}
+/app/server/db.ts:107
+        throw new Error(`Database connection failed after ${MAX_RETRIES} attempts: ${error.message}`);
+              ^
+
+
+Error: Database connection failed after 5 attempts: Unexpected server response: 503
+    at initializePool (/app/server/db.ts:107:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async getPool (/app/server/db.ts:132:12)
+    at async <anonymous> (/app/server/db.ts:159:28)
+
+Node.js v20.18.0
+npm warn config production Use `--omit=dev` instead.
