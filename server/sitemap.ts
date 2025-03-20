@@ -109,7 +109,7 @@ export class SitemapGenerator {
           url: `${this.baseUrl}/categoria/${category.slug}`,
           changefreq: 'weekly',
           priority: 0.7,
-          lastmod: category.updatedAt ? this.formatDate(new Date(category.updatedAt)) : today
+          lastmod: today
         });
       });
       
@@ -120,21 +120,20 @@ export class SitemapGenerator {
           url: `${this.baseUrl}/autor/${author.slug}`,
           changefreq: 'weekly',
           priority: 0.7,
-          lastmod: author.updatedAt ? this.formatDate(new Date(author.updatedAt)) : today
+          lastmod: today
         });
       });
       
       // Adicionar livros
       const books = await storage.getAllBooks();
       books.forEach(book => {
-        if (book.isPublic) {  // Apenas livros públicos devem aparecer no sitemap
-          sitemapItems.push({
-            url: `${this.baseUrl}/livro/${book.slug}`,
-            changefreq: 'monthly',
-            priority: 0.6,
-            lastmod: book.updatedAt ? this.formatDate(new Date(book.updatedAt)) : today
-          });
-        }
+        // Todos os livros devem aparecer no sitemap
+        sitemapItems.push({
+          url: `${this.baseUrl}/livro/${book.slug}`,
+          changefreq: 'monthly',
+          priority: 0.6,
+          lastmod: today
+        });
       });
       
       // Gerar o XML do sitemap

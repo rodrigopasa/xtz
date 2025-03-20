@@ -59,7 +59,7 @@ async function initializeSystem() {
     const newAdmin = await storage.createUser({
       username: 'admin',
       password: hashedPassword,
-      email: 'admin@bibliotech.com',
+      email: 'admin@elexandria.app',
       name: 'Administrador',
       role: 'admin'
     });
@@ -131,7 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Configure PostgreSQL session store
   const PostgreSQLStore = connectPgSimple(session);
-  const sessionSecret = process.env.SESSION_SECRET || "bibliotech-secret-key-2025";
+  const sessionSecret = process.env.SESSION_SECRET || "elexandria-secret-key-2025";
 
   console.log("Configurando sessão com PostgreSQL");
 
@@ -327,7 +327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const settings = await db.select().from(siteSettings).limit(1);
       res.json(settings[0] || {
-        siteName: "BiblioTech",
+        siteName: "Elexandria",
         siteDescription: "Sua biblioteca digital",
         primaryColor: "#3b82f6"
       });
@@ -1536,6 +1536,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error instanceof Error ? error.message : "Erro no upload de PDF" });
     }
   });
+
+  // === Rotas para SEO ===
+  
+  // Rota para servir o sitemap.xml
+  app.get('/sitemap.xml', async (req, res) => {
+    try {
+      // Verificar se o arquivo existe, se não, gerar
+      const sitemapPath = path.join(process.cwd(), 'public', 'sitemap.xml');
+      if (!fs.existsSync(sitemapPath)) {
+        console.log("Sitemap não encontrado, gerando...");
+        await sitemapGenerator.generateSitemap();
+      }
+      
+      // Definir o tipo de conteúdo como XML
+      res.header('Content-Type', 'application/xml');
+      
+      // Enviar o arquivo
+      res.sendFile(sitemapPath);
+    } catch (error) {
+      console.error("Erro ao servir sitemap:", error);
+      res.status(500).send("Erro ao gerar sitemap");
+    }
+  });
+
+  // Rota para forçar a regeneração do sitemap (apenas admin)
+  app.post('/api/admin/regenerate-sitemap', isAdmin, async (req, res) => {
+    try {
+      const result = await sitemapGenerator.generateSitemap();
+      if (result) {
+        res.json({ success: true, message: "Sitemap regenerado com sucesso" });
+      } else {
+        res.status(500).json({ success: false, message: "Erro ao regenerar sitemap" });
+      }
+    } catch (error) {
+      console.error("Erro ao regenerar sitemap:", error);
+      res.status(500).json({ success: false, message: "Erro ao regenerar sitemap" });
+    }
+  });
+
+  // Regenerar sitemap após alterações em conteúdo importante
+  app.post('/api/admin/books', isAdmin, (req, res, next) => {
+    // Chamar o próximo middleware e depois regenerar o sitemap
+    next();
+    // Regenerar sitemap após a resposta ser enviada
+    res.on('finish', async () => {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        console.log("Livro criado/atualizado, regenerando sitemap...");
+        await sitemapGenerator.generateSitemap();
+      }
+    });
+  });
+
+  // Regenerar sitemap após adicionar/atualizar categoria
+  app.post('/api/categories', isAdmin, (req, res, next) => {
+    next();
+    res.on('finish', async () => {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        console.log("Categoria criada/atualizada, regenerando sitemap...");
+        await sitemapGenerator.generateSitemap();
+      }
+    });
+  });
+
+  // Regenerar sitemap após adicionar/atualizar autor
+  app.post('/api/authors', isAdmin, (req, res, next) => {
+    next();
+    res.on('finish', async () => {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        console.log("Autor criado/atualizado, regenerando sitemap...");
+        await sitemapGenerator.generateSitemap();
+      }
+    });
+  });
+
+  // Gerar o sitemap inicial na inicialização do servidor
+  sitemapGenerator.generateSitemap()
+    .then(result => {
+      if (result) {
+        console.log("Sitemap inicial gerado com sucesso");
+      } else {
+        console.error("Erro ao gerar sitemap inicial");
+      }
+    })
+    .catch(error => {
+      console.error("Exceção ao gerar sitemap inicial:", error);
+    });
 
   const server = createServer(app);
   return server;
