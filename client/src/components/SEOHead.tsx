@@ -82,8 +82,10 @@ export default function SEOHead({ title, description, image, noIndex, canonicalU
     settings?.googleTagManagerId
   ]);
 
-  // Valores padrão
-  const finalTitle = title || settings?.metaTitle || settings?.siteName || "Elexandria";
+  // Valores padrão com fallback para configurações do site
+  const finalTitle = title 
+    ? `${title} | ${settings?.siteName || "Elexandria"}` 
+    : settings?.metaTitle || settings?.siteName || "Elexandria";
   const finalDescription = description || settings?.metaDescription || settings?.siteDescription || "Sua biblioteca digital";
   const finalImage = image || settings?.ogImage || "";
   const twitterHandle = settings?.twitterHandle || "";

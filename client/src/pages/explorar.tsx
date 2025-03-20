@@ -140,9 +140,18 @@ export default function Explorar() {
   );
 
   // Reset to first page when filters change
+  // Resetar para primeira página quando os filtros mudam
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedCategory, selectedAuthor, selectedFormat, sortBy, sortOrder]);
+  
+  // Determinar se a página atual deve ser indexada
+  const shouldIndex = 
+    currentPage === 1 && 
+    !searchQuery && 
+    !selectedCategory && 
+    !selectedAuthor && 
+    !selectedFormat;
 
   // Handle search input
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -240,8 +249,10 @@ export default function Explorar() {
   return (
     <div className="container mx-auto px-4 py-8">
       <SEOHead 
-        title="Explorar Livros | Elexandria"
+        title="Explorar Livros"
         description="Explore nossa ampla coleção de livros digitais. Encontre seu próximo livro favorito por categoria, autor ou formato."
+        canonicalUrl="/explorar"
+        noIndex={!shouldIndex}
       />
       
       {/* Página principal */}
