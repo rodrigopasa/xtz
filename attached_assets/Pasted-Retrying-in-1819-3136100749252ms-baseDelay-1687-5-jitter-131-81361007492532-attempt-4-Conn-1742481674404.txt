@@ -1,0 +1,100 @@
+Retrying in 1819.3136100749252ms { baseDelay: 1687.5, jitter: 131.81361007492532, attempt: 4 }
+Connection attempt 5/5 { elapsedTime: 4804, timestamp: '2025-03-20T14:40:32.199Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: '185.173.110.61',
+  timestamp: '2025-03-20T14:40:32.200Z',
+  secure: true
+}
+SSL verification disabled for development
+Database configuration: {
+  MAX_RETRIES: 5,
+  INITIAL_BACKOFF: 500,
+  MAX_BACKOFF: 5000,
+  CONNECTION_TIMEOUT: 10000,
+  POOL_SIZE: 5,
+  NODE_ENV: 'production',
+  DATABASE_URL_SET: true
+}
+Initializing Drizzle ORM...
+Starting database connection process at: 2025-03-20T14:40:36.548Z
+Connection attempt 1/5 { elapsedTime: 0, timestamp: '2025-03-20T14:40:36.548Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: '185.173.110.61',
+  timestamp: '2025-03-20T14:40:36.551Z',
+  secure: true
+}
+Retrying in 526.5896672363476ms { baseDelay: 500, jitter: 26.58966723634759, attempt: 1 }
+Connection attempt 2/5 { elapsedTime: 590, timestamp: '2025-03-20T14:40:37.138Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: '185.173.110.61',
+  timestamp: '2025-03-20T14:40:37.139Z',
+  secure: true
+}
+Retrying in 784.3936467646163ms { baseDelay: 750, jitter: 34.39364676461629, attempt: 2 }
+Connection attempt 3/5 { elapsedTime: 1387, timestamp: '2025-03-20T14:40:37.935Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: '185.173.110.61',
+  timestamp: '2025-03-20T14:40:37.936Z',
+  secure: true
+}
+  totalElapsed: 2983
+}
+Connection attempt failed: {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+  attempt: 5,
+  duration: 51,
+  totalElapsed: 4855
+}
+Maximum retries reached {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+  attempt: 5,
+  duration: 51,
+  totalElapsed: 4855
+}
+/app/server/db.ts:107
+        throw new Error(`Database connection failed after ${MAX_RETRIES} attempts: ${error.message}`);
+              ^
+
+
+Error: Database connection failed after 5 attempts: Unexpected server response: 503
+    at initializePool (/app/server/db.ts:107:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at getPool (/app/server/db.ts:132:12)
+    at <anonymous> (/app/server/db.ts:159:28)
+
+Node.js v18.20.5
+(node:31) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Connection attempt failed: {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+  attempt: 1,
+  duration: 61,
+  totalElapsed: 61
+}
+Connection attempt failed: {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+  attempt: 2,
+  duration: 12,
+  totalElapsed: 601
+}
+Connection attempt failed: {
+  name: undefined,
+  message: 'Unexpected server response: 503',
+  code: undefined,
+Retrying in 1179.6048336270974ms { baseDelay: 1125, jitter: 54.60483362709734, attempt: 3 }
+  attempt: 3,
+  duration: 10,
+  totalElapsed: 1397
+}

@@ -2,15 +2,23 @@
 nixPkgs = ['nodejs_20', 'postgresql']
 
 [phases.install]
-cmds = ['npm install']
+cmds = ['npm ci']
 
 [phases.build]
 cmds = ['npm run build']
 
 [start]
-cmd = 'node server/initDb.js && npm start'
+cmd = 'npx tsx server/initDb.ts && npm run start'
 
 [variables]
 PORT = '5000'
 HOST = '0.0.0.0'
 NODE_ENV = 'production'
+NODE_TLS_REJECT_UNAUTHORIZED = '0'
+
+[nixpacks]
+plan_path = "/app"
+
+# Configurações de upload e arquivos
+[fs]
+dir_mode = "0777"
