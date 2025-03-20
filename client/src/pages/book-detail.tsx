@@ -354,12 +354,10 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                 </div>
 
                 <div className="mt-6 flex flex-col gap-3">
-                  {/* Só mostrar o botão de leitura online se houver pelo menos um formato disponível */}
                   {(book.pdfUrl || book.epubUrl) && (
                     <Button
                       className="flex items-center justify-center"
                       onClick={() => handleReadOnline(
-                        // Priorizar o formato disponível, ou o primeiro se ambos estiverem disponíveis
                         book.epubUrl ? 'epub' : 'pdf'
                       )}
                     >
@@ -420,7 +418,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
             {/* Book Info */}
             <div className="md:w-2/3 lg:w-3/4">
               <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">{book.title}</h1>
-              <p className="text-xl text-neutral-600 mb-4">{book.author.name}</p>
+              <p className="text-xl text-foreground mb-4">{book.author.name}</p>
 
               <div className="flex items-center mb-6">
                 <div className="flex text-accent">
@@ -444,7 +442,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                     );
                   })}
                 </div>
-                <span className="text-neutral-600 ml-2">{book.rating.toFixed(1)} ({book.ratingCount} avaliações)</span>
+                <span className="text-foreground ml-2">{book.rating.toFixed(1)} ({book.ratingCount} avaliações)</span>
               </div>
 
               <div className="flex flex-wrap gap-2 mb-6">
@@ -463,9 +461,9 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                 )}
               </div>
 
-              <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+              <div className="bg-card rounded-lg shadow-md p-6 mb-8">
                 <h2 className="font-serif text-xl font-bold mb-4">Sobre o livro</h2>
-                <p className="text-neutral-600 whitespace-pre-line">
+                <p className="text-foreground whitespace-pre-line">
                   {book.description}
                 </p>
               </div>
@@ -481,23 +479,23 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
 
                 {/* Book Details */}
                 <TabsContent value="details" className="space-y-8">
-                  <div className="bg-white rounded-lg shadow-md p-6">
+                  <div className="bg-card rounded-lg shadow-md p-6">
                     <h2 className="font-serif text-xl font-bold mb-4">Informações do livro</h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <ul className="space-y-3">
                           <li className="flex">
-                            <span className="font-medium w-28 text-neutral-800">Título:</span>
-                            <span className="text-neutral-600">{book.title}</span>
+                            <span className="font-medium w-28 text-foreground">Título:</span>
+                            <span className="text-foreground">{book.title}</span>
                           </li>
                           <li className="flex">
-                            <span className="font-medium w-28 text-neutral-800">Autor:</span>
-                            <span className="text-neutral-600">{book.author.name}</span>
+                            <span className="font-medium w-28 text-foreground">Autor:</span>
+                            <span className="text-foreground">{book.author.name}</span>
                           </li>
                           <li className="flex">
-                            <span className="font-medium w-28 text-neutral-800">Série:</span>
-                            <span className="text-neutral-600">
+                            <span className="font-medium w-28 text-foreground">Série:</span>
+                            <span className="text-foreground">
                               {book.series ? (
                                 <>
                                   {book.series.name}
@@ -507,16 +505,16 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                             </span>
                           </li>
                           <li className="flex">
-                            <span className="font-medium w-28 text-neutral-800">Editora:</span>
-                            <span className="text-neutral-600">{book.publisher || 'Não informado'}</span>
+                            <span className="font-medium w-28 text-foreground">Editora:</span>
+                            <span className="text-foreground">{book.publisher || 'Não informado'}</span>
                           </li>
                           <li className="flex">
-                            <span className="font-medium w-28 text-neutral-800">Ano:</span>
-                            <span className="text-neutral-600">{book.publishYear || 'Não informado'}</span>
+                            <span className="font-medium w-28 text-foreground">Ano:</span>
+                            <span className="text-foreground">{book.publishYear || 'Não informado'}</span>
                           </li>
                           <li className="flex">
-                            <span className="font-medium w-28 text-neutral-800">Idioma:</span>
-                            <span className="text-neutral-600">
+                            <span className="font-medium w-28 text-foreground">Idioma:</span>
+                            <span className="text-foreground">
                               {book.language === 'pt-BR' ? 'Português (Brasil)' : book.language}
                             </span>
                           </li>
@@ -526,27 +524,27 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                       <div>
                         <ul className="space-y-3">
                           <li className="flex">
-                            <span className="font-medium w-28 text-neutral-800">Páginas:</span>
-                            <span className="text-neutral-600">{book.pageCount || 'Não informado'}</span>
+                            <span className="font-medium w-28 text-foreground">Páginas:</span>
+                            <span className="text-foreground">{book.pageCount || 'Não informado'}</span>
                           </li>
                           <li className="flex">
-                            <span className="font-medium w-28 text-neutral-800">ISBN:</span>
-                            <span className="text-neutral-600">{book.isbn || 'Não informado'}</span>
+                            <span className="font-medium w-28 text-foreground">ISBN:</span>
+                            <span className="text-foreground">{book.isbn || 'Não informado'}</span>
                           </li>
                           <li className="flex">
-                            <span className="font-medium w-28 text-neutral-800">Categoria:</span>
-                            <span className="text-neutral-600">{book.category.name}</span>
+                            <span className="font-medium w-28 text-foreground">Categoria:</span>
+                            <span className="text-foreground">{book.category.name}</span>
                           </li>
                           <li className="flex">
-                            <span className="font-medium w-28 text-neutral-800">Formato:</span>
-                            <span className="text-neutral-600">
+                            <span className="font-medium w-28 text-foreground">Formato:</span>
+                            <span className="text-foreground">
                               {book.format === 'epub' ? 'EPUB' :
                                 book.format === 'pdf' ? 'PDF' : 'EPUB, PDF'}
                             </span>
                           </li>
                           <li className="flex">
-                            <span className="font-medium w-28 text-neutral-800">Downloads:</span>
-                            <span className="text-neutral-600">{book.downloadCount}</span>
+                            <span className="font-medium w-28 text-foreground">Downloads:</span>
+                            <span className="text-foreground">{book.downloadCount}</span>
                           </li>
                         </ul>
                       </div>
@@ -662,7 +660,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                                 <div className="flex-grow">
                                   <div className="flex justify-between items-center mb-2">
                                     <h4 className="font-medium">{comment.user?.name}</h4>
-                                    <span className="text-neutral-500 text-sm">
+                                    <span className="text-foreground text-sm">
                                       {formatDate(comment.createdAt)}
                                     </span>
                                   </div>
@@ -675,20 +673,20 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                                     ))}
                                   </div>
 
-                                  <p className="text-neutral-600 mb-3 whitespace-pre-line">
+                                  <p className="text-foreground mb-3 whitespace-pre-line">
                                     {comment.content}
                                   </p>
 
                                   <div className="flex items-center space-x-4 text-sm">
                                     <button
-                                      className="text-neutral-500 hover:text-neutral-700 flex items-center"
+                                      className="text-foreground hover:text-neutral-700 flex items-center"
                                       onClick={() => handleHelpfulClick(comment.id)}
                                       disabled={helpfulMutation.isPending}
                                     >
                                       <ThumbsUp size={16} className="mr-1" />
                                       Útil ({comment.helpfulCount})
                                     </button>
-                                    <button className="text-neutral-500 hover:text-neutral-700 flex items-center">
+                                    <button className="text-foreground hover:text-neutral-700 flex items-center">
                                       <MessageSquare size={16} className="mr-1" /> Responder
                                     </button>
                                   </div>
@@ -699,7 +697,7 @@ export default function BookDetail({ slug, authorSlug }: BookDetailProps) {
                         </div>
                       ) : (
                         <div className="text-center py-6">
-                          <p className="text-neutral-500">
+                          <p className="text-foreground">
                             Ainda não há comentários para este livro. Seja o primeiro a comentar!
                           </p>
                           {!isAuthenticated && (
