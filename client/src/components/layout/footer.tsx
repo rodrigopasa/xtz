@@ -35,7 +35,7 @@ export default function Footer() {
               <span className="text-white text-3xl">
                 <Book />
               </span>
-              <span className="font-serif font-bold text-2xl">{settings?.siteName || "BiblioTech"}</span>
+              <span className="font-serif font-bold text-2xl">{settings?.siteName || "Elexandria"}</span>
             </div>
             <p className="text-neutral-400 mb-4">
               {settings?.siteDescription || "Sua biblioteca digital completa, disponível quando e onde você quiser."}
@@ -154,7 +154,7 @@ export default function Footer() {
         <div ref={footerCustomCodeRef} className="mt-8"></div>
         
         <div className="border-t border-neutral-700 mt-10 pt-6 text-center text-neutral-500 text-sm">
-          <p>&copy; {new Date().getFullYear()} {settings?.siteName || "BiblioTech"}. Todos os direitos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} {settings?.siteName || "Elexandria"}. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>

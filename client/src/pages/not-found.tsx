@@ -30,7 +30,7 @@ export default function NotFound() {
           </div>
           
           <div className="mt-8 pt-6 border-t border-purple-300/10 text-sm text-gray-400">
-            BiblioTech - A sua biblioteca digital
+            Elexandria - A sua biblioteca digital
           </div>
         </CardContent>
       </Card>

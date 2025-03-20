@@ -528,7 +528,7 @@ export default function EPubReader({ url, bookId }: EPubReaderProps) {
     // Adicionado meta tags para SEO e identificação do conteúdo
     <>
       <meta name="robots" content="noindex, nofollow" />
-      <title>{bookTitle || "Leitura"} em EPUB - BiblioTech</title>
+      <title>{bookTitle || "Leitura"} em EPUB - Elexandria</title>
       
       <div className="flex flex-col h-full bg-white">
         {/* Nova Barra de Ferramentas Aprimorada */}

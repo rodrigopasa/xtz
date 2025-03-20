@@ -53,7 +53,7 @@ export default function Autores() {
                     </Avatar>
                     <h3 className="text-xl font-bold mb-2 text-center text-white">{author.name}</h3>
                     <p className="text-sm text-white/70 text-center line-clamp-2">
-                      {author.bio || "Autor de obras renomadas na BiblioTech."}
+                      {author.bio || "Autor de obras renomadas na Elexandria."}
                     </p>
                   </CardContent>
                 </Card>
