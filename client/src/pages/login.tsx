@@ -75,7 +75,7 @@ export default function Login() {
     <div className="min-h-[calc(100vh-64px)] flex items-center justify-center py-12 px-4">
       <Card className="w-full max-w-md bg-neutral-900/90 border border-purple-500/30 text-white">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center text-white">Entrar na BiblioTech</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center text-white">Entrar na Elexandria</CardTitle>
           <CardDescription className="text-center text-purple-300">
             Entre com seu nome de usuário e senha para acessar sua conta
           </CardDescription>

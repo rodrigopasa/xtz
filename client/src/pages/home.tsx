@@ -264,9 +264,9 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-10 md:py-16 bg-white">
+      <section className="py-10 md:py-16 bg-purple-900">
         <div className="container mx-auto px-4">
-          <h2 className="font-serif text-2xl md:text-3xl font-bold mb-12 text-center">Por que escolher a BiblioTech?</h2>
+          <h2 className="font-serif text-2xl md:text-3xl font-bold mb-12 text-center text-white">Por que escolher a Elexandria?</h2>
           
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
@@ -276,7 +276,7 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="font-serif font-bold text-xl mb-3">Leitura Online</h3>
-              <p className="text-neutral-600">Leia diretamente no navegador com nosso leitor de EPUB e PDF integrado, sem necessidade de baixar aplicativos adicionais.</p>
+              <p className="text-white">Leia diretamente no navegador com nosso leitor de EPUB e PDF integrado, sem necessidade de baixar aplicativos adicionais.</p>
             </div>
             
             <div className="text-center">
@@ -286,7 +286,7 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="font-serif font-bold text-xl mb-3">Downloads Ilimitados</h3>
-              <p className="text-neutral-600">Baixe seus livros favoritos em formatos EPUB e PDF para ler offline em qualquer dispositivo, a qualquer momento.</p>
+              <p className="text-white">Baixe seus livros favoritos em formatos EPUB e PDF para ler offline em qualquer dispositivo, a qualquer momento.</p>
             </div>
             
             <div className="text-center">
@@ -296,7 +296,7 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="font-serif font-bold text-xl mb-3">Comunidade Ativa</h3>
-              <p className="text-neutral-600">Compartilhe suas impressões, deixe comentários e descubra novas leituras através das recomendações de outros leitores.</p>
+              <p className="text-white">Compartilhe suas impressões, deixe comentários e descubra novas leituras através das recomendações de outros leitores.</p>
             </div>
           </div>
         </div>

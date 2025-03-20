@@ -58,7 +58,7 @@ export default function AdminHeader() {
             <span className="text-white text-2xl">
               <Book />
             </span>
-            <span className="font-serif font-bold text-xl">BiblioTech Admin</span>
+            <span className="font-serif font-bold text-xl">Elexandria Admin</span>
           </Link>
 
           {/* User Info */}
@@ -104,7 +104,7 @@ export default function AdminHeader() {
       <Sheet open={showMobileMenu} onOpenChange={setShowMobileMenu}>
         <SheetContent side="left" className="bg-neutral-900 text-white border-neutral-700">
           <SheetHeader className="border-b border-neutral-700 pb-4">
-            <SheetTitle className="text-white font-serif">BiblioTech Admin</SheetTitle>
+            <SheetTitle className="text-white font-serif">Elexandria Admin</SheetTitle>
             <SheetClose className="absolute right-4 top-4 rounded-sm text-neutral-400 hover:text-white" />
           </SheetHeader>
 

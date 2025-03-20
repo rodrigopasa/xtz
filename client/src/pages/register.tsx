@@ -74,7 +74,7 @@ export default function Register() {
       
       toast({
         title: "Cadastro realizado com sucesso",
-        description: "Bem-vindo à BiblioTech! Sua conta foi criada.",
+        description: "Bem-vindo à Elexandria! Sua conta foi criada.",
       });
       
       // Redirecionar para a página inicial após o cadastro
@@ -96,7 +96,7 @@ export default function Register() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Criar uma conta</CardTitle>
           <CardDescription className="text-center">
-            Preencha os campos abaixo para se cadastrar na BiblioTech
+            Preencha os campos abaixo para se cadastrar na Elexandria
           </CardDescription>
         </CardHeader>
         <CardContent>

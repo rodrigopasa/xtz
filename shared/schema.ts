@@ -185,7 +185,7 @@ export const insertCommentSchema = createInsertSchema(comments).pick({
 export const siteSettings = pgTable("site_settings", {
   id: serial("id").primaryKey(),
   // Informações básicas
-  siteName: text("site_name").notNull().default("BiblioTech"),
+  siteName: text("site_name").notNull().default("Elexandria"),
   siteDescription: text("site_description").notNull().default("Sua biblioteca digital de livros em domínio público"),
   primaryColor: text("primary_color").notNull().default("#2563eb"),
   accentColor: text("accent_color").notNull().default("#3b82f6"),

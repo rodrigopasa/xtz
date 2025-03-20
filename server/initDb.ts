@@ -9,7 +9,7 @@ async function initializeDatabase() {
     await db.insert(users).values({
       username: 'admin',
       password: hashedPassword,
-      email: 'admin@bibliotech.com',
+      email: 'admin@elexandria.com',
       name: 'Administrador',
       role: 'admin',
       avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin'
