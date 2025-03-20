@@ -68,7 +68,7 @@ export default function Header() {
               <Book />
             </span>
             <span className="font-serif font-bold text-2xl gradient-heading">
-              {settings?.siteName || "BiblioTech"}
+              {settings?.siteName || "Elexandria"}
             </span>
           </Link>
 
@@ -95,6 +95,9 @@ export default function Header() {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
+            <Link href="/explorar" className="font-medium text-white hover:text-purple-300 transition-colors">
+              Explorar
+            </Link>
             <Link href="/categorias" className="font-medium text-white hover:text-purple-300 transition-colors">
               Categorias
             </Link>

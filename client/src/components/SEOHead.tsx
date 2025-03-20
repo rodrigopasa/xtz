@@ -7,10 +7,12 @@ interface SEOProps {
   title?: string;
   description?: string;
   image?: string;
+  noIndex?: boolean;
+  canonicalUrl?: string;
   children?: React.ReactNode;
 }
 
-export default function SEOHead({ title, description, image, children }: SEOProps) {
+export default function SEOHead({ title, description, image, noIndex, canonicalUrl, children }: SEOProps) {
   // Obter configurações do site
   const { data: settings } = useQuery({
     queryKey: ['/api/settings'],
@@ -81,10 +83,11 @@ export default function SEOHead({ title, description, image, children }: SEOProp
   ]);
 
   // Valores padrão
-  const finalTitle = title || settings?.metaTitle || settings?.siteName || "BiblioTech";
+  const finalTitle = title || settings?.metaTitle || settings?.siteName || "Elexandria";
   const finalDescription = description || settings?.metaDescription || settings?.siteDescription || "Sua biblioteca digital";
   const finalImage = image || settings?.ogImage || "";
   const twitterHandle = settings?.twitterHandle || "";
+  const siteUrl = settings?.siteUrl || "https://elexandria.app";
 
   return (
     <Helmet>
@@ -102,6 +105,17 @@ export default function SEOHead({ title, description, image, children }: SEOProp
       <meta property="og:description" content={finalDescription} />
       {finalImage && <meta property="og:image" content={finalImage} />}
       <meta property="og:type" content="website" />
+      <meta property="og:site_name" content={settings?.siteName || "Elexandria"} />
+      
+      {/* Canonical URL para evitar conteúdo duplicado */}
+      {canonicalUrl && (
+        <link rel="canonical" href={canonicalUrl.startsWith("http") ? canonicalUrl : `${siteUrl}${canonicalUrl}`} />
+      )}
+      
+      {/* NoIndex para páginas que não devem ser indexadas */}
+      {noIndex && (
+        <meta name="robots" content="noindex, nofollow" />
+      )}
 
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />

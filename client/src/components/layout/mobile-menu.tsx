@@ -37,7 +37,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       <SheetContent side="left" className="sm:max-w-md w-full bg-gray-900 border-r border-purple-500/20 text-white">
         <SheetHeader className="border-b border-purple-500/20 pb-4">
           <SheetTitle className="font-serif font-bold text-2xl gradient-heading">
-            {settings?.siteName || "BiblioTech"}
+            {settings?.siteName || "Elexandria"}
           </SheetTitle>
           <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 text-white">
             <X className="h-5 w-5" />
@@ -47,6 +47,15 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
         <nav className="p-4">
           <ul className="space-y-4">
+            <li>
+              <Link 
+                href="/explorar" 
+                className="block p-2 font-medium text-white hover:bg-purple-900/30 rounded"
+                onClick={onClose}
+              >
+                Explorar
+              </Link>
+            </li>
             <li>
               <Link 
                 href="/categorias" 

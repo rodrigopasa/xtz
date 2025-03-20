@@ -17,6 +17,7 @@ import { insertSettingsSchema, insertBookSchema, siteSettings } from "@shared/sc
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { sitemapGenerator } from "./sitemap";
 
 // Middleware para verificar se o usuário é administrador
 const isAdmin = (req: Request, res: Response, next: NextFunction) => {

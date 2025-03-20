@@ -27,6 +27,7 @@ import Lancamentos from "@/pages/lancamentos";
 import MaisLidos from "@/pages/mais-lidos";
 import Categorias from "@/pages/categorias";
 import Autores from "@/pages/autores";
+import Explorar from "@/pages/explorar";
 import TesteLivros from "@/pages/teste";
 
 // User Dashboard Pages
@@ -140,6 +141,16 @@ function Router() {
           <>
             <Header />
             <Autores />
+            <Footer />
+          </>
+        )}
+      </Route>
+      
+      <Route path="/explorar">
+        {() => (
+          <>
+            <Header />
+            <Explorar />
             <Footer />
           </>
         )}
