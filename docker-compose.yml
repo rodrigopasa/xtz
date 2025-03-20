@@ -19,14 +19,42 @@ services:
       - PGDATABASE=${PGDATABASE}
       - PGPORT=${PGPORT}
       - SESSION_SECRET=${SESSION_SECRET}
+      - COOKIE_SECURE=false  # Para domínio sem SSL
+      - MAX_FILE_SIZE=50000000
     volumes:
-      - uploads:/app/public/uploads
+      - uploads:/app/uploads
+      - books:/app/public/books
+      - covers:/app/public/covers
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Banco de dados PostgreSQL (opcional, se quiser usar o interno do Coolify, você pode remover este serviço)
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${PGUSER:-postgres}
+      - POSTGRES_PASSWORD=${PGPASSWORD:-postgres}
+      - POSTGRES_DB=${PGDATABASE:-elexandria}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
 
 volumes:
   uploads:
+  books:
+  covers:
+  postgres_data:

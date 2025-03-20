@@ -33,9 +33,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create app directory and public directory
+# Create app directory and required directories
 WORKDIR /app
-RUN mkdir -p /app/public && chmod 777 /app/public
+RUN mkdir -p /app/public/books /app/public/covers /app/uploads && \
+    chmod -R 777 /app/public /app/uploads
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist ./dist
