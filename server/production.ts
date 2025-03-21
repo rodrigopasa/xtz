@@ -1,11 +1,9 @@
 import express, { Express } from "express";
 import path from "path";
 import fs from "fs";
-import { dirname } from "path";
-import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Usamos process.cwd() para ter compatibilidade tanto com ESM quanto com CommonJS
+const ROOT_DIR = process.cwd();
 
 /**
  * Configura o servidor Express para servir arquivos estáticos em produção.
@@ -15,7 +13,7 @@ export function setupProductionServer(app: Express) {
   console.log("Configurando servidor para ambiente de produção");
   
   // Determina o caminho correto para a pasta dist/public
-  const distPath = path.resolve(__dirname, "..", "dist", "public");
+  const distPath = path.resolve(ROOT_DIR, "dist", "public");
   
   if (!fs.existsSync(distPath)) {
     console.error(`Diretório de build não encontrado: ${distPath}`);

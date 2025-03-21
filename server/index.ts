@@ -121,8 +121,9 @@ function startHealthCheck() {
     // Configuração do servidor baseada no ambiente
     if (process.env.NODE_ENV === 'production' || process.env.VITE_DEV_SERVER_ENABLED === 'false') {
       console.log("Ambiente de produção detectado, usando servidor estático");
-      // Importar dinamicamente para evitar erros de importação em ambientes de desenvolvimento
-      const { setupProductionServer } = await import('./production.js');
+      // Importar o módulo de produção
+      const productionModule = await import('./production');
+      const { setupProductionServer } = productionModule;
       const setupSuccess = setupProductionServer(app);
       
       if (!setupSuccess) {
