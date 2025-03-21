@@ -1,0 +1,89 @@
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+
+Database configuration: {
+  MAX_RETRIES: 5,
+  INITIAL_BACKOFF: 500,
+  MAX_BACKOFF: 5000,
+  CONNECTION_TIMEOUT: 10000,
+npm warn config production Use `--omit=dev` instead.
+  POOL_SIZE: 5,
+  NODE_ENV: 'production',
+  DATABASE_URL_SET: true
+}
+Initializing Drizzle ORM...
+Starting database connection process at: 2025-03-21T14:13:14.689Z
+Connection attempt 1/5 { elapsedTime: 1, timestamp: '2025-03-21T14:13:14.690Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: 'ep-autumn-moon-acnqpsdv-pooler.sa-east-1.aws.neon.tech',
+  timestamp: '2025-03-21T14:13:14.694Z',
+  secure: true
+}
+Database connection successful { attempt: 1, duration: 1046 }
+Drizzle ORM initialized successfully
+=== Iniciando servidor ===
+Timestamp: 2025-03-21T14:13:15.767Z
+Ambiente: production
+✓ Todas as variáveis de ambiente críticas estão presentes
+Inicializando rotas...
+Iniciando setup inicial do sistema...
+Sistema já inicializado - usuário admin existe
+Setup inicial concluído
+Configurando sessão com PostgreSQL
+✓ Rotas inicializadas com sucesso
+Configurando monitoramento para ambiente de produção
+Iniciando monitoramento do banco de dados (intervalo: 30000ms)
+✓ Monitoramento do banco de dados iniciado
+Configurando servidor Vite para ambiente: production
+✓ Configuração Vite concluída
+2:13:16 PM [express] ✓ Servidor rodando em 0.0.0.0:5000
+2:13:16 PM [express] ✓ Ambiente: production
+Sitemap gerado com sucesso: /app/public/sitemap.xml
+Sitemap inicial gerado com sucesso
+WebSocket connection attempt: {
+  url: 'ep-autumn-moon-acnqpsdv-pooler.sa-east-1.aws.neon.tech',
+  timestamp: '2025-03-21T14:13:45.946Z',
+  secure: true
+}
+Status do banco de dados: { healthy: true, timestamp: '2025-03-21T14:13:45.978Z' }
+
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+
+Database configuration: {
+  MAX_RETRIES: 5,
+  INITIAL_BACKOFF: 500,
+  MAX_BACKOFF: 5000,
+  CONNECTION_TIMEOUT: 10000,
+  POOL_SIZE: 5,
+  NODE_ENV: 'production',
+  DATABASE_URL_SET: true
+}
+Initializing Drizzle ORM...
+Starting database connection process at: 2025-03-21T14:14:11.504Z
+Connection attempt 1/5 { elapsedTime: 1, timestamp: '2025-03-21T14:14:11.505Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: 'ep-autumn-moon-acnqpsdv-pooler.sa-east-1.aws.neon.tech',
+  timestamp: '2025-03-21T14:14:11.514Z',
+  secure: true
+}
+Database connection successful { attempt: 1, duration: 128 }
+Drizzle ORM initialized successfully
+=== Iniciando servidor ===
+Timestamp: 2025-03-21T14:14:11.655Z
+Ambiente: production
+✓ Todas as variáveis de ambiente críticas estão presentes
+Inicializando rotas...
+Iniciando setup inicial do sistema...
+Sistema já inicializado - usuário admin existe
+Setup inicial concluído
+Configurando sessão com PostgreSQL
+✓ Rotas inicializadas com sucesso
+Configurando monitoramento para ambiente de produção
+2:14:04 PM [vite] Pre-transform error: Failed to load url /src/main.tsx?v=RNu7eKVewX8JlYKf78ZO6 (resolved id: /src/main.tsx?v=RNu7eKVewX8JlYKf78ZO6). Does the file exist?
+npm warn config production Use `--omit=dev` instead.
+Iniciando monitoramento do banco de dados (intervalo: 30000ms)
+✓ Monitoramento do banco de dados iniciado
+Configurando servidor Vite para ambiente: production

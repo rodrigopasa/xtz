@@ -1,0 +1,100 @@
+WebSocket connection attempt: {
+  url: 'ep-autumn-moon-acnqpsdv-pooler.sa-east-1.aws.neon.tech',
+  timestamp: '2025-03-21T14:24:11.151Z',
+  secure: true
+}
+Status do banco de dados: { healthy: true, timestamp: '2025-03-21T14:24:11.355Z' }
+WebSocket connection attempt: {
+  url: 'ep-autumn-moon-acnqpsdv-pooler.sa-east-1.aws.neon.tech',
+  timestamp: '2025-03-21T14:24:41.153Z',
+  secure: true
+}
+Status do banco de dados: { healthy: true, timestamp: '2025-03-21T14:24:41.199Z' }
+Database configuration: {
+  MAX_RETRIES: 5,
+  INITIAL_BACKOFF: 500,
+  MAX_BACKOFF: 5000,
+  CONNECTION_TIMEOUT: 10000,
+  POOL_SIZE: 5,
+  NODE_ENV: 'production',
+  DATABASE_URL_SET: true
+}
+Initializing Drizzle ORM...
+Starting database connection process at: 2025-03-21T14:24:59.387Z
+Connection attempt 1/5 { elapsedTime: 0, timestamp: '2025-03-21T14:24:59.387Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: 'ep-autumn-moon-acnqpsdv-pooler.sa-east-1.aws.neon.tech',
+  timestamp: '2025-03-21T14:24:59.390Z',
+  secure: true
+}
+Database connection successful { attempt: 1, duration: 61 }
+Drizzle ORM initialized successfully
+
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+
+Database configuration: {
+  MAX_RETRIES: 5,
+  INITIAL_BACKOFF: 500,
+  MAX_BACKOFF: 5000,
+  CONNECTION_TIMEOUT: 10000,
+  POOL_SIZE: 5,
+  NODE_ENV: 'production',
+  DATABASE_URL_SET: true
+}
+Initializing Drizzle ORM...
+Starting database connection process at: 2025-03-21T14:25:03.432Z
+Connection attempt 1/5 { elapsedTime: 1, timestamp: '2025-03-21T14:25:03.433Z' }
+Pool created, testing connection...
+WebSocket connection attempt: {
+  url: 'ep-autumn-moon-acnqpsdv-pooler.sa-east-1.aws.neon.tech',
+  timestamp: '2025-03-21T14:25:03.436Z',
+  secure: true
+}
+Database connection successful { attempt: 1, duration: 56 }
+Drizzle ORM initialized successfully
+=== Iniciando servidor ===
+Timestamp: 2025-03-21T14:25:03.496Z
+Ambiente: production
+✓ Todas as variáveis de ambiente críticas estão presentes
+Inicializando rotas...
+Iniciando setup inicial do sistema...
+Sistema já inicializado - usuário admin existe
+Setup inicial concluído
+Configurando sessão com PostgreSQL
+✓ Rotas inicializadas com sucesso
+Configurando monitoramento para ambiente de produção
+Iniciando monitoramento do banco de dados (intervalo: 30000ms)
+✓ Monitoramento do banco de dados iniciado
+Configurando servidor Vite para ambiente: production
+✓ Configuração Vite concluída
+2:25:03 PM [express] ✓ Servidor rodando em 0.0.0.0:5000
+2:25:03 PM [express] ✓ Ambiente: production
+Sitemap gerado com sucesso: /app/public/sitemap.xml
+Sitemap inicial gerado com sucesso
+2:24:57 PM [vite] Pre-transform error: Failed to load url /src/main.tsx?v=gbFS4rXGLJrrLNgz3pG85 (resolved id: /src/main.tsx?v=gbFS4rXGLJrrLNgz3pG85). Does the file exist?
+npm warn config production Use `--omit=dev` instead.
+Error initializing database: error: duplicate key value violates unique constraint "users_username_unique"
+    at file:///app/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async initializeDatabase (/app/server/initDb.ts:9:5) {
+  length: 212,
+  severity: 'ERROR',
+  code: '23505',
+  detail: 'Key (username)=(admin) already exists.',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'users',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'users_username_unique',
+  file: 'nbtinsert.c',
+  line: '666',
+  routine: '_bt_check_unique'
+}
+npm warn config production Use `--omit=dev` instead.
