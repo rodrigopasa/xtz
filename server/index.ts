@@ -118,10 +118,24 @@ function startHealthCheck() {
       res.status(status).json({ message });
     });
 
-    // Para evitar erros com o Vite em produção
-    console.log(`Configurando servidor Vite para ambiente: ${app.get("env")}`);
-    await setupVite(app, server);
-    console.log("✓ Configuração Vite concluída");
+    // Configuração do servidor baseada no ambiente
+    if (process.env.NODE_ENV === 'production' || process.env.VITE_DEV_SERVER_ENABLED === 'false') {
+      console.log("Ambiente de produção detectado, usando servidor estático");
+      // Importar dinamicamente para evitar erros de importação em ambientes de desenvolvimento
+      const { setupProductionServer } = await import('./production.js');
+      const setupSuccess = setupProductionServer(app);
+      
+      if (!setupSuccess) {
+        console.error("Falha ao configurar servidor de produção");
+        process.exit(1);
+      }
+      
+      console.log("✓ Configuração do servidor de produção concluída");
+    } else {
+      console.log(`Configurando servidor Vite para ambiente: ${app.get("env")}`);
+      await setupVite(app, server);
+      console.log("✓ Configuração Vite de desenvolvimento concluída");
+    }
 
     const port = process.env.PORT || 5000;
     const host = process.env.HOST || "0.0.0.0";
