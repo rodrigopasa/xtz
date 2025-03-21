@@ -136,6 +136,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log("Configurando sessão com PostgreSQL");
 
   const pool = await getPool();
+  // Determina se estamos usando HTTPS baseado no env
+  const useSecureCookies = process.env.COOKIE_SECURE === 'true';
+  console.log(`[Session] Configuração de cookies - secure: ${useSecureCookies}, environment: ${process.env.NODE_ENV}`);
+
   app.use(session({
     store: new PostgreSQLStore({
       pool: pool as any,
@@ -148,8 +152,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 24 horas
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
+      secure: useSecureCookies,
+      sameSite: useSecureCookies ? 'none' : 'lax' // Ajusta sameSite para funcionar com secure
     }
   }));
 
